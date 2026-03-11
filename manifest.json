@@ -1,0 +1,28 @@
+{
+  "name": "محطة الدهار الجديدة - نظام التشغيل",
+  "short_name": "محطة الدهار",
+  "description": "نظام تشغيل ومتابعة محطة الدهار الجديدة",
+  "start_url": "./operating.html",
+  "display": "standalone",
+  "background_color": "#e8e8ec",
+  "theme_color": "#0077b6",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='24' fill='%230077b6'/><path d='M96 30C96 30,60 70,60 96C60 118,76 134,96 134C116 134,132 118,132 96C132 70,96 30,96 30Z' fill='rgba(0,212,255,0.4)' stroke='%2300d4ff' stroke-width='4'/><path d='M78 95C78 95,84 88,96 94C108 100,114 88,120 94' stroke='%2300ffd4' stroke-width='5' stroke-linecap='round' fill='none'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='64' fill='%230077b6'/><path d='M256 80C256 80,160 188,160 256C160 314,202 356,256 356C310 356,352 314,352 256C352 188,256 80,256 80Z' fill='rgba(0,212,255,0.4)' stroke='%2300d4ff' stroke-width='10'/><path d='M208 254C208 254,224 236,256 252C288 268,304 236,320 252' stroke='%2300ffd4' stroke-width='14' stroke-linecap='round' fill='none'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity"],
+  "prefer_related_applications": false
+}
