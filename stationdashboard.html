@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>محطة الدهار الجديدة — لوحة الأداء</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
@@ -758,7 +759,7 @@ function buildDashboard() {
 
   // Aggregate
   let totalWater=0, totalHours=0, flowArr=[], effArr=[];
-  const areaMap={}, pumpMap={};
+  const areaMap={};
   const dailyMap={};
 
   filtered.forEach(r => {
@@ -784,14 +785,6 @@ function buildDashboard() {
       areaMap[area].water+=water; areaMap[area].hrs+=hrs;
       if(flow>0) areaMap[area].flow.push(flow);
       if(eff>0) areaMap[area].eff.push(eff);
-
-      // pumps
-      let pumpNums=z.pumpNumbers||[];
-      if(typeof pumpNums==="string"){pumpNums=pumpNums.split(/[,\-\s]+/).map(p=>p.trim()).filter(p=>p&&!isNaN(p));}
-      pumpNums.forEach(p=>{
-        if(!pumpMap['P'+p]) pumpMap['P'+p]={hrs:0,runs:0};
-        pumpMap['P'+p].hrs+=hrs; pumpMap['P'+p].runs++;
-      });
 
       // daily
       if(r.date){
@@ -823,7 +816,7 @@ function buildDashboard() {
   buildHoursTable(areaMap, totalHours);
 
   // Pumps — من بيانات الشيت مباشرة مع فلتر الفترة
-  const pumpMap = {};
+  const pumpMap = {}; // eslint-disable-line
   (window._pumpHoursData || []).forEach(function(row) {
     if (!row.date || row.date < from || row.date > to) return;
     for (var i = 1; i <= 8; i++) {
