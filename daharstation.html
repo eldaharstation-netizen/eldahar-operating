@@ -2,14 +2,13 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0077b6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="محطة الدهار">
-<!-- manifest removed -->
+<link rel="manifest" href="manifest.json">
 <title>محطة الدهار الجديدة - نظام التشغيل</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
@@ -679,34 +678,14 @@ input[type="time"]{letter-spacing:1px;font-family:'Rajdhani',sans-serif;font-siz
             </div>
             <!-- end tanks visual row -->
 
-            <!-- STATION METER + CALCS -->
-            <div style="background:rgba(0,230,118,0.04);border:1px solid rgba(0,230,118,0.2);border-radius:8px;padding:0.9rem;margin-bottom:0.9rem;">
-              <div style="font-size:0.82rem;font-weight:800;color:var(--green);margin-bottom:0.8rem;">💧 المياه الواردة للمحطة</div>
-              <div class="fg fg-4">
-                <div class="field">
-                  <label>📟 قراءة عداد الوارد <span class="req">*</span></label>
-                  <div class="iw"><input type="number" id="stationMeter" placeholder="0" step="0.1" min="0" oninput="calcStationMeter()" style="padding-left:3.5rem;font-size:1rem;font-family:Rajdhani,sans-serif;font-weight:700;color:var(--green);"><span class="suf">م³/س</span></div>
-                  <div style="font-size:0.7rem;color:var(--txt3);margin-top:0.2rem;">قراءة عداد التدفق — للمقارنة فقط</div>
-                </div>
-                <div class="field">
-                  <label>📊 وارد العداد <span style="font-size:0.65rem;color:var(--green);">(× ساعات)</span></label>
-                  <div class="iw"><input type="number" id="meterInflow" readonly placeholder="--" style="padding-left:3rem;color:var(--green);font-family:Rajdhani,sans-serif;font-weight:700;font-size:1rem;"><span class="suf">م³</span></div>
-                  <div style="font-size:0.7rem;color:var(--txt3);margin-top:0.2rem;" id="meterLastInfo">أدخل قراءة العداد</div>
-                </div>
-                <div class="field">
-                  <label>🧮 الوارد الحقيقي <span style="font-size:0.65rem;color:var(--cyan);">(ضخ + تكديس)</span></label>
-                  <div class="iw"><input type="number" id="calcInflow" readonly placeholder="--" style="padding-left:3rem;color:var(--cyan);font-family:Rajdhani,sans-serif;font-weight:700;font-size:1rem;"><span class="suf">م³</span></div>
-                  <div style="font-size:0.7rem;margin-top:0.2rem;" id="inflowCompare">--</div>
-                </div>
-                <div class="field">
-                  <label>📉 فرق دقة العداد</label>
-                  <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:8px;padding:0.5rem 0.7rem;margin-top:0.2rem;">
-                    <div style="font-family:Rajdhani,sans-serif;font-size:1.1rem;font-weight:700;" id="inflowDiffVal">--</div>
-                    <div style="font-size:0.68rem;color:var(--txt3);" id="inflowDiffLbl">أدخل البيانات</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- hidden fields for compatibility -->
+            <input type="hidden" id="stationMeter">
+            <input type="hidden" id="meterInflow">
+            <input type="hidden" id="calcInflow">
+            <input type="hidden" id="meterLastInfo">
+            <input type="hidden" id="inflowCompare">
+            <input type="hidden" id="inflowDiffVal">
+            <input type="hidden" id="inflowDiffLbl">
 
             <!-- BALANCE SUMMARY -->
             <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:0.9rem;">
@@ -839,8 +818,7 @@ input[type="time"]{letter-spacing:1px;font-family:'Rajdhani',sans-serif;font-siz
         <div class="actions">
           <button class="btn btn-primary" onclick="saveRecord()">💾 حفظ البيانات</button>
           <button class="btn btn-add" onclick="newRecord()">🆕 تسجيل جديد</button>
-          <button class="btn" style="background:rgba(0,230,118,0.12);border:1px solid rgba(0,230,118,0.4);color:var(--green);" onclick="viewLastRecord()">👁 عرض آخر سجل</button>
-          <button class="btn" style="background:rgba(0,119,182,0.12);border:1px solid rgba(0,119,182,0.4);color:#0077b6;" onclick="editLastRecord()">✏️ تعديل آخر سجل</button>
+          <button class="btn" style="background:rgba(0,255,212,0.1);border:1px solid rgba(0,255,212,0.35);color:var(--cyan);" onclick="copyLastRecord()">📋 نسخ آخر تسجيل</button>
           <button class="btn btn-export" onclick="showDailyReport()">📄 تقرير اليوم</button>
           <button class="btn" style="background:rgba(0,255,212,0.1);border:1px solid rgba(0,255,212,0.35);color:var(--cyan);" onclick="openImportModal()">📥 استيراد بيانات قديمة</button>
           <button class="btn btn-admin" onclick="openAdminModal()">🔐 لوحة التحليلات</button>
@@ -1123,6 +1101,54 @@ input[type="time"]{letter-spacing:1px;font-family:'Rajdhani',sans-serif;font-siz
     </div>
   </div>
 
+  <!-- تقرير كل المناطق -->
+  <div class="panel" style="margin-top:1.2rem;">
+    <div class="panel-hdr">
+      <div class="panel-title"><div class="panel-ico">🗺</div>تقرير كمية المياه — كل المناطق</div>
+      <div class="panel-tag">ALL AREAS REPORT</div>
+    </div>
+    <div style="padding:1rem;">
+      <div class="fg fg-3" style="margin-bottom:1rem;">
+        <div class="field">
+          <label>📅 من تاريخ</label>
+          <input type="date" id="allAreasFrom">
+        </div>
+        <div class="field">
+          <label>📅 إلى تاريخ</label>
+          <input type="date" id="allAreasTo">
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end;gap:0.5rem;">
+          <button class="btn btn-primary" onclick="generateAllAreasReport()" style="flex:1;justify-content:center;">📊 احسب</button>
+          <button class="btn btn-outline" onclick="exportAllAreasExcel()" style="flex:1;justify-content:center;">📥 Excel</button>
+          <button class="btn btn-outline" onclick="printAllAreasReport()" style="flex:1;justify-content:center;">🖨 طباعة</button>
+        </div>
+      </div>
+      <div id="allAreasResults" style="display:none;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;" id="allAreasTable">
+          <thead>
+            <tr style="background:var(--bg3);">
+              <th style="padding:0.7rem;text-align:right;color:var(--txt3);font-weight:700;">📍 المنطقة</th>
+              <th style="padding:0.7rem;text-align:right;color:var(--txt3);font-weight:700;">⏱ إجمالي الساعات</th>
+              <th style="padding:0.7rem;text-align:right;color:var(--txt3);font-weight:700;">💧 كمية المياه م³</th>
+              <th style="padding:0.7rem;text-align:right;color:var(--txt3);font-weight:700;">📊 متوسط التصرف م³/س</th>
+              <th style="padding:0.7rem;text-align:right;color:var(--txt3);font-weight:700;">📋 عدد التسجيلات</th>
+              <th style="padding:0.7rem;text-align:right;color:var(--txt3);font-weight:700;">📈 متوسط الكفاءة%</th>
+            </tr>
+          </thead>
+          <tbody id="allAreasBody"></tbody>
+          <tfoot>
+            <tr style="background:var(--bg3);font-weight:800;">
+              <td style="padding:0.7rem;color:var(--txt2);">الإجمالي</td>
+              <td style="padding:0.7rem;color:var(--cyan);font-family:Rajdhani,sans-serif;" id="allAreasTotalHrs">--</td>
+              <td style="padding:0.7rem;color:var(--green);font-family:Rajdhani,sans-serif;" id="allAreasTotalWater">--</td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- رسوم بيانية مفلترة -->
   <div class="panel" style="margin-top:1.2rem;">
     <div class="panel-hdr"><div class="panel-title"><div class="panel-ico">📈</div>تحليل مرئي</div></div>
@@ -1393,21 +1419,11 @@ input[type="time"]{letter-spacing:1px;font-family:'Rajdhani',sans-serif;font-siz
 <div class="overlay" id="setupModal">
   <div class="modal modal-wide">
     <div style="font-size:2rem;text-align:center;margin-bottom:0.5rem;">🔗</div>
-    <h3 style="text-align:center;">إعداد رابط Google Sheets</h3>
-
-    <!-- الرابط الحالي -->
-    <div id="currentUrlBox" style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:0.8rem;margin-bottom:1rem;display:none;">
-      <div style="font-size:0.72rem;color:var(--txt3);font-weight:700;margin-bottom:0.4rem;">✅ الرابط الحالي المحفوظ:</div>
-      <div id="currentUrlDisplay" style="font-size:0.68rem;color:var(--cyan);word-break:break-all;font-family:monospace;direction:ltr;"></div>
-    </div>
-
-    <p style="text-align:center;font-size:0.85rem;color:var(--txt3);margin-bottom:1rem;">الصق الرابط الجديد هنا لو عاوزة تغييره</p>
-    <div class="field" style="margin-bottom:0.5rem;">
-      <label>رابط الـ Web App الجديد:</label>
+    <h3 style="text-align:center;">ربط مع Google Sheets</h3>
+    <p style="text-align:center;">الصق رابط الـ Web App من Apps Script</p>
+    <div class="field" style="margin-bottom:1rem;">
+      <label>رابط الـ Web App:</label>
       <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec" dir="ltr" style="font-size:0.72rem;text-align:left;">
-    </div>
-    <div style="font-size:0.72rem;color:var(--txt3);margin-bottom:1rem;">
-      📌 احصلي على الرابط من: Apps Script → Deploy → Manage Deployments → نسخ الرابط
     </div>
     <div class="modal-btns">
       <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="saveScriptUrl()">✔ حفظ وربط</button>
@@ -1423,7 +1439,7 @@ input[type="time"]{letter-spacing:1px;font-family:'Rajdhani',sans-serif;font-siz
 // STATE
 // ============================================================
 let records = JSON.parse(localStorage.getItem('dahar_records') || '[]');
-let scriptUrl = localStorage.getItem('dahar_script_url') || 'https://script.google.com/macros/s/AKfycbzfrDo099UzuPhOaaYZ6xa7aBptrf3uNMpuRVG3lO0_qdsizWB5iLy-7UIsmBPfPY9A/exec';
+let scriptUrl = localStorage.getItem('dahar_script_url') || 'https://script.google.com/macros/s/AKfycbwV4HPEMITXIVwknzKbheiXxVxmFY6z8LNCEx_Gpc9CQq62T-QRmVMBl2p67alWDb0J/exec';
 let pumpSpecs = JSON.parse(localStorage.getItem('dahar_specs') || '{"flow":450,"pressure":7,"head":3,"power":75}');
 let zoneCount = 0;
 let flowChart, pressureChart, hoursChart, effChart;
@@ -2550,11 +2566,6 @@ const PAGE_SIZE = 25;
 // ============================================================
 // TABLE
 // ============================================================
-// ── تحديث الـ _stableIdx على كل records ──
-function tagRecords() {
-  records.forEach((r, i) => { r._stableIdx = i; });
-}
-
 function renderTable() {
   const tbody = document.getElementById('recordsBody');
   const searchVal = (document.getElementById('recordsSearch')?.value || '').toLowerCase().trim();
@@ -2597,23 +2608,19 @@ function renderTable() {
   const start = (tablePage-1) * PAGE_SIZE;
   const shown = filtered.slice(start, start + PAGE_SIZE);
 
-  // نحدث الـ index على كل records
-  tagRecords();
-
   tbody.innerHTML = shown.map((r,i)=>{
-    const recordIdx = r._stableIdx;
-    if (recordIdx === undefined || recordIdx === -1) return ''; // أمان إضافي
     const z = r.zones?.[0]||r.groups?.[0]||{};
     const badge = r.synced ? '<span class="badge b-synced">✓ مزامن</span>' : '<span class="badge b-pending">⏳ معلق</span>';
     const hrs = z.runHours ? z.runHours+'h' : '--';
     const endTime = z.endTime || '';
     const eff = z.effFlow ? `<span style="color:${z.effFlow>=90?'var(--green)':z.effFlow>=70?'var(--amber)':'var(--red)'};font-weight:700">${z.effFlow}%</span>` : '--';
+    const recIdx = records.indexOf(r);
     return `<tr>
       <td style="color:var(--txt3)">${start+i+1}</td>
-      <td>${r.date}${r.recordTime ? '<br><span style="font-size:0.72rem;color:var(--txt3);font-family:Rajdhani,sans-serif;">'+r.recordTime+'</span>' : ''}</td>
+      <td>${r.date||'--'}${r.recordTime ? '<br><span style="font-size:0.72rem;color:var(--txt3);font-family:Rajdhani,sans-serif;">'+r.recordTime+'</span>' : ''}</td>
       <td><span style="font-size:0.78rem;font-weight:700;color:${r.shiftType==='صباحية'?'var(--amber)':'var(--purple)'}">${r.shiftType==='صباحية'?'🌅 صباحية':'🌆 مسائية'}</span></td>
-      <td style="font-size:0.82rem">${r.engineer}</td>
-      <td style="font-size:0.82rem">${r.technician}</td>
+      <td style="font-size:0.82rem">${r.engineer||'--'}</td>
+      <td style="font-size:0.82rem">${r.technician||'--'}</td>
       <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;font-size:0.8rem">${z.area||'--'}</td>
       <td style="color:var(--green);font-family:'Rajdhani',sans-serif;font-weight:700">${hrs}</td>
       <td style="color:var(--cyan);font-family:'Rajdhani',sans-serif;font-weight:700">${z.actualFlow||'--'}</td>
@@ -2623,13 +2630,13 @@ function renderTable() {
         ${endTime 
           ? `<span style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--txt2)">${endTime}</span>` 
           : `<span style="color:var(--amber);font-size:0.75rem;font-weight:700;">⏳ لم تُسجَّل</span>`}
-        <button data-idx="${recordIdx}" onclick="editEndTime(parseInt(this.dataset.idx))" title="تعديل نهاية التشغيل" style="margin-right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,119,182,0.12);border:1px solid rgba(0,119,182,0.4);color:#0077b6;cursor:pointer;font-size:0.8rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,119,182,0.25)'" onmouseout="this.style.background='rgba(0,119,182,0.12)'">✏️</button>
+        <button onclick="editEndTime(${recIdx})" title="تعديل نهاية التشغيل" style="margin-right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,119,182,0.12);border:1px solid rgba(0,119,182,0.4);color:#0077b6;cursor:pointer;font-size:0.8rem;transition:all 0.2s;">✏️</button>
       </td>
       <td>${badge}</td>
       <td style="display:flex;gap:4px;align-items:center;">
-        <button data-idx="${recordIdx}" onclick="viewRecord(parseInt(this.dataset.idx))" title="عرض السجل كامل" style="width:32px;height:32px;border-radius:50%;background:rgba(0,230,118,0.12);border:2px solid rgba(0,230,118,0.4);color:var(--green);cursor:pointer;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,230,118,0.25)'" onmouseout="this.style.background='rgba(0,230,118,0.12)'">👁</button>
-        <button data-idx="${recordIdx}" onclick="openEditModal(parseInt(this.dataset.idx))" title="تعديل السجل" style="width:32px;height:32px;border-radius:50%;background:rgba(0,119,182,0.12);border:2px solid rgba(0,119,182,0.4);color:#0077b6;cursor:pointer;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,119,182,0.25)'" onmouseout="this.style.background='rgba(0,119,182,0.12)'">✏️</button>
-        <button data-idx="${recordIdx}" onclick="deleteRecord(parseInt(this.dataset.idx))" title="حذف السجل" style="width:32px;height:32px;border-radius:50%;background:rgba(192,57,43,0.15);border:2px solid rgba(192,57,43,0.6);color:#c0392b;cursor:pointer;font-size:1rem;font-weight:700;transition:all 0.2s;" onmouseover="this.style.background='rgba(192,57,43,0.35)'" onmouseout="this.style.background='rgba(192,57,43,0.15)'">🗑</button>
+        <button onclick="viewRecord(${recIdx})" title="عرض السجل كامل" style="width:32px;height:32px;border-radius:50%;background:rgba(0,230,118,0.12);border:2px solid rgba(0,230,118,0.4);color:var(--green);cursor:pointer;font-size:0.9rem;transition:all 0.2s;">👁</button>
+        <button onclick="openEditModal(${recIdx})" title="تعديل السجل" style="width:32px;height:32px;border-radius:50%;background:rgba(0,119,182,0.12);border:2px solid rgba(0,119,182,0.4);color:#0077b6;cursor:pointer;font-size:0.9rem;transition:all 0.2s;">✏️</button>
+        <button onclick="deleteRecord(${recIdx})" title="حذف السجل" style="width:32px;height:32px;border-radius:50%;background:rgba(192,57,43,0.15);border:2px solid rgba(192,57,43,0.6);color:#c0392b;cursor:pointer;font-size:1rem;font-weight:700;transition:all 0.2s;">🗑</button>
       </td>
     </tr>`;
   }).join('');
@@ -2681,61 +2688,37 @@ function populateTableDayFilter() {
 // ============================================================
 function deleteRecord(idx) {
   if (!confirm('⚠ هل أنت متأكد من حذف هذا السجل؟\nلا يمكن التراجع عن هذا الإجراء.')) return;
-  tagRecords(); // تأكد إن الـ index محدث
-  if (isNaN(idx) || idx < 0 || idx >= records.length) return;
+  idx = parseInt(idx);
+  if (idx < 0 || idx >= records.length) return;
   const r = records[idx];
   records.splice(idx, 1);
   localStorage.setItem('dahar_records', JSON.stringify(records));
   updateKPIs(); renderTable(); updatePendingBadge();
   addAlert(`تم حذف سجل ${r.date} - ${r.engineer}`, 'warn');
   showToast('🗑 تم حذف السجل', 'warn');
-
-  // إرسال طلب الحذف لـ Google Sheets
-  if (scriptUrl) {
-    fetch(scriptUrl, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action: 'deleteRecord', id: id })
-    }).then(res => res.text()).then(text => {
-      let result = {};
-      try { result = JSON.parse(text); } catch(e) {}
-      if (result.status === 'ok') {
-        addAlert(`تم حذف السجل من Sheets بنجاح`, 'ok');
-      } else {
-        showToast('⚠ السجل محذوف محلياً لكن فشل الحذف من Sheets', 'warn');
-      }
-    }).catch(() => {
-      showToast('⚠ السجل محذوف محلياً لكن تعذر الاتصال بـ Sheets', 'warn');
-    });
-  }
 }
 
 // ============================================================
 // EDIT END TIME
 // ============================================================
 function editEndTime(idx) {
-  tagRecords(); // تأكد إن الـ index محدث
-  if (isNaN(idx) || idx < 0 || idx >= records.length) return;
+  idx = parseInt(idx);
+  if (idx < 0 || idx >= records.length) return;
   const r = records[idx];
   const z = r.zones?.[0] || {};
   const current = z.endTime || '';
-  const newEnd = prompt(`تعديل نهاية التشغيل للسجل ${r.date}\nأدخلي الوقت بصيغة HH:MM`, current);
+  const newEnd = prompt(`تعديل نهاية التشغيل للسجل ${r.date}\nأدخلي الوقت`, current);
   if (newEnd === null) return;
-  if (!/^\d{2}:\d{2}$/.test(newEnd)) { showToast('⚠ صيغة الوقت غير صحيحة — استخدمي HH:MM', 'warn'); return; }
-  // Update endTime and recalculate hours
   if (r.zones?.[0]) {
     r.zones[0].endTime = newEnd;
-    const [sh,sm] = (r.zones[0].startTime||'00:00').split(':').map(Number);
-    const [eh,em] = newEnd.split(':').map(Number);
-    let mins = (eh*60+em)-(sh*60+sm);
-    if (mins < 0) mins += 1440;
-    r.zones[0].runHours = parseFloat((mins/60).toFixed(2));
+  } else {
+    if (!r.zones) r.zones = [{}];
+    r.zones[0].endTime = newEnd;
   }
   r.synced = false;
   records[idx] = r;
   localStorage.setItem('dahar_records', JSON.stringify(records));
   renderTable(); updateKPIs(); updatePendingBadge();
-  addAlert(`تم تعديل نهاية التشغيل للسجل ${r.date}`, 'ok');
   showToast('✔ تم تعديل نهاية التشغيل');
 }
 
@@ -2811,9 +2794,7 @@ function copyLastRecord() {
     if (z.actualFlow) zone.querySelector('.actualFlow').value = z.actualFlow;
     if (z.pressure) zone.querySelector('.pressure').value = z.pressure;
     if (z.frequency) zone.querySelector('.frequency').value = z.frequency;
-    let pNums = z.pumpNumbers || [];
-    if (typeof pNums === 'string') pNums = pNums.split(/[,\-\s]+/).map(p=>p.trim()).filter(p=>p&&!isNaN(p));
-    pNums.forEach(n => { const chk=zone.querySelector(`input[value="${parseInt(n)}"].pump-chk`); if(chk) chk.checked=true; });
+    (z.pumpNumbers||[]).forEach(n => { const chk=zone.querySelector(`input[value="${n}"].pump-chk`); if(chk) chk.checked=true; });
     updateZoneEfficiency(zone); calcHours(zone);
   }
   ['t1Level','t2Level','stationMeter'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
@@ -2829,8 +2810,19 @@ function copyLastRecord() {
 function fixOldDates() {
   let changed = false;
   records.forEach(r => {
-    if (r.date && r.date.includes('T')) {
-      r.date = new Date(r.date).toLocaleDateString('en-CA');
+    // إصلاح التاريخ
+    if (r.date) {
+      const d = r.date.toString();
+      if (d.includes('T') || d.includes('GMT')) {
+        const parsed = new Date(d);
+        r.date = parsed.getFullYear() >= 2020 ? parsed.toLocaleDateString('en-CA') : '';
+        changed = true;
+      }
+    }
+    // إصلاح الـ ID — لو مش رقم نحوله لرقم من التاريخ والوقت
+    if (r.id && isNaN(parseInt(r.id))) {
+      // ابقى على الـ id كـ string بس خليه consistent
+      r._stringId = String(r.id);
       changed = true;
     }
   });
@@ -3123,6 +3115,129 @@ function switchTab(tab) {
   });
   if (tab === 'analysis') { populateFilterOptions(); populateReportArea(); applyFilters(); }
   if (tab === 'eval') { setDefaultEvalDates(); buildEvaluation(); }
+}
+
+// ============================================================
+// ALL AREAS REPORT
+// ============================================================
+function generateAllAreasReport() {
+  const from = document.getElementById('allAreasFrom').value;
+  const to = document.getElementById('allAreasTo').value;
+
+  const toMins = t => {
+    if (!t || t === '--') return null;
+    if (t.toString().includes(':')) {
+      const [h,m] = t.toString().split(':').map(Number);
+      return h*60+(m||0);
+    }
+    const isPm = t.toString().includes('م');
+    const h = parseInt(t) % 12;
+    return (isPm ? h+12 : h) * 60;
+  };
+
+  const areaMap = {};
+  records.forEach(r => {
+    if (from && r.date < from) return;
+    if (to && r.date > to) return;
+    const zones = r.zones || [];
+    const firstHrs = parseFloat(zones[0]?.runHours) || 0;
+    zones.forEach(z => {
+      const area = z.area || '--';
+      if (area === '--') return;
+      if (!areaMap[area]) areaMap[area] = { hrs:0, water:0, flow:[], eff:[], count:0 };
+      let hrs = parseFloat(z.runHours) || 0;
+      if (hrs === 0 && z.startTime && z.endTime && z.endTime !== '--') {
+        const sm = toMins(z.startTime), em = toMins(z.endTime);
+        if (sm !== null && em !== null) {
+          let mins = em-sm; if(mins<0) mins+=24*60;
+          hrs = parseFloat((mins/60).toFixed(2));
+        }
+      }
+      if (hrs === 0) hrs = firstHrs;
+      const flow = parseFloat(z.actualFlow)||0;
+      const water = flow>0&&hrs>0 ? Math.round(flow*hrs) : 0;
+      const eff = parseFloat(z.effFlow)||0;
+      areaMap[area].hrs += hrs;
+      areaMap[area].water += water;
+      if(flow>0) areaMap[area].flow.push(flow);
+      if(eff>0) areaMap[area].eff.push(eff);
+      areaMap[area].count++;
+    });
+  });
+
+  const rows = Object.entries(areaMap).map(([area,d]) => ({
+    area,
+    hrs: parseFloat(d.hrs.toFixed(1)),
+    water: d.water,
+    avgFlow: d.flow.length ? parseFloat((d.flow.reduce((a,b)=>a+b,0)/d.flow.length).toFixed(1)) : 0,
+    avgEff: d.eff.length ? Math.round(d.eff.reduce((a,b)=>a+b,0)/d.eff.length) : 0,
+    count: d.count
+  })).sort((a,b) => b.water-a.water);
+
+  const totalHrs = rows.reduce((s,r)=>s+r.hrs,0);
+  const totalWater = rows.reduce((s,r)=>s+r.water,0);
+
+  document.getElementById('allAreasTotalHrs').textContent = totalHrs.toFixed(1)+'h';
+  document.getElementById('allAreasTotalWater').textContent = totalWater.toLocaleString()+' م³';
+  document.getElementById('allAreasBody').innerHTML = rows.map((r,i) => `
+    <tr style="border-bottom:1px solid var(--brd);${i%2===0?'':'background:var(--bg3);'}">
+      <td style="padding:0.7rem;font-weight:700;">${r.area}</td>
+      <td style="padding:0.7rem;color:var(--cyan);font-family:Rajdhani,sans-serif;font-weight:700;">${r.hrs}h</td>
+      <td style="padding:0.7rem;color:var(--green);font-family:Rajdhani,sans-serif;font-weight:700;">${r.water.toLocaleString()}</td>
+      <td style="padding:0.7rem;color:var(--amber);font-family:Rajdhani,sans-serif;">${r.avgFlow}</td>
+      <td style="padding:0.7rem;color:var(--txt3);">${r.count}</td>
+      <td style="padding:0.7rem;font-weight:700;color:${r.avgEff>=90?'var(--green)':r.avgEff>=70?'var(--amber)':'var(--red)'};">${r.avgEff}%</td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:1.5rem;">لا توجد بيانات</td></tr>';
+  document.getElementById('allAreasResults').style.display = 'block';
+  return { rows, totalHrs, totalWater };
+}
+
+function exportAllAreasExcel() {
+  const res = generateAllAreasReport();
+  if (!res || !res.rows.length) return;
+  const from = document.getElementById('allAreasFrom').value||'--';
+  const to = document.getElementById('allAreasTo').value||'--';
+  let csv = '\uFEFF';
+  csv += 'المنطقة,إجمالي الساعات,كمية المياه م³,متوسط التصرف م³/س,عدد التسجيلات,متوسط الكفاءة%\n';
+  res.rows.forEach(r => { csv += `"${r.area}",${r.hrs},${r.water},${r.avgFlow},${r.count},${r.avgEff}\n`; });
+  csv += `"الإجمالي",${res.totalHrs.toFixed(1)},${res.totalWater},,\n`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `تقرير_المناطق_${from}_${to}.csv`;
+  a.click();
+  showToast('✅ تم تصدير ملف Excel');
+}
+
+function printAllAreasReport() {
+  const res = generateAllAreasReport();
+  if (!res) return;
+  const from = document.getElementById('allAreasFrom').value||'--';
+  const to = document.getElementById('allAreasTo').value||'--';
+  const tableHtml = document.getElementById('allAreasTable')?.outerHTML||'';
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+  <title>تقرير كمية المياه</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>body{font-family:Cairo,sans-serif;background:#f5f5f5;color:#1a1a2e;padding:2rem;}
+  h1{color:#0077b6;font-size:1.4rem;margin-bottom:0.2rem;}.sub{color:#666;font-size:0.85rem;margin-bottom:1.5rem;}
+  .kpis{display:flex;gap:1rem;margin-bottom:1.5rem;}.kpi{background:white;border-radius:10px;padding:1rem 1.5rem;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.08);flex:1;}
+  .kpi-val{font-size:1.8rem;font-weight:900;color:#0077b6;}.kpi-lbl{font-size:0.7rem;color:#666;font-weight:700;}
+  table{width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+  th{background:#0077b6;color:white;padding:0.7rem;font-size:0.82rem;text-align:right;}
+  td{padding:0.65rem 0.8rem;border-bottom:1px solid #eee;font-size:0.82rem;}tfoot td{background:#f0f0f0;font-weight:800;}
+  .footer{margin-top:1.5rem;text-align:center;color:#666;font-size:0.75rem;}@media print{.no-print{display:none;}}</style></head><body>
+  <h1>🗺 تقرير كمية المياه — كل المناطق</h1>
+  <div class="sub">📅 من ${from} إلى ${to} | طُبع: ${new Date().toLocaleString('ar-EG')}</div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-val">${res.totalHrs.toFixed(1)}h</div><div class="kpi-lbl">⏱ إجمالي الساعات</div></div>
+    <div class="kpi"><div class="kpi-val">${res.totalWater.toLocaleString()}</div><div class="kpi-lbl">💧 إجمالي المياه م³</div></div>
+  </div>
+  ${tableHtml}
+  <div class="footer">محطة الدهار الجديدة — BY ENG/ AYAT MAHMOUD ELBENDARY</div>
+  <div class="no-print" style="text-align:center;margin-top:1rem;">
+    <button onclick="window.print()" style="background:#0077b6;color:white;border:none;padding:0.6rem 1.5rem;border-radius:7px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;">🖨 طباعة</button>
+  </div></body></html>`);
+  win.document.close();
 }
 
 // ============================================================
@@ -3465,42 +3580,27 @@ async function loadFromSheets() {
     }
 
     // دمج السجلات — الشيت هو المصدر الرئيسي
-    let added = 0, updated = 0;
+    const existing = records.map(r => parseInt(r.id));
+    let added = 0;
     sheetRecords.forEach(r => {
       // إصلاح التاريخ لو ISO
       if (r.date && r.date.toString().includes('T')) {
-        r.date = new Date(r.date).toLocaleDateString('en-CA');
+        const parsed = new Date(r.date);
+        r.date = parsed.getFullYear() >= 2020 ? parsed.toLocaleDateString('en-CA') : '';
       }
-      // إصلاح pumpNumbers — قد يكون string من الشيت
-      if (r.zones) {
-        r.zones.forEach(z => {
-          if (typeof z.pumpNumbers === 'string') {
-            z.pumpNumbers = z.pumpNumbers.split(/[,\-\s]+/).map(p=>p.trim()).filter(p=>p&&!isNaN(p)).map(Number);
-          }
-          if (!Array.isArray(z.pumpNumbers)) z.pumpNumbers = [];
-        });
-      }
-      r.synced = true;
-      const idx = records.findIndex(x => String(x.id) === String(r.id));
-      if (idx === -1) {
+      if (!existing.includes(parseInt(r.id))) {
+        r.synced = true;
         records.push(r);
         added++;
-      } else {
-        records[idx] = r;
-        updated++;
       }
     });
 
     // ترتيب من الأحدث للأقدم
-    records.sort((a, b) => {
-      if (b.date !== a.date) return b.date > a.date ? 1 : -1;
-      return String(b.id).localeCompare(String(a.id));
-    });
-    tagRecords();
+    records.sort((a, b) => b.id - a.id);
     localStorage.setItem('dahar_records', JSON.stringify(records));
     renderTable(); updateKPIs(); updatePendingBadge();
 
-    showToast(`✅ تم تحميل ${sheetRecords.length} سجل (${added} جديد، ${updated} محدَّث)`);
+    showToast(`✅ تم تحميل ${sheetRecords.length} سجل (${added} جديد)`);
     addAlert(`تم تحميل ${sheetRecords.length} سجل من Sheets`, 'ok');
 
   } catch (e) {
@@ -3514,20 +3614,10 @@ async function loadFromSheets() {
 }
 
 function saveScriptUrl() {
-  const url = document.getElementById('scriptUrl').value.trim();
-  // لو الـ input فاضي — احتفظ بالرابط الحالي وأغلق
-  if (!url) {
-    if (scriptUrl) {
-      showToast('✔ تم الاحتفاظ بالرابط الحالي');
-      closeOverlay('setupModal');
-    } else {
-      showToast('⚠ أدخلي الرابط أولاً', 'warn');
-    }
-    return;
-  }
-  if (!url.startsWith('https://script.google.com')) { showToast('⚠ الرابط غير صحيح — لازم يبدأ بـ https://script.google.com', 'warn'); return; }
-  scriptUrl = url;
-  localStorage.setItem('dahar_script_url', url);
+  const url=document.getElementById('scriptUrl').value.trim();
+  if(!url||!url.startsWith('https://script.google.com')){ showToast('⚠ الرابط غير صحيح','warn'); return; }
+  scriptUrl=url;
+  localStorage.setItem('dahar_script_url',url);
   closeOverlay('setupModal');
   updateSyncUI();
   showToast('✔ تم حفظ الرابط وتفعيل المزامنة');
@@ -4078,21 +4168,7 @@ function fillFormFromAI() {
   showToast('✔ تم ملء الفورم من الصورة');
 }
 
-function showSetupModal() {
-  // عرض الرابط الحالي
-  const currentBox = document.getElementById('currentUrlBox');
-  const currentDisp = document.getElementById('currentUrlDisplay');
-  const input = document.getElementById('scriptUrl');
-  if (scriptUrl) {
-    if (currentBox) { currentBox.style.display = 'block'; }
-    if (currentDisp) { currentDisp.textContent = scriptUrl; }
-    if (input) { input.value = ''; input.placeholder = 'الصق الرابط الجديد هنا (اتركيه فاضي لو مش عاوزة تغيير)'; }
-  } else {
-    if (currentBox) { currentBox.style.display = 'none'; }
-    if (input) { input.value = ''; }
-  }
-  document.getElementById('setupModal').classList.add('show');
-}
+function showSetupModal(){ if(scriptUrl) document.getElementById('scriptUrl').value=scriptUrl; document.getElementById('setupModal').classList.add('show'); }
 function closeOverlay(id){ document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');}));
 
@@ -4104,12 +4180,17 @@ function showToast(msg,type='ok'){
   setTimeout(()=>t.classList.remove('show'),3200);
 }
 </script>
-<!-- SERVICE WORKER — معطل عشان ما يتعارضش مع Google Sheets -->
+<!-- SERVICE WORKER REGISTRATION -->
 <script>
 if ('serviceWorker' in navigator) {
-  // امسح أي Service Worker قديم عشان ما يتعارضش مع Google Sheets
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(reg => reg.unregister());
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        console.log('✅ Service Worker registered');
+        // Check for updates every 30 min
+        setInterval(() => reg.update(), 30 * 60 * 1000);
+      })
+      .catch(err => console.log('SW registration failed:', err));
   });
 }
 
@@ -4214,27 +4295,8 @@ setInterval(checkScheduleAlert, 30000);
 // ============================================================
 // VIEW RECORD
 // ============================================================
-// عرض وتعديل آخر سجل مباشرة من أزرار الأكشن
-function viewLastRecord() {
-  if (!records.length) { showToast('⚠ لا توجد سجلات بعد', 'warn'); return; }
-  records.forEach((r, i) => { r._stableIdx = i; });
-  viewRecord(0);
-}
-
-function editLastRecord() {
-  if (!records.length) { showToast('⚠ لا توجد سجلات بعد', 'warn'); return; }
-  records.forEach((r, i) => { r._stableIdx = i; });
-  // ترتيب من الأحدث للأقدم
-  const sorted = [...records].sort((a,b) => {
-    if (b.date !== a.date) return b.date.localeCompare(a.date);
-    return (b._stableIdx||0) - (a._stableIdx||0);
-  });
-  const latest = sorted[0];
-  openEditModal(latest._stableIdx);
-}
-
 function viewRecord(idx) {
-  tagRecords(); // تأكد إن الـ index محدث
+  idx = parseInt(idx);
   const r = records[idx];
   if (!r) { showToast('⚠ لم يتم العثور على السجل', 'warn'); return; }
 
@@ -4308,7 +4370,7 @@ function viewRecord(idx) {
       ${r.synced ? '✓ مزامن مع Sheets' : '⏳ غير مزامن'} — ${r.timestamp||''}
     </div>
 
-    <button data-idx="${idx}" onclick="saveViewRecord(parseInt(this.dataset.idx))" style="width:100%;padding:0.8rem;background:linear-gradient(135deg,rgba(0,230,118,0.2),rgba(0,230,118,0.1));border:2px solid rgba(0,230,118,0.5);border-radius:10px;color:var(--green);font-family:Cairo,sans-serif;font-size:1rem;font-weight:800;cursor:pointer;">
+    <button onclick="saveViewRecord(${idx})" style="width:100%;padding:0.8rem;background:linear-gradient(135deg,rgba(0,230,118,0.2),rgba(0,230,118,0.1));border:2px solid rgba(0,230,118,0.5);border-radius:10px;color:var(--green);font-family:Cairo,sans-serif;font-size:1rem;font-weight:800;cursor:pointer;">
       💾 حفظ التعديلات
     </button>
   `;
@@ -4321,8 +4383,9 @@ function viewRecord(idx) {
 }
 
 function saveViewRecord(idx) {
+  idx = parseInt(idx);
+  if (idx < 0 || idx >= records.length) return;
   const r = records[idx];
-  if (!r) return;
   const content = document.getElementById('viewModalContent');
   const inputs = content.querySelectorAll('input, select');
   let inputIdx = 0;
@@ -4384,10 +4447,11 @@ function vBox(label, val, color) {
 
 
 function openEditModal(idx) {
-  tagRecords(); // تأكد إن الـ index محدث
+  idx = parseInt(idx);
   const r = records[idx];
   if (!r) { showToast('⚠ لم يتم العثور على السجل', 'warn'); return; }
   const z = r.zones?.[0] || {};
+
   document.getElementById('editRecordId').value = idx;
 
   // بيانات الوردية
@@ -4412,7 +4476,7 @@ function openEditModal(idx) {
 
 function saveEditRecord() {
   const idx = parseInt(document.getElementById('editRecordId').value);
-  if (isNaN(idx) || idx < 0 || idx >= records.length) return;
+  if (idx < 0 || idx >= records.length) return;
   const r = records[idx];
   r.engineer = document.getElementById('editEngineer').value;
   r.technician = document.getElementById('editTechnician').value;
@@ -4442,29 +4506,7 @@ function saveEditRecord() {
   renderTable(); updateKPIs(); updatePendingBadge();
   closeOverlay('editModal');
   showToast('✔ تم تعديل السجل بنجاح');
-  if (scriptUrl) {
-    // إرسال التعديل كـ updateRecord لتحديث الصف في Sheets وليس إضافة صف جديد
-    const recToSync = { ...r, action: 'updateRecord' };
-    fetch(scriptUrl, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain;charset=utf-8'},
-      body: JSON.stringify(recToSync)
-    }).then(res => res.text()).then(text => {
-      let result = {};
-      try { result = JSON.parse(text); } catch(e) {}
-      if (result.status === 'ok') {
-        const i2 = records.findIndex(x => x.id === r.id);
-        if (i2 !== -1) records[i2].synced = true;
-        localStorage.setItem('dahar_records', JSON.stringify(records));
-        renderTable(); updatePendingBadge();
-        addAlert(`تم تحديث السجل في Sheets`, 'ok');
-      } else {
-        showToast('⚠ التعديل محفوظ محلياً — فشل التحديث في Sheets', 'warn');
-      }
-    }).catch(() => {
-      showToast('⚠ التعديل محفوظ محلياً — تعذر الاتصال بـ Sheets', 'warn');
-    });
-  }
+  if (scriptUrl) syncNow();
 }
 
 </script>
