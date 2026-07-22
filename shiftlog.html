@@ -915,23 +915,19 @@ function buildTable() {
       <td><input type="text" data-col="notes" placeholder="..." style="font-family:Cairo,sans-serif;font-size:0.75rem;min-width:100px;"></td>
     </tr>`;
   }).join('');
-// تعبئة قوائم المناطق
+// تعبئة المناطق
 document.querySelectorAll('select[data-col="area"]').forEach(sel => {
+  sel.innerHTML = "";
   AREAS.forEach(area => {
-    const opt = document.createElement('option');
-    opt.value = area;
-    opt.textContent = area;
-    sel.appendChild(opt);
+    sel.innerHTML += `<option value="${area}">${area}</option>`;
   });
 });
 
-// تعبئة قوائم الطلمبات
+// تعبئة الطلمبات
 document.querySelectorAll('select[data-col="pump"]').forEach(sel => {
+  sel.innerHTML = "";
   PUMPS.forEach(pump => {
-    const opt = document.createElement('option');
-    opt.value = pump;
-    opt.textContent = pump;
-    sel.appendChild(opt);
+    sel.innerHTML += `<option value="${pump}">${pump}</option>`;
   });
 });
   // Auto-fill من آخر صف فيه بيانات
