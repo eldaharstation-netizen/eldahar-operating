@@ -265,6 +265,18 @@ header {
 }
 .multi-dropdown label:hover { background:rgba(0,180,255,0.08); }
 
+/* ── CHECKLIST داخل الجدول (منطقة/طلمبة لكل ساعة) ── */
+.cell-ms { min-width: 88px; }
+.cell-ms .multi-select-display {
+  padding: 0.25rem 0.4rem;
+  min-height: 26px;
+  font-size: 0.68rem;
+  gap: 0.15rem;
+}
+.cell-ms .multi-dropdown { min-width: 210px; max-height: 230px; }
+.cell-ms .tag { font-size: 0.6rem; padding: 0.03rem 0.32rem; }
+.multi-dropdown input[type="checkbox"] { accent-color: var(--blue); cursor:pointer; }
+
 /* ── TABLE ── */
 .table-section {
   background: var(--card);
@@ -779,62 +791,82 @@ function updateDayName() {
   }
 }
 
-function initDropdowns() {
-  // المنطقة الافتراضية لكل خط
-  const DEFAULT_AREAS = {
-    1: [], // خط الشمال — لا يوجد افتراضي
-    2: [], // شبكات الدهار — لا يوجد افتراضي
-    3: ['خط جبل العفش'] // جبل العفش — افتراضي دائماً
-  };
-
-  [1,2,3].forEach(line => {
-    const defaults = DEFAULT_AREAS[line] || [];
-    // Areas
-    const areaDD = document.getElementById('areaDropdown'+line);
-    areaDD.innerHTML = AREAS.map(a => `
-      <label>
-        <input type="checkbox" value="${a}" ${defaults.includes(a)?'checked':''} onchange="updateDisplay('area',${line})">
-        ${a}
-      </label>`).join('');
-
-    // Pumps
-    const pumpDD = document.getElementById('pumpDropdown'+line);
-    pumpDD.innerHTML = PUMPS.map(p => `
-      <label>
-        <input type="checkbox" value="${p}" onchange="updateDisplay('pump',${line})">
-        ${p}
-      </label>`).join('');
-
-    // تحديث العرض بعد التهيئة
-    updateDisplay('area', line);
-    updateDisplay('pump', line);
-  });
-}
-
+// ── تشيك ليست المنطقة/الطلمبة لكل صف (ساعة) ولكل خط ──
 function toggleDropdown(id) {
   const dd = document.getElementById(id);
   const isOpen = dd.style.display === 'block';
   document.querySelectorAll('.multi-dropdown').forEach(d => d.style.display='none');
-  if (!isOpen) dd.style.display = 'block';
+  if (isOpen) return;
+
+  // تعبئة تلقائية من آخر صف فيه اختيار لو القائمة لسه فاضية
+  const m = id.match(/^(area|pump)DD_(\d)_(\d+)$/);
+  if (m) {
+    const type = m[1], line = m[2], rowIdx = parseInt(m[3], 10);
+    if (getRowChecklist(type, line, rowIdx).length === 0) {
+      for (let i = rowIdx - 1; i >= 0; i--) {
+        const prevText = getRowChecklistText(type, line, i);
+        if (prevText) { setRowChecklist(type, line, rowIdx, prevText); autoStatusFromChecklist(line, rowIdx); break; }
+      }
+    }
+  }
+
+  dd.style.display = 'block';
 }
 
-function updateDisplay(type, line) {
-  const prefix = type === 'area' ? 'area' : 'pump';
-  const dd = document.getElementById(prefix+'Dropdown'+line);
-  const display = document.getElementById(prefix+'Display'+line);
-  const checked = [...dd.querySelectorAll('input:checked')].map(c=>c.value);
-  if (checked.length === 0) {
-    display.innerHTML = `<span style="color:var(--txt3)">اختر ${type==='area'?'المناطق':'الطلمبات'}...</span>`;
-  } else {
-    display.innerHTML = checked.map(v=>`<span class="tag">${v}</span>`).join('');
-  }
+function onChecklistChange(type, line, rowIdx) {
+  updateChecklistDisplay(type, line, rowIdx);
+  autoStatusFromChecklist(line, rowIdx);
+  updateLiveStatus();
   updateSummary();
 }
 
-function getSelected(type, line) {
-  const prefix = type === 'area' ? 'area' : 'pump';
-  const dd = document.getElementById(prefix+'Dropdown'+line);
+function updateChecklistDisplay(type, line, rowIdx) {
+  const dd = document.getElementById(`${type}DD_${line}_${rowIdx}`);
+  const display = document.getElementById(`${type}Disp_${line}_${rowIdx}`);
+  if (!dd || !display) return;
+  const checked = [...dd.querySelectorAll('input:checked')].map(c=>c.value);
+  display.innerHTML = checked.length
+    ? checked.map(v=>`<span class="tag">${v}</span>`).join('')
+    : `<span style="color:var(--txt3)">اختر...</span>`;
+}
+
+function getRowChecklist(type, line, rowIdx) {
+  const dd = document.getElementById(`${type}DD_${line}_${rowIdx}`);
+  if (!dd) return [];
   return [...dd.querySelectorAll('input:checked')].map(c=>c.value);
+}
+
+function getRowChecklistText(type, line, rowIdx) {
+  return getRowChecklist(type, line, rowIdx).join('+');
+}
+
+function setRowChecklist(type, line, rowIdx, text) {
+  const values = (text||'').split('+').map(s=>s.trim()).filter(Boolean);
+  const dd = document.getElementById(`${type}DD_${line}_${rowIdx}`);
+  if (!dd) return;
+  dd.querySelectorAll('input').forEach(inp => { inp.checked = values.includes(inp.value); });
+  updateChecklistDisplay(type, line, rowIdx);
+}
+
+// تجميع كل المناطق/الطلمبات المستخدمة خلال اليوم لخط معين (لاستخدامها في الملخص والتقرير)
+function aggregateLineValues(type, line) {
+  const set = new Set();
+  document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
+    getRowChecklist(type, line, i).forEach(v => set.add(v));
+  });
+  return [...set];
+}
+
+// إعادة تفعيل الخط تلقائياً لو الفني اختار منطقة أو طلمبة وهو متوقف
+function autoStatusFromChecklist(line, rowIdx) {
+  const hasArea = getRowChecklist('area', line, rowIdx).length > 0;
+  const hasPump = getRowChecklist('pump', line, rowIdx).length > 0;
+  if (!hasArea && !hasPump) return;
+  const tr = document.querySelectorAll('#tableBody tr')[rowIdx];
+  const btn = tr?.querySelector(`.line-status-btn[data-line="${line}"]`);
+  if (btn && btn.classList.contains('stopped-btn')) {
+    toggleLineStatus(btn);
+  }
 }
 
 // ── TABLE ──
@@ -874,8 +906,18 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line1"><select data-line="1" data-col="area" multiple></select></td>
-      <td class="cell-line1"><select data-line="1" data-col="pump"></select></td>
+      <td class="cell-line1">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="areaDisp_1_${i}" onclick="toggleDropdown('areaDD_1_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="areaDD_1_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line1">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="pumpDisp_1_${i}" onclick="toggleDropdown('pumpDD_1_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="pumpDD_1_${i}"></div>
+        </div>
+      </td>
       <td class="cell-line1"><input type="number" data-line="1" data-col="freq" placeholder="--" step="0.5"></td>
       <td class="cell-line1"><input type="number" data-line="1" data-col="amp" placeholder="--" step="1"></td>
       <td class="cell-line1"><input type="number" data-line="1" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
@@ -888,8 +930,18 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line1"><select data-line="2" data-col="area" multiple></select></td>
-      <td class="cell-line1"><select data-line="2" data-col="pump"></select></td>
+      <td class="cell-line2">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="areaDisp_2_${i}" onclick="toggleDropdown('areaDD_2_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="areaDD_2_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line2">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="pumpDisp_2_${i}" onclick="toggleDropdown('pumpDD_2_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="pumpDD_2_${i}"></div>
+        </div>
+      </td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="freq" placeholder="--" step="0.5"></td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="amp" placeholder="--" step="1"></td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
@@ -902,8 +954,18 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line1"><select data-line="3" data-col="area" multiple></select></td>
-      <td class="cell-line1"><select data-line="3" data-col="pump"></select></td>
+      <td class="cell-line3">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="areaDisp_3_${i}" onclick="toggleDropdown('areaDD_3_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="areaDD_3_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line3">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="pumpDisp_3_${i}" onclick="toggleDropdown('pumpDD_3_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="pumpDD_3_${i}"></div>
+        </div>
+      </td>
       <td class="cell-line3"><input type="number" data-line="3" data-col="freq" placeholder="--" step="0.5"></td>
       <td class="cell-line3"><input type="number" data-line="3" data-col="amp" placeholder="--" step="1"></td>
       <td class="cell-line3"><input type="number" data-line="3" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
@@ -915,69 +977,28 @@ function buildTable() {
       <td><input type="text" data-col="notes" placeholder="..." style="font-family:Cairo,sans-serif;font-size:0.75rem;min-width:100px;"></td>
     </tr>`;
   }).join('');
-// تعبئة المناطق
-document.querySelectorAll('select[data-col="area"]').forEach(sel => {
-  sel.innerHTML = "";
-  AREAS.forEach(area => {
-    sel.innerHTML += `<option value="${area}">${area}</option>`;
+// تعبئة تشيك ليست المناطق والطلمبات لكل صف/خط
+HOURS.forEach((h, i) => {
+  [1,2,3].forEach(l => {
+    const areaDD = document.getElementById(`areaDD_${l}_${i}`);
+    if (areaDD) {
+      areaDD.innerHTML = AREAS.map(a => `
+        <label>
+          <input type="checkbox" value="${a}" data-line="${l}" data-col="area" onchange="onChecklistChange('area',${l},${i})">
+          ${a}
+        </label>`).join('');
+    }
+    const pumpDD = document.getElementById(`pumpDD_${l}_${i}`);
+    if (pumpDD) {
+      pumpDD.innerHTML = PUMPS.map(p => `
+        <label>
+          <input type="checkbox" value="${p}" data-line="${l}" data-col="pump" onchange="onChecklistChange('pump',${l},${i})">
+          ${p}
+        </label>`).join('');
+    }
   });
 });
-
-// تعبئة الطلمبات
-document.querySelectorAll('select[data-col="pump"]').forEach(sel => {
-  sel.innerHTML = "";
-  PUMPS.forEach(pump => {
-    sel.innerHTML += `<option value="${pump}">${pump}</option>`;
-  });
-});
-  // Auto-fill من آخر صف فيه بيانات
-  document.querySelectorAll('#tableBody tr').forEach((row, rowIdx) => {
-    // لما الفني يدخل أي خانة في الصف — نملي المنطقة والطلمبة تلقائياً من الصف السابق
-    row.querySelectorAll('input, select').forEach(inp => {
-      inp.addEventListener('focus', function() {
-        if (this.value) return; // لو فيه قيمة مش بنغيرها
-
-        const col = this.dataset.col;
-        const line = this.dataset.line;
-
-        // تملية المنطقة والطلمبة من آخر صف فيه بيانات
-        if (col === 'area' || col === 'pump') {
-          // أولاً — جرب من الـ checklist
-          const fromChecklist = getSelectedText(col === 'area' ? 'area' : 'pump', line);
-          if (fromChecklist) {
-            this.value = fromChecklist;
-          } else {
-            // تانياً — من آخر صف فيه بيانات
-            const allRows = document.querySelectorAll('#tableBody tr');
-            for (let i = rowIdx - 1; i >= 0; i--) {
-              const prevInp = allRows[i].querySelector(`[data-line="${line}"][data-col="${col}"]`);
-              if (prevInp && prevInp.value) {
-                this.value = prevInp.value;
-                break;
-              }
-            }
-          }
-        }
-
-        // تملية مصدر الكهرباء من الصف السابق
-        if (!col && !line) {
-          const powerBtn = row.querySelector('.power-btn');
-          if (powerBtn && rowIdx > 0) {
-            const prevRows = document.querySelectorAll('#tableBody tr');
-            for (let i = rowIdx - 1; i >= 0; i--) {
-              const prevBtn = prevRows[i].querySelector('.power-btn');
-              if (prevBtn) {
-                powerBtn.dataset.mode = prevBtn.dataset.mode;
-                powerBtn.textContent = prevBtn.textContent;
-                powerBtn.className = prevBtn.className;
-                break;
-              }
-            }
-          }
-        }
-      });
-    });
-  });
+  // ملحوظة: تعبئة المنطقة/الطلمبة التلقائية من الصف السابق بتحصل عند فتح قائمة التشيك نفسها (toggleDropdown)
 
   // تملية تلقائية للكهرباء والجهد لما تتحرك للصف التالي
   document.querySelectorAll('#tableBody tr').forEach((row, rowIdx) => {
@@ -1034,7 +1055,7 @@ function updateSummary() {
   const total = getFlow(1) + getFlow(2) + getFlow(3);
 
   [1,2,3].forEach(l => {
-    const areas = getSelected('area',l);
+    const areas = aggregateLineValues('area',l);
     document.getElementById('summaryArea'+l).textContent = areas.length ? areas.join(' + ') : 'خط '+l;
     document.getElementById('summaryFlow'+l).textContent = getFlow(l).toLocaleString() || '--';
   });
@@ -1052,8 +1073,8 @@ function collectData() {
     row.tech = tr.querySelector('.tech-sel')?.value || '';
     [1,2,3].forEach(l => {
       row['line'+l] = {
-        area: tr.querySelector(`input[data-line="${l}"][data-col="area"]`)?.value || '',
-        pump: tr.querySelector(`input[data-line="${l}"][data-col="pump"]`)?.value || '',
+        area: getRowChecklistText('area', l, i),
+        pump: getRowChecklistText('pump', l, i),
         freq: tr.querySelector(`input[data-line="${l}"][data-col="freq"]`)?.value || '',
         amp:  tr.querySelector(`input[data-line="${l}"][data-col="amp"]`)?.value || '',
         flow: tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value || '',
@@ -1077,9 +1098,9 @@ function collectData() {
       line3: { start: document.getElementById('meter3Start').value, end: document.getElementById('meter3End').value, flow: getFlow(3) },
     },
     config: {
-      line1: { areas: getSelected('area',1), pumps: getSelected('pump',1) },
-      line2: { areas: getSelected('area',2), pumps: getSelected('pump',2) },
-      line3: { areas: getSelected('area',3), pumps: getSelected('pump',3) },
+      line1: { areas: aggregateLineValues('area',1), pumps: aggregateLineValues('pump',1) },
+      line2: { areas: aggregateLineValues('area',2), pumps: aggregateLineValues('pump',2) },
+      line3: { areas: aggregateLineValues('area',3), pumps: aggregateLineValues('pump',3) },
     },
     rows,
     totalFlow: getFlow(1)+getFlow(2)+getFlow(3),
@@ -1126,23 +1147,6 @@ function restoreShift(data) {
     }
   });
 
-  // config
-  [1,2,3].forEach(l => {
-    const c = data.config?.['line'+l];
-    if (c) {
-      const areaDD = document.getElementById('areaDropdown'+l);
-      areaDD.querySelectorAll('input').forEach(inp => {
-        inp.checked = c.areas?.includes(inp.value);
-      });
-      updateDisplay('area',l);
-      const pumpDD = document.getElementById('pumpDropdown'+l);
-      pumpDD.querySelectorAll('input').forEach(inp => {
-        inp.checked = c.pumps?.includes(inp.value);
-      });
-      updateDisplay('pump',l);
-    }
-  });
-
   buildTable();
 
   // rows
@@ -1154,7 +1158,9 @@ function restoreShift(data) {
     [1,2,3].forEach(l => {
       const ld = row['line'+l];
       if (!ld) return;
-      ['area','pump','freq','amp','flow','press'].forEach(col => {
+      setRowChecklist('area', l, i, ld.area);
+      setRowChecklist('pump', l, i, ld.pump);
+      ['freq','amp','flow','press'].forEach(col => {
         const inp = tr.querySelector(`input[data-line="${l}"][data-col="${col}"]`);
         if (inp) inp.value = ld[col] || '';
       });
@@ -1310,13 +1316,13 @@ function updateLiveStatus() {
   [1,2,3].forEach(line => {
     const rows = document.querySelectorAll('#tableBody tr');
     let lastArea = '--', lastPump = '--', lastFlow = '--', lastPress = '--';
-    rows.forEach(row => {
-      const areaInp = row.querySelector(`input[data-line="${line}"][data-col="area"]`);
-      const pumpInp = row.querySelector(`input[data-line="${line}"][data-col="pump"]`);
+    rows.forEach((row, i) => {
+      const areaTxt = getRowChecklistText('area', line, i);
+      const pumpTxt = getRowChecklistText('pump', line, i);
       const flowInp = row.querySelector(`input[data-line="${line}"][data-col="flow"]`);
       const pressInp = row.querySelector(`input[data-line="${line}"][data-col="press"]`);
-      if (areaInp?.value) lastArea  = areaInp.value;
-      if (pumpInp?.value) lastPump  = pumpInp.value;
+      if (areaTxt) lastArea  = areaTxt;
+      if (pumpTxt) lastPump  = pumpTxt;
       if (flowInp?.value) lastFlow  = flowInp.value + ' م³/س';
       if (pressInp?.value) lastPress = pressInp.value + ' بار';
     });
@@ -1375,7 +1381,7 @@ function generateWhatsAppReport() {
 
   // المناطق الشغالة
   const areas = new Set();
-  document.querySelectorAll('select[data-col="area"]multiple').forEach(inp => { if(inp.value) inp.value.split('+').forEach(a => areas.add(a.trim())); });
+  [1,2,3].forEach(l => aggregateLineValues('area', l).forEach(a => areas.add(a)));
 
   const msg =
 `📊 *تقرير محطة الدهار — ${date} ${dayName}*
@@ -1522,9 +1528,15 @@ function toggleLineStatus(btn) {
     btn.style.color = 'var(--red)';
 
     // مسح كل بيانات الخط في نفس الصف
-    row.querySelectorAll(`input[data-line="${line}"]`).forEach(inp => {
+    row.querySelectorAll(`input[data-line="${line}"]:not([type="checkbox"])`).forEach(inp => {
       inp.value = '';
       inp.style.opacity = '0.3';
+    });
+    row.querySelectorAll(`input[data-line="${line}"][type="checkbox"]`).forEach(inp => { inp.checked = false; });
+    ['area','pump'].forEach(type => {
+      updateChecklistDisplay(type, line, [...document.querySelectorAll('#tableBody tr')].indexOf(row));
+      const wrap = row.querySelector(`#${type}Disp_${line}_${[...document.querySelectorAll('#tableBody tr')].indexOf(row)}`)?.closest('.multi-select-wrap');
+      if (wrap) wrap.style.opacity = '0.3';
     });
   } else {
     // تحويل لنشط — إعادة تفعيل الخانات
@@ -1535,8 +1547,13 @@ function toggleLineStatus(btn) {
     btn.style.border = '1px solid rgba(0,230,118,0.4)';
     btn.style.color = 'var(--green)';
 
-    row.querySelectorAll(`input[data-line="${line}"]`).forEach(inp => {
+    row.querySelectorAll(`input[data-line="${line}"]:not([type="checkbox"])`).forEach(inp => {
       inp.style.opacity = '1';
+    });
+    ['area','pump'].forEach(type => {
+      const rowIdx = [...document.querySelectorAll('#tableBody tr')].indexOf(row);
+      const wrap = row.querySelector(`#${type}Disp_${line}_${rowIdx}`)?.closest('.multi-select-wrap');
+      if (wrap) wrap.style.opacity = '1';
     });
   }
   updateLiveStatus();
@@ -1570,13 +1587,21 @@ function copyRowDown(btn) {
   }
   const nextRow = allRows[idx + 1];
 
-  // نسخ كل الـ inputs و selects
-  const currInputs = currentRow.querySelectorAll('input:not([readonly]), select');
-  const nextInputs = nextRow.querySelectorAll('input:not([readonly]), select');
+  // نسخ كل الـ inputs العادية (بدون الـ checkboxes الخاصة بقوائم التشيك)
+  const currInputs = currentRow.querySelectorAll('input:not([readonly]):not([type="checkbox"]), select');
+  const nextInputs = nextRow.querySelectorAll('input:not([readonly]):not([type="checkbox"]), select');
   currInputs.forEach((inp, i) => {
     if (!nextInputs[i]) return;
     nextInputs[i].value = inp.value;
     nextInputs[i].style.opacity = inp.style.opacity || '1';
+  });
+
+  // نسخ اختيارات المنطقة والطلمبة (تشيك ليست) لكل خط
+  [1,2,3].forEach(line => {
+    ['area','pump'].forEach(type => {
+      const text = getRowChecklistText(type, line, idx);
+      setRowChecklist(type, line, idx + 1, text);
+    });
   });
 
   // نسخ زرار مصدر الكهرباء
@@ -1600,7 +1625,11 @@ function copyRowDown(btn) {
       nextBtn.style.color      = currBtn.style.color;
       // لو متوقف — خانات الخط تبقى شفافة
       if (currBtn.classList.contains('stopped-btn')) {
-        nextRow.querySelectorAll(`input[data-line="${line}"]`).forEach(i => { i.style.opacity = '0.3'; });
+        nextRow.querySelectorAll(`input[data-line="${line}"]:not([type="checkbox"])`).forEach(i => { i.style.opacity = '0.3'; });
+        nextRow.querySelectorAll(`[id^="areaDisp_${line}_"], [id^="pumpDisp_${line}_"]`).forEach(d => {
+          const wrap = d.closest('.multi-select-wrap');
+          if (wrap) wrap.style.opacity = '0.3';
+        });
       }
     }
   });
@@ -1625,7 +1654,6 @@ document.addEventListener('click', e => {
 window.addEventListener('load', () => {
   document.getElementById('shiftDate').value = new Date().toLocaleDateString('en-CA');
   updateDayName();
-  initDropdowns();
   buildTable();
   updateClock();
 
