@@ -888,8 +888,8 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line1"><select data-line="1" data-col="area" multiple></select></td>
-      <td class="cell-line1"><select data-line="1" data-col="pump"></select></td>
+      <td class="cell-line1"><select data-line="2" data-col="area" multiple></select></td>
+      <td class="cell-line1"><select data-line="2" data-col="pump"></select></td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="freq" placeholder="--" step="0.5"></td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="amp" placeholder="--" step="1"></td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
@@ -902,8 +902,8 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line1"><select data-line="1" data-col="area" multiple></select></td>
-      <td class="cell-line1"><select data-line="1" data-col="pump"></select></td>
+      <td class="cell-line1"><select data-line="3" data-col="area" multiple></select></td>
+      <td class="cell-line1"><select data-line="3" data-col="pump"></select></td>
       <td class="cell-line3"><input type="number" data-line="3" data-col="freq" placeholder="--" step="0.5"></td>
       <td class="cell-line3"><input type="number" data-line="3" data-col="amp" placeholder="--" step="1"></td>
       <td class="cell-line3"><input type="number" data-line="3" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
@@ -915,7 +915,25 @@ function buildTable() {
       <td><input type="text" data-col="notes" placeholder="..." style="font-family:Cairo,sans-serif;font-size:0.75rem;min-width:100px;"></td>
     </tr>`;
   }).join('');
+// تعبئة قوائم المناطق
+document.querySelectorAll('select[data-col="area"]').forEach(sel => {
+  AREAS.forEach(area => {
+    const opt = document.createElement('option');
+    opt.value = area;
+    opt.textContent = area;
+    sel.appendChild(opt);
+  });
+});
 
+// تعبئة قوائم الطلمبات
+document.querySelectorAll('select[data-col="pump"]').forEach(sel => {
+  PUMPS.forEach(pump => {
+    const opt = document.createElement('option');
+    opt.value = pump;
+    opt.textContent = pump;
+    sel.appendChild(opt);
+  });
+});
   // Auto-fill من آخر صف فيه بيانات
   document.querySelectorAll('#tableBody tr').forEach((row, rowIdx) => {
     // لما الفني يدخل أي خانة في الصف — نملي المنطقة والطلمبة تلقائياً من الصف السابق
@@ -936,7 +954,7 @@ function buildTable() {
             // تانياً — من آخر صف فيه بيانات
             const allRows = document.querySelectorAll('#tableBody tr');
             for (let i = rowIdx - 1; i >= 0; i--) {
-              const prevInp = allRows[i].querySelector(`input[data-line="${line}"][data-col="${col}"]`);
+              const prevInp = allRows[i].querySelector(`[data-line="${line}"][data-col="${col}"]`);
               if (prevInp && prevInp.value) {
                 this.value = prevInp.value;
                 break;
