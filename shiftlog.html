@@ -874,7 +874,7 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line1"><input type="text" data-line="1" data-col="area" placeholder="--" style="color:var(--line1);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
+      <td class="cell-line1"><<select data-col="area" multiple></select></td>
       <td class="cell-line1"><input type="text" data-line="1" data-col="pump" placeholder="--" style="color:var(--line1);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
       <td class="cell-line1"><input type="number" data-line="1" data-col="freq" placeholder="--" step="0.5"></td>
       <td class="cell-line1"><input type="number" data-line="1" data-col="amp" placeholder="--" step="1"></td>
@@ -888,7 +888,7 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line2"><input type="text" data-line="2" data-col="area" placeholder="--" style="color:var(--line2);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
+      <td class="cell-line1"><<select data-col="area" multiple></select></td>
       <td class="cell-line2"><input type="text" data-line="2" data-col="pump" placeholder="--" style="color:var(--line2);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="freq" placeholder="--" step="0.5"></td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="amp" placeholder="--" step="1"></td>
@@ -902,7 +902,7 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line3"><input type="text" data-line="3" data-col="area" placeholder="--" style="color:var(--line3);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
+      <td class="cell-line1"><<select data-col="area" multiple></select></td>
       <td class="cell-line3"><input type="text" data-line="3" data-col="pump" placeholder="--" style="color:var(--line3);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
       <td class="cell-line3"><input type="number" data-line="3" data-col="freq" placeholder="--" step="0.5"></td>
       <td class="cell-line3"><input type="number" data-line="3" data-col="amp" placeholder="--" step="1"></td>
@@ -1361,7 +1361,7 @@ function generateWhatsAppReport() {
 
   // المناطق الشغالة
   const areas = new Set();
-  document.querySelectorAll('input[data-col="area"]').forEach(inp => { if(inp.value) inp.value.split('+').forEach(a => areas.add(a.trim())); });
+  document.querySelectorAll('select[data-col="area"]multiple').forEach(inp => { if(inp.value) inp.value.split('+').forEach(a => areas.add(a.trim())); });
 
   const msg =
 `📊 *تقرير محطة الدهار — ${date} ${dayName}*
