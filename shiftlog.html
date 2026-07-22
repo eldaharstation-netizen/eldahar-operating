@@ -1071,10 +1071,16 @@ function collectData() {
   document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
     const row = { time: HOURS[i] };
     row.tech = tr.querySelector('.tech-sel')?.value || '';
+    const powerBtn = tr.querySelector('.power-btn');
+    row.powerSource = powerBtn?.dataset.mode === 'diesel' ? 'ديزل' : 'شبكة';
+    row.voltage = tr.querySelector('input[data-col="voltage"]')?.value || '';
+    row.inflow  = tr.querySelector('input[data-col="inflow"]')?.value || '';
     [1,2,3].forEach(l => {
+      const statusBtn = tr.querySelector(`.line-status-btn[data-line="${l}"]`);
       row['line'+l] = {
         area: getRowChecklistText('area', l, i),
         pump: getRowChecklistText('pump', l, i),
+        status: statusBtn?.classList.contains('stopped-btn') ? 'stopped' : 'نشط',
         freq: tr.querySelector(`input[data-line="${l}"][data-col="freq"]`)?.value || '',
         amp:  tr.querySelector(`input[data-line="${l}"][data-col="amp"]`)?.value || '',
         flow: tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value || '',
@@ -1093,9 +1099,9 @@ function collectData() {
     engineer: document.getElementById('engineer').value,
     generalNotes: document.getElementById('generalNotes').value,
     meters: {
-      line1: { start: document.getElementById('meter1Start').value, end: document.getElementById('meter1End').value, flow: getFlow(1) },
-      line2: { start: document.getElementById('meter2Start').value, end: document.getElementById('meter2End').value, flow: getFlow(2) },
-      line3: { start: document.getElementById('meter3Start').value, end: document.getElementById('meter3End').value, flow: getFlow(3) },
+      line1: { start: document.getElementById('meter1Start').value, end: document.getElementById('meter1End').value, flow: getFlow(1), areas: collectAreaMeters(1) },
+      line2: { start: document.getElementById('meter2Start').value, end: document.getElementById('meter2End').value, flow: getFlow(2), areas: collectAreaMeters(2) },
+      line3: { start: document.getElementById('meter3Start').value, end: document.getElementById('meter3End').value, flow: getFlow(3), areas: collectAreaMeters(3) },
     },
     config: {
       line1: { areas: aggregateLineValues('area',1), pumps: aggregateLineValues('pump',1) },
@@ -1108,12 +1114,56 @@ function collectData() {
   };
 }
 
-function saveShift() {
+// جمع قراءات عدادات المناطق الفرعية (المضافة بزرار "➕ إضافة منطقة") لخط معين
+function collectAreaMeters(line) {
+  const container = document.getElementById('areaMeters'+line);
+  const result = [];
+  if (!container) return result;
+  container.querySelectorAll('[id^="areaMeter_"]').forEach(div => {
+    const nameSel = div.querySelector('select');
+    const before = div.querySelector('.am-before')?.value || '';
+    const after  = div.querySelector('.am-after')?.value  || '';
+    const diff   = div.querySelector('.am-diff')?.value   || '';
+    if (nameSel?.value || before || after) {
+      result.push({ name: nameSel?.value || '', before, after, diff });
+    }
+  });
+  return result;
+}
+
+async function saveShift() {
   const data = collectData();
   const key = 'dahar_shift_' + data.date;
   localStorage.setItem(key, JSON.stringify(data));
   localStorage.setItem('dahar_last_shift', data.date);
-  showToast('💾 تم حفظ سجل يوم '+data.date);
+
+  if (!scriptUrl) {
+    showToast('💾 اتحفظ محلياً بس — مفيش رابط شيت جوجل محفوظ (ضيفيه من قسم "ربط Google Sheets")', 'warn');
+    return;
+  }
+
+  const saveBtns = document.querySelectorAll('button[onclick="saveShift()"]');
+  const originalTexts = [...saveBtns].map(b => b.textContent);
+  saveBtns.forEach(b => { b.disabled = true; b.textContent = '⏳ جاري الحفظ في الشيت...'; });
+
+  try {
+    // ملحوظة: من غير هيدرز عشان نتجنب CORS preflight مع Apps Script
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (result && result.status === 'ok') {
+      showToast('✅ تم حفظ سجل يوم '+data.date+' في شيت جوجل بنجاح');
+    } else {
+      showToast('⚠ اتحفظ محلياً بس فشل الرفع للشيت: '+(result?.message || 'خطأ غير معروف'), 'warn');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('⚠ اتحفظ محلياً بس تعذر الاتصال بشيت جوجل — تأكدي من الرابط والإنترنت', 'warn');
+  } finally {
+    saveBtns.forEach((b,i) => { b.disabled = false; b.textContent = originalTexts[i]; });
+  }
 }
 
 function loadShift() {
@@ -1144,6 +1194,26 @@ function restoreShift(data) {
       document.getElementById('meter'+l+'Start').value = m.start || '';
       document.getElementById('meter'+l+'End').value = m.end || '';
       calcFlow(l);
+
+      // استرجاع قراءات عدادات المناطق الفرعية
+      const container = document.getElementById('areaMeters'+l);
+      if (container) container.innerHTML = '';
+      areaMeterCounts[l] = 0;
+      (m.areas||[]).forEach(am => {
+        addAreaMeter(l);
+        const idx = areaMeterCounts[l];
+        const div = document.getElementById(`areaMeter_${l}_${idx}`);
+        if (div) {
+          const sel = div.querySelector('select');
+          if (sel) sel.value = am.name || '';
+          const beforeInp = div.querySelector('.am-before');
+          const afterInp  = div.querySelector('.am-after');
+          const diffInp   = div.querySelector('.am-diff');
+          if (beforeInp) beforeInp.value = am.before || '';
+          if (afterInp)  afterInp.value  = am.after  || '';
+          if (diffInp)   diffInp.value   = am.diff   || '';
+        }
+      });
     }
   });
 
@@ -1155,9 +1225,35 @@ function restoreShift(data) {
     if (!tr) return;
     const techSel = tr.querySelector('.tech-sel');
     if (techSel) techSel.value = row.tech || '';
+
+    // مصدر الكهرباء
+    const powerBtn = tr.querySelector('.power-btn');
+    if (powerBtn) {
+      if (row.powerSource === 'ديزل') {
+        powerBtn.dataset.mode = 'diesel';
+        powerBtn.textContent  = '🔴 ديزل';
+        powerBtn.className    = 'power-btn diesel-btn';
+      } else {
+        powerBtn.dataset.mode = 'grid';
+        powerBtn.textContent  = '⚡ شبكة';
+        powerBtn.className    = 'power-btn grid-btn';
+      }
+    }
+    const voltInp = tr.querySelector('input[data-col="voltage"]');
+    if (voltInp) voltInp.value = row.voltage || '';
+    const inflowInp = tr.querySelector('input[data-col="inflow"]');
+    if (inflowInp) inflowInp.value = row.inflow || '';
+
     [1,2,3].forEach(l => {
       const ld = row['line'+l];
       if (!ld) return;
+      // حالة الخط أولاً (نشط/متوقف) — قبل استرجاع القيم عشان التبديل بيمسح الخانات
+      const statusBtn = tr.querySelector(`.line-status-btn[data-line="${l}"]`);
+      if (statusBtn) {
+        const shouldBeStopped = ld.status === 'stopped';
+        const isStopped = statusBtn.classList.contains('stopped-btn');
+        if (shouldBeStopped !== isStopped) toggleLineStatus(statusBtn);
+      }
       setRowChecklist('area', l, i, ld.area);
       setRowChecklist('pump', l, i, ld.pump);
       ['freq','amp','flow','press'].forEach(col => {
@@ -1341,7 +1437,7 @@ function updateLiveStatus() {
 setInterval(updateLiveStatus, 30000);
 
 // ── SCRIPT URL ──
-let scriptUrl = localStorage.getItem('shiftlog_script_url') || 'https://script.google.com/macros/s/AKfycbyCbiT_dQI-aPR7h8hK4C2tM2vbtjB29_a2BET4qu_q9S09KlHg4jRT-FKiSZk7rtdV/exec';
+let scriptUrl = localStorage.getItem('shiftlog_script_url') || 'https://script.google.com/macros/s/AKfycbzP_OGpigXKSz7RA9o4h0RdgNsYsQAMczvxob5axJSSVRKHlouvInqnM-vidDPwsLo/exec';
 
 function saveScriptUrl() {
   const url = document.getElementById('scriptUrl').value.trim();
