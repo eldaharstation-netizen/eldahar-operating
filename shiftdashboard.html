@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحليلات محطة الدهار</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #050d1a;
+  --bg2:   #080f1e;
+  --bg3:   #0d1829;
+  --card:  #0a1526;
+  --brd:   rgba(0,180,255,0.12);
+  --txt:   #ffffff;
+  --txt2:  #c4dceb;
+  --txt3:  #7badd4;
+  --blue:  #0077b6;
+  --cyan:  #00d4ff;
+  --green: #00e676;
+  --amber: #ffb300;
+  --red:   #ff3b5c;
+  --purple:#b388ff;
+  --line1: #00b4d8;
+  --line2: #00e676;
+  --line3: #ffb300;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--txt); font-family:'Cairo',sans-serif; min-height:100vh; }
+
+/* ── HEADER ── */
+.header {
+  background:linear-gradient(135deg,var(--bg2),var(--bg3));
+  border-bottom:1px solid var(--brd);
+  padding:0.8rem 1.2rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:0.8rem;
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+.header-title { font-size:1.1rem; font-weight:900; color:var(--cyan); }
+.header-sub   { font-size:0.75rem; color:var(--txt3); }
+.header-controls { display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap; }
+.period-btn {
+  padding:0.35rem 0.8rem;
+  border-radius:8px;
+  border:1px solid var(--brd);
+  background:transparent;
+  color:var(--txt3);
+  font-family:'Cairo',sans-serif;
+  font-size:0.8rem;
+  font-weight:700;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.period-btn.active { background:var(--blue); color:white; border-color:var(--blue); }
+.date-range { display:none; gap:0.4rem; align-items:center; }
+.date-range input {
+  background:var(--bg3);
+  border:1px solid var(--brd);
+  border-radius:6px;
+  padding:0.3rem 0.6rem;
+  color:var(--txt);
+  font-size:0.78rem;
+  outline:none;
+}
+.btn-load {
+  padding:0.4rem 1rem;
+  background:var(--blue);
+  border:none;
+  border-radius:8px;
+  color:white;
+  font-family:'Cairo',sans-serif;
+  font-size:0.82rem;
+  font-weight:700;
+  cursor:pointer;
+}
+.live-dot { width:8px; height:8px; border-radius:50%; background:var(--green); display:inline-block; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── MAIN ── */
+.main { padding:1rem; max-width:1400px; margin:0 auto; }
+
+/* ── SECTION TITLE ── */
+.sec-header {
+  display:flex;
+  align-items:center;
+  gap:0.6rem;
+  margin:1.2rem 0 0.8rem;
+  padding-bottom:0.5rem;
+  border-bottom:2px solid var(--brd);
+}
+.sec-icon { font-size:1.2rem; }
+.sec-title { font-size:1rem; font-weight:900; color:var(--txt); letter-spacing:0.5px; }
+.sec-tag { font-size:0.7rem; color:var(--txt3); font-family:'Rajdhani',sans-serif; letter-spacing:2px; margin-right:auto; }
+
+/* ── KPI GRID ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.8rem; margin-bottom:1rem; }
+.kpi-card {
+  background:var(--card);
+  border:1px solid var(--brd);
+  border-radius:12px;
+  padding:1rem;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.kpi-card::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:3px;
+  background:var(--accent, var(--blue));
+}
+.kpi-label { font-size:0.72rem; color:var(--txt3); font-weight:700; margin-bottom:0.4rem; }
+.kpi-value { font-family:'Rajdhani',sans-serif; font-size:2.2rem; font-weight:800; line-height:1; }
+.kpi-unit  { font-size:0.72rem; color:var(--txt3); margin-top:0.3rem; }
+
+/* ── CHART GRID ── */
+.chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+.chart-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-bottom:1rem; }
+@media(max-width:768px) { .chart-grid-2,.chart-grid-3 { grid-template-columns:1fr; } }
+
+.chart-card {
+  background:var(--card);
+  border:1px solid var(--brd);
+  border-radius:12px;
+  padding:1rem;
+}
+.chart-title { font-size:0.8rem; font-weight:700; color:var(--txt2); margin-bottom:0.8rem; }
+.chart-wrap  { height:220px; position:relative; }
+
+/* ── TANK VISUAL ── */
+.tanks-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+.tank-card {
+  background:var(--card);
+  border:1px solid var(--brd);
+  border-radius:12px;
+  padding:1rem;
+  text-align:center;
+}
+.tank-visual {
+  width:80px;
+  height:120px;
+  border:3px solid var(--cyan);
+  border-radius:6px;
+  margin:0.5rem auto;
+  position:relative;
+  overflow:hidden;
+  background:var(--bg3);
+}
+.tank-fill {
+  position:absolute;
+  bottom:0; left:0; right:0;
+  background:linear-gradient(to top, rgba(0,180,255,0.6), rgba(0,212,255,0.3));
+  transition:height 1s ease;
+}
+.tank-level {
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Rajdhani',sans-serif;
+  font-weight:800;
+  font-size:1rem;
+  color:white;
+  text-shadow:0 0 4px rgba(0,0,0,0.8);
+  z-index:2;
+}
+
+/* ── TABLE ── */
+.data-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+.data-table th { padding:0.6rem; background:var(--bg3); color:var(--txt3); font-weight:700; text-align:center; }
+.data-table td { padding:0.6rem; border-bottom:1px solid var(--brd); text-align:center; color:var(--txt2); }
+.data-table tr:hover td { background:rgba(0,180,255,0.04); }
+
+/* ── TECH SCORE ── */
+.tech-card {
+  background:var(--card);
+  border:1px solid var(--brd);
+  border-radius:12px;
+  padding:1rem;
+  margin-bottom:0.8rem;
+}
+.tech-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.8rem; }
+.tech-name   { font-weight:800; font-size:1rem; }
+.tech-score  { font-family:'Rajdhani',sans-serif; font-size:1.8rem; font-weight:900; }
+.score-bar   { height:8px; background:var(--bg3); border-radius:4px; overflow:hidden; margin-bottom:0.6rem; }
+.score-fill  { height:100%; border-radius:4px; transition:width 1s ease; }
+.score-items { display:grid; grid-template-columns:repeat(5,1fr); gap:0.4rem; }
+.score-item  { text-align:center; background:var(--bg3); border-radius:8px; padding:0.4rem; }
+.score-item-val { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:1rem; }
+.score-item-lbl { font-size:0.62rem; color:var(--txt3); }
+
+/* ── ALERT BANNER ── */
+.alert-banner {
+  background:rgba(255,59,92,0.1);
+  border:1px solid rgba(255,59,92,0.3);
+  border-radius:10px;
+  padding:0.7rem 1rem;
+  margin-bottom:0.8rem;
+  font-size:0.82rem;
+  color:var(--red);
+  display:none;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-title">🏭 محطة الدهار — لوحة التحليلات</div>
+    <div class="header-sub">
+      <span class="live-dot"></span>
+      <span id="lastUpdate" style="margin-right:0.4rem;">--</span>
+    </div>
+  </div>
+  <div class="header-controls">
+    <button class="period-btn active" onclick="setPeriod('yesterday',this)">أمس التشغيلي</button>
+    <button class="period-btn" onclick="setPeriod('today',this)">اليوم</button>
+    <button class="period-btn" onclick="setPeriod('week',this)">أسبوع</button>
+    <button class="period-btn" onclick="setPeriod('month',this)">شهر</button>
+    <button class="period-btn" onclick="setPeriod('custom',this)">مخصص</button>
+    <div class="date-range" id="customRange">
+      <input type="date" id="dateFrom">
+      <span style="color:var(--txt3)">—</span>
+      <input type="date" id="dateTo">
+      <button class="btn-load" onclick="loadAndBuild()">تطبيق</button>
+    </div>
+    <button class="btn-load" onclick="loadAndBuild()">🔄 تحديث</button>
+    <button onclick="showUrlSettings()" style="padding:0.4rem 0.8rem;background:rgba(179,136,255,0.15);border:1px solid rgba(179,136,255,0.4);border-radius:8px;color:#b388ff;font-family:'Cairo',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;">⚙ الرابط</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ═══════════════════════════════════════════════
+     القسم الأول — الخلاصة
+═══════════════════════════════════════════════ -->
+<div class="sec-header">
+  <div class="sec-icon">📊</div>
+  <div class="sec-title">الخلاصة اليومية</div>
+  <div class="sec-tag">DAILY SUMMARY</div>
+</div>
+
+<!-- تنبيهات -->
+<div class="alert-banner" id="alertBanner"></div>
+
+<!-- KPIs الرئيسية -->
+<div class="kpi-grid">
+  <div class="kpi-card" style="--accent:var(--cyan);">
+    <div class="kpi-label">💧 إجمالي المنصرف</div>
+    <div class="kpi-value" id="kpiTotal" style="color:var(--cyan);">--</div>
+    <div class="kpi-unit">م³</div>
+  </div>
+  <div class="kpi-card" style="--accent:var(--line1);">
+    <div class="kpi-label">🔵 خط 1 (الشمال)</div>
+    <div class="kpi-value" id="kpiLine1" style="color:var(--line1);">--</div>
+    <div class="kpi-unit">م³</div>
+  </div>
+  <div class="kpi-card" style="--accent:var(--line2);">
+    <div class="kpi-label">🟢 خط 2 (الدهار)</div>
+    <div class="kpi-value" id="kpiLine2" style="color:var(--line2);">--</div>
+    <div class="kpi-unit">م³</div>
+  </div>
+  <div class="kpi-card" style="--accent:var(--line3);">
+    <div class="kpi-label">🟡 خط 3 (جبل العفش)</div>
+    <div class="kpi-value" id="kpiLine3" style="color:var(--line3);">--</div>
+    <div class="kpi-unit">م³</div>
+  </div>
+  <div class="kpi-card" style="--accent:var(--purple);">
+    <div class="kpi-label">🌊 الوارد للمحطة</div>
+    <div class="kpi-value" id="kpiInflow" style="color:var(--purple);">--</div>
+    <div class="kpi-unit">م³/س متوسط</div>
+  </div>
+  <div class="kpi-card" style="--accent:var(--amber);">
+    <div class="kpi-label">⚡ متوسط ساعات التشغيل</div>
+    <div class="kpi-value" id="kpiHours" style="color:var(--amber);">--</div>
+    <div class="kpi-unit">ساعة</div>
+  </div>
+</div>
+
+<!-- الخزانات والمنصرف اليومي -->
+<div class="chart-grid-2" style="grid-template-columns:1fr 2fr;">
+
+  <!-- الخزانات -->
+  <div class="chart-card">
+    <div class="chart-title">🏗 مناسيب الخزانات</div>
+    <div class="tanks-row" style="grid-template-columns:1fr 1fr;gap:0.5rem;margin:0;">
+      <div class="tank-card" style="padding:0.6rem;">
+        <div style="font-size:0.72rem;color:var(--txt3);font-weight:700;">خزان 1</div>
+        <div class="tank-visual">
+          <div class="tank-fill" id="tank1Fill" style="height:0%"></div>
+          <div class="tank-level" id="tank1Level">--</div>
+        </div>
+        <div id="tank1M3" style="font-size:0.72rem;color:var(--cyan);">-- م³</div>
+        <div id="tank1M"  style="font-size:0.85rem;font-family:Rajdhani,sans-serif;font-weight:700;color:var(--txt);">-- م</div>
+      </div>
+      <div class="tank-card" style="padding:0.6rem;">
+        <div style="font-size:0.72rem;color:var(--txt3);font-weight:700;">خزان 2</div>
+        <div class="tank-visual">
+          <div class="tank-fill" id="tank2Fill" style="height:0%"></div>
+          <div class="tank-level" id="tank2Level">--</div>
+        </div>
+        <div id="tank2M3" style="font-size:0.72rem;color:var(--cyan);">-- م³</div>
+        <div id="tank2M"  style="font-size:0.85rem;font-family:Rajdhani,sans-serif;font-weight:700;color:var(--txt);">-- م</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- منصرف يومي -->
+  <div class="chart-card">
+    <div class="chart-title">📈 المنصرف اليومي لكل خط (م³)</div>
+    <div class="chart-wrap"><canvas id="dailyFlowChart"></canvas></div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     القسم الثاني — التحليلات
+═══════════════════════════════════════════════ -->
+<div class="sec-header">
+  <div class="sec-icon">📉</div>
+  <div class="sec-title">التحليلات الفنية</div>
+  <div class="sec-tag">TECHNICAL ANALYSIS</div>
+</div>
+
+<!-- كميات المناطق -->
+<div class="chart-card" style="margin-bottom:1rem;">
+  <div class="chart-title">🗺 المنصرف لكل منطقة (م³)</div>
+  <div class="chart-wrap" style="height:200px;"><canvas id="areaFlowChart"></canvas></div>
+</div>
+
+<!-- أداء الطلمبات -->
+<div class="chart-grid-2" style="margin-bottom:1rem;">
+  <div class="chart-card">
+    <div class="chart-title">💧 تصرف الطلمبات عبر الزمن (م³/س)</div>
+    <div class="chart-wrap"><canvas id="pumpFlowChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">📊 ضغط الطلمبات عبر الزمن (م)</div>
+    <div class="chart-wrap"><canvas id="pumpPressChart"></canvas></div>
+  </div>
+</div>
+
+<!-- منحنى الطلمبة -->
+<div class="chart-card" style="margin-bottom:1rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;flex-wrap:wrap;gap:0.5rem;">
+    <div class="chart-title" style="margin:0;">🔄 منحنى الطلمبة — الأداء الفعلي مقارنة بالتصميمي</div>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <select id="pumpCurveFilter" onchange="buildPumpCurve()" style="background:var(--bg3);border:1px solid var(--brd);border-radius:6px;padding:0.3rem 0.6rem;color:var(--txt);font-family:Cairo,sans-serif;font-size:0.78rem;outline:none;">
+        <option value="">كل الخطوط</option>
+        <option value="1">خط 1</option>
+        <option value="2">خط 2</option>
+        <option value="3">خط 3</option>
+      </select>
+    </div>
+  </div>
+  <div class="chart-wrap" style="height:280px;"><canvas id="pumpCurveChart"></canvas></div>
+  <div style="display:flex;gap:1rem;justify-content:center;margin-top:0.6rem;font-size:0.75rem;flex-wrap:wrap;">
+    <span style="color:var(--cyan);">● النقاط الفعلية</span>
+    <span style="color:rgba(255,100,100,0.8);">— المنحنى التصميمي</span>
+    <span style="color:var(--amber);">◆ نقطة التصميم (450 م³/س, 70 م)</span>
+  </div>
+</div>
+
+<!-- كفاءة الطلمبات -->
+<div class="chart-grid-3" style="margin-bottom:1rem;">
+  <div class="chart-card">
+    <div class="chart-title">⚡ كفاءة التصرف %</div>
+    <div class="chart-wrap"><canvas id="effFlowChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">📊 كفاءة الضغط %</div>
+    <div class="chart-wrap"><canvas id="effPressChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">⚙ القدرة الكهربائية (KW)</div>
+    <div class="chart-wrap"><canvas id="powerChart"></canvas></div>
+  </div>
+</div>
+
+<!-- مقارنة يوم بيوم -->
+<div class="chart-card" style="margin-bottom:1rem;">
+  <div class="chart-title">📅 مقارنة المنصرف — هذا الأسبوع vs الأسبوع الماضي</div>
+  <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     القسم الثالث — أداء الفنيين
+═══════════════════════════════════════════════ -->
+<div class="sec-header">
+  <div class="sec-icon">👷</div>
+  <div class="sec-title">أداء الفنيين</div>
+  <div class="sec-tag">TECHNICIAN PERFORMANCE</div>
+</div>
+
+<div id="techCards">
+  <div style="text-align:center;color:var(--txt3);padding:2rem;">جاري تحميل البيانات...</div>
+</div>
+
+<!-- جدول ملخص الفنيين -->
+<div class="chart-card">
+  <div class="chart-title">📋 ملخص أداء الفنيين</div>
+  <div style="overflow-x:auto;">
+    <table class="data-table" id="techTable">
+      <thead>
+        <tr>
+          <th>الفني</th>
+          <th>ورديات</th>
+          <th>الانتظام %</th>
+          <th>التوقيت %</th>
+          <th>الاكتمال %</th>
+          <th>المنطقية %</th>
+          <th>الكفاءة %</th>
+          <th>الإجمالي</th>
+          <th>التقييم</th>
+        </tr>
+      </thead>
+      <tbody id="techTableBody">
+        <tr><td colspan="9" style="color:var(--txt3);">لا توجد بيانات</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const SCRIPT_URL = localStorage.getItem('shiftlog_script_url') ||
+  'https://script.google.com/macros/s/AKfycbyCbiT_dQI-aPR7h8hK4C2tM2vbtjB29_a2BET4qu_q9S09KlHg4jRT-FKiSZk7rtdV/exec';
+
+const TANK_HEIGHT = 8;   // م
+const TANK_CAP    = 10000; // م³
+const PUMP_DESIGN = { flow:450, head:70, power:75, freq:50 }; // نقطة التصميم عند 50 Hz
+
+// منحنى الطلمبة التصميمي عند تردد معين (قوانين التشابه + منحنى H-Q)
+function designCurve(q, freq) {
+  freq = freq || PUMP_DESIGN.freq;
+  const ratio = freq / PUMP_DESIGN.freq;
+
+  // تحويل Q للتردد الأصلي (50Hz) عشان نحسب على المنحنى الأصلي
+  const q50 = ratio > 0 ? q / ratio : q;
+
+  // منحنى عند 50 Hz: H = H0 - k*Q²
+  const H0 = 85; // ضغط عند Q=0 و 50Hz
+  const k  = (H0 - PUMP_DESIGN.head) / (PUMP_DESIGN.flow ** 2);
+  const h50 = Math.max(0, H0 - k * q50 * q50);
+
+  // تحويل الضغط للتردد الحالي بقانون التشابه
+  return parseFloat((h50 * ratio * ratio).toFixed(1));
+}
+
+// حساب نقطة التصميم عند تردد معين
+function designPointAtFreq(freq) {
+  const ratio = freq / PUMP_DESIGN.freq;
+  return {
+    flow:  parseFloat((PUMP_DESIGN.flow  * ratio).toFixed(1)),
+    head:  parseFloat((PUMP_DESIGN.head  * ratio * ratio).toFixed(1)),
+    power: parseFloat((PUMP_DESIGN.power * ratio * ratio * ratio).toFixed(1))
+  };
+}
+
+// كفاءة الطلمبة مع VFD — بالمقارنة بنقطة التصميم عند نفس التردد
+function calcPumpEfficiency(flow, head, freq) {
+  freq = freq || PUMP_DESIGN.freq;
+  const dp = designPointAtFreq(freq);
+  const effFlow  = dp.flow  > 0 ? Math.min(120, Math.round((flow  / dp.flow)  * 100)) : 0;
+  const effHead  = dp.head  > 0 ? Math.min(120, Math.round((head  / dp.head)  * 100)) : 0;
+  return { effFlow, effHead };
+}
+
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+let allShifts = [];
+let filteredShifts = [];
+let currentPeriod = 'yesterday';
+let charts = {};
+
+// ═══════════════════════════════════════════════
+// PERIOD
+// ═══════════════════════════════════════════════
+function setPeriod(p, btn) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('customRange').style.display = p === 'custom' ? 'flex' : 'none';
+  if (p !== 'custom') loadAndBuild();
+}
+
+function getDateRange() {
+  const today = new Date().toLocaleDateString('en-CA');
+  const yest  = new Date(); yest.setDate(yest.getDate()-1);
+  if (currentPeriod === 'yesterday') return { from: yest.toLocaleDateString('en-CA'), to: yest.toLocaleDateString('en-CA') };
+  if (currentPeriod === 'today')     return { from: today, to: today };
+  if (currentPeriod === 'week')      { const d=new Date(); d.setDate(d.getDate()-7); return { from:d.toLocaleDateString('en-CA'), to:today }; }
+  if (currentPeriod === 'month')     { const d=new Date(); d.setDate(d.getDate()-30); return { from:d.toLocaleDateString('en-CA'), to:today }; }
+  return { from: document.getElementById('dateFrom').value||today, to: document.getElementById('dateTo').value||today };
+}
+
+// ═══════════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════════
+async function loadAndBuild() {
+  try {
+    const res  = await fetch(SCRIPT_URL + '?action=getShifts&t=' + Date.now());
+    const data = await res.json();
+    allShifts  = data.shifts || [];
+    document.getElementById('lastUpdate').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    buildAll();
+  } catch(e) {
+    console.error(e);
+    // لو مفيش اتصال — خد من localStorage
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('dahar_shift_'));
+    allShifts  = keys.map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch(ex) { return null; } }).filter(Boolean);
+    buildAll();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// BUILD ALL
+// ═══════════════════════════════════════════════
+function buildAll() {
+  const { from, to } = getDateRange();
+  filteredShifts = allShifts.filter(s => s.date >= from && s.date <= to);
+
+  buildSummary();
+  buildAreaChart();
+  buildPumpCharts();
+  buildPumpCurve();
+  buildEfficiencyCharts();
+  buildCompareChart();
+  buildTechAnalysis();
+  checkAlerts();
+}
+
+// ═══════════════════════════════════════════════
+// SECTION 1 — SUMMARY
+// ═══════════════════════════════════════════════
+function buildSummary() {
+  let l1=0, l2=0, l3=0, inflowSum=0, inflowCount=0, hoursSum=0;
+  let lastTank1=null, lastTank2=null;
+
+  filteredShifts.forEach(s => {
+    const m = s.meters || {};
+    l1 += parseFloat(m.line1?.flow || 0);
+    l2 += parseFloat(m.line2?.flow || 0);
+    l3 += parseFloat(m.line3?.flow || 0);
+
+    // الوارد والخزانات من آخر صف
+    (s.rows || []).forEach(row => {
+      if (row.inflow) { inflowSum += parseFloat(row.inflow); inflowCount++; }
+      if (row.tank1)  lastTank1 = parseFloat(row.tank1);
+      if (row.tank2)  lastTank2 = parseFloat(row.tank2);
+    });
+
+    // ساعات التشغيل
+    [1,2,3].forEach(ln => {
+      const activeRows = (s.rows||[]).filter(r => r['line'+ln]?.status !== 'stopped' && r['line'+ln]?.flow);
+      hoursSum += activeRows.length * 2; // كل صف = ساعتين
+    });
+  });
+
+  const total = l1 + l2 + l3;
+  const avgInflow = inflowCount > 0 ? (inflowSum / inflowCount).toFixed(1) : '--';
+  const avgHours  = filteredShifts.length > 0 ? (hoursSum / filteredShifts.length / 3).toFixed(1) : '--';
+
+  document.getElementById('kpiTotal').textContent  = total > 0 ? Math.round(total).toLocaleString() : '--';
+  document.getElementById('kpiLine1').textContent  = l1 > 0 ? Math.round(l1).toLocaleString() : '--';
+  document.getElementById('kpiLine2').textContent  = l2 > 0 ? Math.round(l2).toLocaleString() : '--';
+  document.getElementById('kpiLine3').textContent  = l3 > 0 ? Math.round(l3).toLocaleString() : '--';
+  document.getElementById('kpiInflow').textContent = avgInflow;
+  document.getElementById('kpiHours').textContent  = avgHours;
+
+  // الخزانات
+  updateTank(1, lastTank1);
+  updateTank(2, lastTank2);
+
+  // منصرف يومي
+  buildDailyFlowChart();
+}
+
+function updateTank(n, levelM) {
+  const pct = levelM != null ? Math.min(100, Math.max(0, (levelM / TANK_HEIGHT) * 100)) : 0;
+  const m3  = levelM != null ? Math.round(levelM / TANK_HEIGHT * TANK_CAP) : null;
+  document.getElementById(`tank${n}Fill`).style.height  = pct + '%';
+  document.getElementById(`tank${n}Level`).textContent  = levelM != null ? levelM.toFixed(1)+'م' : '--';
+  document.getElementById(`tank${n}M`).textContent      = levelM != null ? levelM.toFixed(2)+' م' : '--';
+  document.getElementById(`tank${n}M3`).textContent     = m3 != null ? m3.toLocaleString()+' م³' : '--';
+}
+
+function buildDailyFlowChart() {
+  // تجميع المنصرف بالتاريخ
+  const dates = {}, l1={}, l2={}, l3={};
+  filteredShifts.forEach(s => {
+    const d = s.date;
+    if (!dates[d]) { dates[d]=true; l1[d]=0; l2[d]=0; l3[d]=0; }
+    l1[d] += parseFloat(s.meters?.line1?.flow||0);
+    l2[d] += parseFloat(s.meters?.line2?.flow||0);
+    l3[d] += parseFloat(s.meters?.line3?.flow||0);
+  });
+  const labels = Object.keys(dates).sort();
+
+  destroyChart('dailyFlowChart');
+  charts.dailyFlow = new Chart(document.getElementById('dailyFlowChart'), {
+    type:'bar',
+    data:{ labels,
+      datasets:[
+        { label:'خط 1', data:labels.map(d=>Math.round(l1[d]||0)), backgroundColor:'rgba(0,180,216,0.6)', borderColor:'rgba(0,180,216,1)', borderWidth:1, borderRadius:4 },
+        { label:'خط 2', data:labels.map(d=>Math.round(l2[d]||0)), backgroundColor:'rgba(0,230,118,0.6)', borderColor:'rgba(0,230,118,1)', borderWidth:1, borderRadius:4 },
+        { label:'خط 3', data:labels.map(d=>Math.round(l3[d]||0)), backgroundColor:'rgba(255,179,0,0.6)',  borderColor:'rgba(255,179,0,1)',  borderWidth:1, borderRadius:4 },
+      ]
+    },
+    options: chartOpts('م³')
+  });
+}
+
+// ═══════════════════════════════════════════════
+// SECTION 2 — TECHNICAL ANALYSIS
+// ═══════════════════════════════════════════════
+function buildAreaChart() {
+  const areaMap = {};
+  filteredShifts.forEach(s => {
+    (s.rows||[]).forEach(row => {
+      [1,2,3].forEach(ln => {
+        const l = row['line'+ln] || {};
+        const area = l.area;
+        const flow = parseFloat(l.flow) || 0;
+        const hrs  = 2; // كل صف = ساعتين
+        if (area && flow > 0) {
+          if (!areaMap[area]) areaMap[area] = 0;
+          areaMap[area] += flow * hrs;
+        }
+      });
+    });
+  });
+
+  const areas = Object.keys(areaMap).sort((a,b) => areaMap[b]-areaMap[a]);
+  destroyChart('areaFlowChart');
+  charts.areaFlow = new Chart(document.getElementById('areaFlowChart'), {
+    type:'bar',
+    data:{ labels:areas, datasets:[{ label:'المنصرف م³', data:areas.map(a=>Math.round(areaMap[a])),
+      backgroundColor:'rgba(179,136,255,0.6)', borderColor:'rgba(179,136,255,1)', borderWidth:1, borderRadius:4 }] },
+    options:{ ...chartOpts('م³'), indexAxis:'y' }
+  });
+}
+
+function buildPumpCharts() {
+  const labels=[], flowData=[], pressData=[];
+  filteredShifts.forEach(s => {
+    (s.rows||[]).forEach(row => {
+      if (!row.time) return;
+      const label = s.date.substring(5) + ' ' + row.time;
+      [1,2,3].forEach(ln => {
+        const l = row['line'+ln] || {};
+        if (l.flow || l.press) {
+          labels.push(label + ' خ'+ln);
+          flowData.push(parseFloat(l.flow)||0);
+          pressData.push(parseFloat(l.press)||0);
+        }
+      });
+    });
+  });
+
+  destroyChart('pumpFlowChart');
+  charts.pumpFlow = new Chart(document.getElementById('pumpFlowChart'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'التصرف م³/س', data:flowData,
+      borderColor:'rgba(0,212,255,0.9)', backgroundColor:'rgba(0,212,255,0.08)',
+      borderWidth:2, tension:0.3, pointRadius:2, fill:true }] },
+    options:chartOpts('م³/س')
+  });
+
+  destroyChart('pumpPressChart');
+  charts.pumpPress = new Chart(document.getElementById('pumpPressChart'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'الضغط م', data:pressData,
+      borderColor:'rgba(255,179,0,0.9)', backgroundColor:'rgba(255,179,0,0.08)',
+      borderWidth:2, tension:0.3, pointRadius:2, fill:true }] },
+    options:chartOpts('م')
+  });
+}
+
+function buildPumpCurve() {
+  const lineFilter = document.getElementById('pumpCurveFilter')?.value || '';
+  const actual = [];
+
+  filteredShifts.forEach(s => {
+    (s.rows||[]).forEach(row => {
+      const lines = lineFilter ? [parseInt(lineFilter)] : [1,2,3];
+      lines.forEach(ln => {
+        const l = row['line'+ln] || {};
+        const flow = parseFloat(l.flow);
+        const press = parseFloat(l.press);
+        if (flow > 0 && press > 0) actual.push({x:flow, y:press});
+      });
+    });
+  });
+
+  // منحنيات تصميمية عند ترددات مختلفة
+  const freqCurves = [50, 45, 40, 35].map((freq, fi) => {
+    const points = [];
+    const ratio  = freq / PUMP_DESIGN.freq;
+    const maxQ   = PUMP_DESIGN.flow * ratio * 1.3;
+    for (let q = 0; q <= maxQ; q += 10) {
+      points.push({ x: parseFloat(q.toFixed(1)), y: designCurve(q, freq) });
+    }
+    const colors = ['rgba(255,100,100,0.9)','rgba(255,150,50,0.7)','rgba(255,200,0,0.6)','rgba(150,200,100,0.5)'];
+    return { label:`منحنى ${freq} Hz`, data:points, type:'line', borderColor:colors[fi], borderWidth:fi===0?2.5:1.5, pointRadius:0, fill:false, tension:0.4 };
+  });
+
+  // نقاط التصميم عند كل تردد
+  const designPts = [50,45,40,35].map(freq => {
+    const dp = designPointAtFreq(freq);
+    return { x:dp.flow, y:dp.head };
+  });
+
+  destroyChart('pumpCurveChart');
+  charts.pumpCurve = new Chart(document.getElementById('pumpCurveChart'), {
+    type:'scatter',
+    data:{ datasets:[
+      { label:'النقاط الفعلية', data:actual, backgroundColor:'rgba(0,212,255,0.7)', pointRadius:6, pointHoverRadius:8, pointStyle:'circle' },
+      ...freqCurves,
+      { label:'نقاط التصميم', data:designPts, backgroundColor:'rgba(255,179,0,1)', pointRadius:8, pointStyle:'rectRot', pointHoverRadius:10 }
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#7badd4', font:{family:'Cairo',size:10} } } },
+      scales:{
+        x:{ title:{display:true,text:'التصرف م³/س',color:'#00d4ff',font:{family:'Cairo',size:10}},
+            ticks:{color:'#4a7a9b'}, grid:{color:'rgba(0,180,255,0.06)'}, min:0, max:600 },
+        y:{ title:{display:true,text:'الضغط م',color:'#ffb300',font:{family:'Cairo',size:10}},
+            ticks:{color:'#4a7a9b'}, grid:{color:'rgba(0,180,255,0.06)'}, min:0, max:100 }
+      }
+    }
+  });
+}
+
+function buildEfficiencyCharts() {
+  const labels=[], effFlow=[], effPress=[], power=[];
+
+  filteredShifts.forEach(s => {
+    (s.rows||[]).forEach(row => {
+      [1,2,3].forEach(ln => {
+        const l = row['line'+ln] || {};
+        const flow  = parseFloat(l.flow)  || 0;
+        const press = parseFloat(l.press) || 0;
+        const amp   = parseFloat(l.amp)   || 0;
+        const volt  = parseFloat(row.voltage) || 380;
+        if (!flow && !press) return;
+
+        const freq = parseFloat(l.freq) || PUMP_DESIGN.freq;
+        const { effFlow:ef, effHead:ep } = calcPumpEfficiency(flow, press, freq);
+        const pw = amp > 0 ? parseFloat((Math.sqrt(3) * volt * amp * 0.85 / 1000).toFixed(1)) : 0;
+
+        labels.push(s.date.substring(5)+' '+row.time+' خ'+ln);
+        effFlow.push(ef);
+        effPress.push(ep);
+        power.push(pw);
+      });
+    });
+  });
+
+  const effColor = arr => arr.map(v => v>=90?'rgba(0,230,118,0.7)':v>=70?'rgba(255,179,0,0.7)':'rgba(255,59,92,0.7)');
+
+  destroyChart('effFlowChart');
+  charts.effFlow = new Chart(document.getElementById('effFlowChart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'كفاءة التصرف %', data:effFlow, backgroundColor:effColor(effFlow), borderRadius:3 }] },
+    options:{ ...chartOpts('%'), scales:{ ...baseScales(), y:{...baseScales().y, min:0, max:120} } }
+  });
+
+  destroyChart('effPressChart');
+  charts.effPress = new Chart(document.getElementById('effPressChart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'كفاءة الضغط %', data:effPress, backgroundColor:effColor(effPress), borderRadius:3 }] },
+    options:{ ...chartOpts('%'), scales:{ ...baseScales(), y:{...baseScales().y, min:0, max:120} } }
+  });
+
+  destroyChart('powerChart');
+  charts.power = new Chart(document.getElementById('powerChart'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'القدرة KW', data:power,
+      borderColor:'rgba(179,136,255,0.9)', backgroundColor:'rgba(179,136,255,0.1)',
+      borderWidth:2, tension:0.3, pointRadius:2, fill:true }] },
+    options:chartOpts('KW')
+  });
+}
+
+function buildCompareChart() {
+  // مقارنة هذا الأسبوع بالأسبوع الماضي
+  const days = ['ح','ن','ث','أ','خ','ج','س'];
+  const thisWeek=[0,0,0,0,0,0,0], lastWeek=[0,0,0,0,0,0,0];
+
+  allShifts.forEach(s => {
+    const d = new Date(s.date);
+    const dow = d.getDay();
+    const now = new Date();
+    const diff = Math.floor((now - d) / (1000*60*60*24));
+    const total = parseFloat(s.meters?.line1?.flow||0) + parseFloat(s.meters?.line2?.flow||0) + parseFloat(s.meters?.line3?.flow||0);
+    if (diff < 7)       thisWeek[dow] += total;
+    else if (diff < 14) lastWeek[dow] += total;
+  });
+
+  destroyChart('compareChart');
+  charts.compare = new Chart(document.getElementById('compareChart'), {
+    type:'bar',
+    data:{ labels:days, datasets:[
+      { label:'هذا الأسبوع', data:thisWeek.map(v=>Math.round(v)), backgroundColor:'rgba(0,212,255,0.6)', borderColor:'rgba(0,212,255,1)', borderWidth:1, borderRadius:4 },
+      { label:'الأسبوع الماضي', data:lastWeek.map(v=>Math.round(v)), backgroundColor:'rgba(100,100,150,0.4)', borderColor:'rgba(100,100,150,0.6)', borderWidth:1, borderRadius:4 }
+    ]},
+    options:chartOpts('م³')
+  });
+}
+
+// ═══════════════════════════════════════════════
+// SECTION 3 — TECH ANALYSIS
+// ═══════════════════════════════════════════════
+function buildTechAnalysis() {
+  const techMap = {};
+
+  allShifts.forEach(s => {
+    const { from, to } = getDateRange();
+    if (s.date < from || s.date > to) return;
+
+    (s.rows||[]).forEach(row => {
+      const tech = row.tech;
+      if (!tech) return;
+      if (!techMap[tech]) techMap[tech] = { shifts:0, rows:[], totalRows:0 };
+      techMap[tech].shifts++;
+      techMap[tech].rows.push(row);
+      techMap[tech].totalRows++;
+    });
+  });
+
+  const techCards = document.getElementById('techCards');
+  const tbody = document.getElementById('techTableBody');
+
+  if (!Object.keys(techMap).length) {
+    techCards.innerHTML = '<div style="text-align:center;color:var(--txt3);padding:2rem;">لا توجد بيانات للفترة المحددة</div>';
+    tbody.innerHTML = '<tr><td colspan="9" style="color:var(--txt3);">لا توجد بيانات</td></tr>';
+    return;
+  }
+
+  techCards.innerHTML = '';
+  tbody.innerHTML = '';
+
+  Object.entries(techMap).forEach(([name, data]) => {
+    const score = calcTechScore(data);
+    const color = score.total >= 90 ? 'var(--green)' : score.total >= 75 ? 'var(--amber)' : 'var(--red)';
+    const grade = score.total >= 90 ? 'ممتاز ⭐' : score.total >= 75 ? 'جيد ✅' : score.total >= 60 ? 'مقبول ⚠' : 'يحتاج متابعة ❌';
+
+    // Card
+    const card = document.createElement('div');
+    card.className = 'tech-card';
+    card.innerHTML = `
+      <div class="tech-header">
+        <div>
+          <div class="tech-name">👷 ${name}</div>
+          <div style="font-size:0.75rem;color:var(--txt3);">${data.shifts} وردية | ${data.totalRows} تسجيل</div>
+        </div>
+        <div>
+          <div class="tech-score" style="color:${color};">${score.total}</div>
+          <div style="font-size:0.72rem;color:${color};text-align:center;">${grade}</div>
+        </div>
+      </div>
+      <div class="score-bar"><div class="score-fill" style="width:${score.total}%;background:${color};"></div></div>
+      <div class="score-items">
+        ${[
+          {lbl:'الانتظام',val:score.regularity},
+          {lbl:'التوقيت', val:score.timing},
+          {lbl:'الاكتمال',val:score.completeness},
+          {lbl:'المنطقية',val:score.logic},
+          {lbl:'الكفاءة', val:score.efficiency}
+        ].map(s => `
+          <div class="score-item">
+            <div class="score-item-val" style="color:${s.val>=18?'var(--green)':s.val>=14?'var(--amber)':'var(--red)'};">${s.val}</div>
+            <div class="score-item-lbl">${s.lbl}</div>
+          </div>`).join('')}
+      </div>`;
+    techCards.appendChild(card);
+
+    // Table row
+    tbody.innerHTML += `<tr>
+      <td style="font-weight:700;">${name}</td>
+      <td>${data.shifts}</td>
+      <td style="color:${score.regularity>=18?'var(--green)':score.regularity>=14?'var(--amber)':'var(--red)'};">${score.regularity*5}%</td>
+      <td style="color:${score.timing>=18?'var(--green)':score.timing>=14?'var(--amber)':'var(--red)'};">${score.timing*5}%</td>
+      <td>${score.completeness*5}%</td>
+      <td>${score.logic*5}%</td>
+      <td>${score.efficiency*5}%</td>
+      <td style="font-weight:800;color:${color};">${score.total}/100</td>
+      <td style="font-weight:700;color:${color};">${grade}</td>
+    </tr>`;
+  });
+}
+
+function calcTechScore(data) {
+  const rows = data.rows;
+  const totalRows = rows.length;
+  if (!totalRows) return { regularity:0, timing:0, completeness:0, logic:0, efficiency:0, total:0 };
+
+  // ① الانتظام (20) — هل سجّل كل الساعات؟
+  const expectedRows = data.shifts * 12; // 12 صف لكل وردية (24 ساعة / 2)
+  const regularity = Math.min(20, Math.round((totalRows / Math.max(1, expectedRows)) * 20));
+
+  // ② التوقيت (20) — بيانات موزعة على مدار الوردية
+  const timing = totalRows >= 8 ? 20 : Math.round((totalRows / 8) * 20);
+
+  // ③ الاكتمال (20) — نسبة الخانات المملوءة
+  let filled=0, total=0;
+  rows.forEach(row => {
+    [1,2,3].forEach(ln => {
+      const l = row['line'+ln] || {};
+      ['flow','press','freq','amp','area','pump'].forEach(col => {
+        total++;
+        if (l[col]) filled++;
+      });
+    });
+  });
+  const completeness = total > 0 ? Math.min(20, Math.round((filled/total)*20)) : 0;
+
+  // ④ المنطقية (20) — بيانات في النطاق المنطقي + مش كلها متكررة
+  let logical=0, checked=0;
+  rows.forEach(row => {
+    [1,2,3].forEach(ln => {
+      const l = row['line'+ln] || {};
+      const flow  = parseFloat(l.flow)  || 0;
+      const press = parseFloat(l.press) || 0;
+      if (flow > 0) {
+        checked++;
+        if (flow >= 200 && flow <= 600 && press >= 30 && press <= 100) logical++;
+      }
+    });
+  });
+  const logic = checked > 0 ? Math.min(20, Math.round((logical/checked)*20)) : 10;
+
+  // ⑤ كفاءة التشغيل (20) — نسبة وقت التشغيل
+  let activeRows=0;
+  rows.forEach(row => {
+    [1,2,3].forEach(ln => {
+      if ((row['line'+ln]||{}).flow) activeRows++;
+    });
+  });
+  const efficiency = totalRows > 0 ? Math.min(20, Math.round((activeRows/(totalRows*3))*20)) : 0;
+
+  const total_score = regularity + timing + completeness + logic + efficiency;
+  return { regularity, timing, completeness, logic, efficiency, total: total_score };
+}
+
+// ═══════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════
+function checkAlerts() {
+  const alerts = [];
+
+  filteredShifts.forEach(s => {
+    (s.rows||[]).forEach(row => {
+      [1,2,3].forEach(ln => {
+        const l = row['line'+ln] || {};
+        const flow  = parseFloat(l.flow)  || 0;
+        const press = parseFloat(l.press) || 0;
+        if (flow > 0 && press > 0) {
+          if (flow < PUMP_DESIGN.flow * 0.7)  alerts.push(`⚠ ${s.date} ${row.time}: تصرف خط ${ln} منخفض (${flow} م³/س)`);
+          if (press > PUMP_DESIGN.head * 1.15) alerts.push(`🔴 ${s.date} ${row.time}: ضغط خط ${ln} مرتفع (${press} م)`);
+        }
+      });
+    });
+  });
+
+  const banner = document.getElementById('alertBanner');
+  if (alerts.length) {
+    banner.style.display = 'block';
+    banner.innerHTML = alerts.slice(0,3).join('<br>') + (alerts.length>3?`<br>... و${alerts.length-3} تنبيه آخر`:'');
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function destroyChart(id) {
+  const canvas = document.getElementById(id);
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+}
+
+function baseScales() {
+  return {
+    x:{ ticks:{color:'#4a7a9b',font:{family:'Rajdhani',size:9},maxRotation:45,maxTicksLimit:12}, grid:{color:'rgba(0,180,255,0.05)'} },
+    y:{ ticks:{color:'#4a7a9b',font:{family:'Rajdhani',size:10}}, grid:{color:'rgba(0,180,255,0.05)'} }
+  };
+}
+
+function chartOpts(unit) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:'#7badd4', font:{family:'Cairo',size:10} } } },
+    scales:{ ...baseScales(), y:{ ...baseScales().y, title:{display:true,text:unit,color:'#4a7a9b',font:{family:'Rajdhani',size:10}} } }
+  };
+}
+
+// ═══════════════════════════════════════════════
+// URL SETTINGS
+// ═══════════════════════════════════════════════
+function showUrlSettings() {
+  let modal = document.getElementById('urlModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'urlModal';
+    modal.style = 'position:fixed;inset:0;background:rgba(5,13,26,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+    modal.innerHTML = `
+      <div style="background:var(--card);border:1px solid var(--brd);border-radius:16px;max-width:500px;width:100%;padding:1.5rem;">
+        <div style="font-size:1.1rem;font-weight:900;color:var(--txt);margin-bottom:0.8rem;font-family:Cairo,sans-serif;">⚙ رابط Google Apps Script</div>
+        <div style="font-size:0.75rem;color:var(--txt3);margin-bottom:0.4rem;font-family:Cairo,sans-serif;">الرابط الحالي:</div>
+        <div id="urlModalCurrent" style="font-size:0.68rem;color:var(--cyan);word-break:break-all;font-family:monospace;background:var(--bg3);padding:0.6rem;border-radius:6px;margin-bottom:0.8rem;direction:ltr;"></div>
+        <div style="font-size:0.75rem;color:var(--txt3);margin-bottom:0.4rem;font-family:Cairo,sans-serif;">الصق الرابط الجديد:</div>
+        <input id="urlModalInput" type="url" placeholder="https://script.google.com/macros/s/.../exec"
+          style="width:100%;box-sizing:border-box;padding:0.6rem;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-size:0.72rem;font-family:monospace;direction:ltr;outline:none;margin-bottom:1rem;">
+        <div style="display:flex;gap:0.8rem;">
+          <button onclick="saveUrlModal()" style="flex:1;padding:0.7rem;background:var(--blue);border:none;border-radius:8px;color:white;font-family:Cairo,sans-serif;font-weight:700;cursor:pointer;">✔ حفظ وتحديث</button>
+          <button onclick="document.getElementById('urlModal').style.display='none'" style="flex:1;padding:0.7rem;background:var(--bg3);border:1px solid var(--brd);border-radius:8px;color:var(--txt);font-family:Cairo,sans-serif;cursor:pointer;">إلغاء</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('urlModalCurrent').textContent = SCRIPT_URL;
+  document.getElementById('urlModalInput').value = '';
+  modal.style.display = 'flex';
+}
+
+function saveUrlModal() {
+  const v = document.getElementById('urlModalInput').value.trim();
+  if (!v) { document.getElementById('urlModal').style.display='none'; return; }
+  if (!v.startsWith('https://script.google.com')) {
+    document.getElementById('urlModalInput').style.border = '1px solid #ff3b5c';
+    return;
+  }
+  SCRIPT_URL = v;
+  localStorage.setItem('shiftlog_script_url', SCRIPT_URL);
+  document.getElementById('urlModal').style.display = 'none';
+  loadAndBuild();
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('load', () => {
+  loadAndBuild();
+  // تحديث كل 5 دقائق
+  setInterval(loadAndBuild, 5*60*1000);
+});
+</script>
+</body>
+</html>
