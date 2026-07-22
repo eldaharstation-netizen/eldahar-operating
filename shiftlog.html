@@ -663,6 +663,7 @@ header {
         </tr>
         <tr>
           <!-- خط 1 -->
+          <th class="th-line1">الحالة</th>
           <th class="th-line1">منطقة</th>
           <th class="th-line1">طلمبة</th>
           <th class="th-line1">تردد Hz</th>
@@ -670,6 +671,7 @@ header {
           <th class="th-line1">تصرف م³/س</th>
           <th class="th-line1">ضغط بار</th>
           <!-- خط 2 -->
+          <th class="th-line1">الحالة</th>
           <th class="th-line2">منطقة</th>
           <th class="th-line2">طلمبة</th>
           <th class="th-line2">تردد Hz</th>
@@ -677,6 +679,7 @@ header {
           <th class="th-line2">تصرف م³/س</th>
           <th class="th-line2">ضغط بار</th>
           <!-- خط 3 -->
+          <th class="th-line1">الحالة</th>
           <th class="th-line3">منطقة</th>
           <th class="th-line3">طلمبة</th>
           <th class="th-line3">تردد Hz</th>
@@ -761,7 +764,7 @@ const DAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربع�
 
 const TECHNICIANS = [
   'اسلام اشرف','احمد خير','عمر عبد المتجلى','احمد عبد الخالق',
-  'اسلام عطية','محمد ابو السعود','طاهر سكوت','يسري',
+  'اسلام عطية','محمد ابو السعود'حسن عبد القادر','طاهر سكوت','يسري',
   'محمد حافظ','خالد السكي','حسين عيسى','محمود سيد'
 ];
 
@@ -871,12 +874,6 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line1" style="text-align:center;padding:2px;">
-        <button class="line-status-btn active-btn" data-line="1" onclick="toggleLineStatus(this)"
-          style="padding:2px 5px;border-radius:5px;border:none;font-size:0.65rem;font-weight:700;cursor:pointer;width:100%;background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:var(--green);">
-          🟢 نشط
-        </button>
-      </td>
       <td class="cell-line1"><input type="text" data-line="1" data-col="area" placeholder="--" style="color:var(--line1);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
       <td class="cell-line1"><input type="text" data-line="1" data-col="pump" placeholder="--" style="color:var(--line1);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
       <td class="cell-line1"><input type="number" data-line="1" data-col="freq" placeholder="--" step="0.5"></td>
@@ -891,12 +888,6 @@ function buildTable() {
           🟢 نشط
         </button>
       </td>
-      <td class="cell-line2" style="text-align:center;padding:2px;">
-        <button class="line-status-btn active-btn" data-line="2" onclick="toggleLineStatus(this)"
-          style="padding:2px 5px;border-radius:5px;border:none;font-size:0.65rem;font-weight:700;cursor:pointer;width:100%;background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:var(--green);">
-          🟢 نشط
-        </button>
-      </td>
       <td class="cell-line2"><input type="text" data-line="2" data-col="area" placeholder="--" style="color:var(--line2);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
       <td class="cell-line2"><input type="text" data-line="2" data-col="pump" placeholder="--" style="color:var(--line2);font-size:0.72rem;font-family:Cairo,sans-serif;"></td>
       <td class="cell-line2"><input type="number" data-line="2" data-col="freq" placeholder="--" step="0.5"></td>
@@ -908,12 +899,6 @@ function buildTable() {
         <button class="line-status-btn active-btn" data-line="3" data-status="active"
           onclick="toggleLineStatus(this)"
           style="padding:2px 5px;border-radius:5px;border:1px solid rgba(255,112,67,0.4);background:rgba(255,112,67,0.12);color:var(--line3);font-size:0.65rem;font-family:Cairo,sans-serif;cursor:pointer;white-space:nowrap;width:100%;">
-          🟢 نشط
-        </button>
-      </td>
-      <td class="cell-line3" style="text-align:center;padding:2px;">
-        <button class="line-status-btn active-btn" data-line="3" onclick="toggleLineStatus(this)"
-          style="padding:2px 5px;border-radius:5px;border:none;font-size:0.65rem;font-weight:700;cursor:pointer;width:100%;background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:var(--green);">
           🟢 نشط
         </button>
       </td>
