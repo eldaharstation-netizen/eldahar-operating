@@ -539,25 +539,40 @@
       </div>
       <button class="btn btn-primary" onclick="loadDashboardData()">🔄 تحديث</button>
       <button class="btn btn-secondary" onclick="toggleAutoRefresh()">⏱️ <span id="autoRefreshBtn">تشغيل التحديث التلقائي</span></button>
-      <button class="btn btn-secondary" id="sendReportBtn" onclick="sendReportNow()">📤 إبعت تقرير دلوقتي على تليجرام</button>
+      <button class="btn btn-secondary" id="sendReportBtn" onclick="previewReportNow()">📤 معاينة وإرسال تقرير على تليجرام</button>
     </div>
 
     <!-- ── INFO CARDS ── -->
     <div class="info-bar">
       <div class="info-card">
-        <div class="info-label">آخر تحديث</div>
-        <div class="info-value" id="lastUpdate">--:--</div>
-        <div class="info-detail">تم حفظ البيانات</div>
+        <div class="info-label">إجمالي المنصرف (تصرف الطلمبات)</div>
+        <div class="info-value" id="totalFlow">0</div>
+        <div class="info-detail" id="totalFlowDetail">م³ — تراكمي حتى آخر ساعة مُدخلة</div>
       </div>
       <div class="info-card">
-        <div class="info-label">إجمالي المنصرف</div>
-        <div class="info-value" id="totalFlow">0</div>
-        <div class="info-detail">م³ اليوم</div>
+        <div class="info-label">إجمالي المنصرف (بالعداد)</div>
+        <div class="info-value" id="kpiMeterOutflow">--</div>
+        <div class="info-detail" id="kpiMeterOutflowDetail">فى انتظار قفل العداد</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">الوارد المحسوب</div>
+        <div class="info-value" id="kpiInflowComputed">--</div>
+        <div class="info-detail">م³ (من التصرفات + التكديس)</div>
+      </div>
+      <div class="info-card" id="kpiStackingCard">
+        <div class="info-label">صافي التكديس</div>
+        <div class="info-value" id="kpiStacking">--</div>
+        <div class="info-detail" id="kpiStackingDetail">م³</div>
       </div>
       <div class="info-card">
         <div class="info-label">عدد الساعات النشطة</div>
         <div class="info-value" id="operatingHours">0</div>
-        <div class="info-detail">ساعة</div>
+        <div class="info-detail">ساعة (بأي خط شغال)</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">آخر تحديث</div>
+        <div class="info-value" id="lastUpdate">--:--</div>
+        <div class="info-detail">تم حفظ البيانات</div>
       </div>
       <div class="info-card">
         <div class="info-label">الحالة العامة</div>
@@ -663,6 +678,7 @@
             </div>
           </div>
           <div class="info-detail" id="tank1Info">منسوب: 0 متر</div>
+          <div class="metric-value" style="font-size:1.1rem;" id="tank1Volume">-- م³</div>
         </div>
 
         <div class="tank-container">
@@ -673,32 +689,36 @@
             </div>
           </div>
           <div class="info-detail" id="tank2Info">منسوب: 0 متر</div>
+          <div class="metric-value" style="font-size:1.1rem;" id="tank2Volume">-- م³</div>
         </div>
+
+        <div class="calib-row" style="margin-top:0.5rem;">
+          <div class="calib-name"><b>إجمالي المخزون الحالي</b></div>
+          <div class="metric-value" id="tanksTotalVolume">-- م³</div>
+        </div>
+        <div class="info-detail">بافتراض 1250 م³ لكل متر ارتفاع فى كل خزان</div>
       </div>
 
-      <!-- ── CUMULATIVE OUTFLOW ── -->
+      <!-- ── OPERATING ANALYTICS ── -->
       <div class="card">
-        <div class="section-title">💧 المنصرف التراكمي اليوم (حتى الآن)</div>
-        <div class="line-metrics">
-          <div class="metric">
-            <div class="metric-label">خط 1</div>
-            <div class="metric-value" id="cumLine1">-- م³</div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">خط 2</div>
-            <div class="metric-value" id="cumLine2">-- م³</div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">خط 3</div>
-            <div class="metric-value" id="cumLine3">-- م³</div>
-          </div>
-          <div class="metric">
-            <div class="metric-label">إجمالي المحطة</div>
-            <div class="metric-value" id="cumTotal">-- م³</div>
-          </div>
-        </div>
-        <div class="info-detail" style="margin-top: 0.8rem;">
-          محسوب من: ساعات التشغيل × التصرف الساعي لكل خط (حتى آخر ساعة مُدخلة) — بيتحدث أول بأول، مش لازم ننتظر قراءة العداد آخر اليوم
+        <div class="section-title">📊 تحليلات التشغيل والمنصرف (تصرف الطلمبات)</div>
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border); color:var(--text-tertiary); text-align:right;">
+              <th style="padding:0.5rem 0.3rem;">الخط</th>
+              <th style="padding:0.5rem 0.3rem;">ساعات التشغيل</th>
+              <th style="padding:0.5rem 0.3rem;">متوسط التصرف</th>
+              <th style="padding:0.5rem 0.3rem;">إجمالي المنصرف</th>
+              <th style="padding:0.5rem 0.3rem;">% من الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody id="analyticsTableBody">
+            <tr><td colspan="5" style="text-align:center;color:var(--text-tertiary);padding:1rem;">-- لا توجد بيانات --</td></tr>
+          </tbody>
+        </table>
+        <div class="calib-row" style="margin-top:0.8rem;">
+          <div class="calib-name"><b>الإجمالي (تصرف الطلمبات)</b></div>
+          <div class="metric-value" id="cumTotal">-- م³</div>
         </div>
       </div>
 
@@ -785,6 +805,23 @@
         <button class="btn btn-secondary" onclick="exportReportPDF()">🖨 تصدير PDF</button>
       </div>
       <div id="reportOutput"><div class="report-empty">اختاري الفترة واضغطي "توليد التقرير"</div></div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: معاينة التقرير قبل الإرسال ── -->
+  <div id="previewModal" style="display:none; position:fixed; inset:0; background:rgba(5,10,25,0.75); z-index:200; align-items:center; justify-content:center;">
+    <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:14px; width:min(640px,92vw); max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <div style="padding:1.2rem 1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-weight:800; font-size:1.05rem;">👁️ معاينة التقرير قبل الإرسال</div>
+        <button class="btn btn-secondary" style="padding:0.4rem 0.9rem;" onclick="closePreviewModal()">✖</button>
+      </div>
+      <div id="previewModalBody" style="padding:1.5rem; overflow-y:auto; white-space:pre-wrap; font-family:'Monaco','Courier New',monospace; font-size:0.85rem; line-height:1.8; flex:1;">
+        ⏳ جاري تجهيز التقرير...
+      </div>
+      <div style="padding:1.2rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:0.8rem; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closePreviewModal()">إلغاء</button>
+        <button class="btn btn-primary" id="confirmSendBtn" onclick="confirmSendReport()">📤 تأكيد الإرسال على تليجرام</button>
+      </div>
     </div>
   </div>
 
@@ -899,22 +936,37 @@
       document.getElementById(lineId + 'Press').textContent = (line.press || '--') + ' m';
     }
 
+    // نفس قيمة CONFIG.TANK_M3_PER_METER فى الـ Apps Script — كل متر ارتفاع = كام م³
+    const TANK_M3_PER_METER = 1250;
+    let tankLevels = { tank1: 0, tank2: 0 };
+
     function updateTankData(tankId, level) {
       const levelNum = parseFloat(level) || 0;
-      const percentage = Math.min((levelNum / 8) * 100, 100); // افترض أن الحد الأقصى 8 متر
+      const percentage = Math.min((levelNum / 8) * 100, 100); // شريط بصري تقريبي فقط
       
       document.getElementById(tankId + 'Level').style.height = percentage + '%';
       document.getElementById(tankId + 'Value').textContent = levelNum.toFixed(2) + ' m';
       document.getElementById(tankId + 'Info').textContent = 'منسوب: ' + levelNum.toFixed(2) + ' متر';
+
+      // 🆕 الكمية الفعلية بالمتر المكعب
+      const volume = levelNum * TANK_M3_PER_METER;
+      document.getElementById(tankId + 'Volume').textContent = volume.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' م³';
+      tankLevels[tankId] = levelNum;
+
+      const totalVolume = (tankLevels.tank1 + tankLevels.tank2) * TANK_M3_PER_METER;
+      document.getElementById('tanksTotalVolume').textContent = totalVolume.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' م³';
     }
 
     function updateDailyStats(data) {
       const m = data.meters || {};
+      const hasMeter = !!(m.line1?.flow || m.line2?.flow || m.line3?.flow);
       const total = (parseFloat(m.line1?.flow) || 0) + 
                     (parseFloat(m.line2?.flow) || 0) + 
                     (parseFloat(m.line3?.flow) || 0);
-      
-      document.getElementById('totalFlow').textContent = total.toFixed(1);
+
+      // 🆕 المنصرف بالعداد (نهائي — بيظهر بس لما العداد يتقفل)
+      document.getElementById('kpiMeterOutflow').textContent = hasMeter ? total.toFixed(0) + ' م³' : '--';
+      document.getElementById('kpiMeterOutflowDetail').textContent = hasMeter ? 'نهائي (العداد مقفول)' : 'فى انتظار قفل العداد';
       
       const operatingHours = (data.rows || []).filter(r => {
         const hasData = (r.line1?.flow || r.line2?.flow || r.line3?.flow);
@@ -926,7 +978,8 @@
     }
 
     // 🆕 المنصرف التراكمي حتى الآن = مجموع (ساعات التشغيل × التصرف الساعي) لكل خط
-    //    نفس منطق الحساب في Apps Script (computeDailyTotals) عشان الرقم يتطابق مع التقرير
+    //    نفس منطق الحساب في Apps Script (computeDailyTotals/computePumpFlowTotals)
+    //    عشان الرقم يتطابق مع التقرير
     function computeCumulativeOutflow(rows) {
       let cum1 = 0, cum2 = 0, cum3 = 0;
       (rows || []).forEach(row => {
@@ -940,20 +993,93 @@
 
     function updateCumulativeOutflow(rows) {
       const c = computeCumulativeOutflow(rows);
-      document.getElementById('cumLine1').textContent = c.line1.toFixed(0) + ' م³';
-      document.getElementById('cumLine2').textContent = c.line2.toFixed(0) + ' م³';
-      document.getElementById('cumLine3').textContent = c.line3.toFixed(0) + ' م³';
       document.getElementById('cumTotal').textContent = c.total.toFixed(0) + ' م³';
+      // 🆕 ده الرقم الرئيسي فوق (منصرف الطلمبات التراكمي)
+      document.getElementById('totalFlow').textContent = c.total > 0 ? c.total.toLocaleString(undefined,{maximumFractionDigits:0}) : '0';
+      renderAnalyticsTable(rows);
     }
 
-    // 🆕 إرسال تقرير فوري على تليجرام (بيستخدم بيانات التاريخ المختار في فلتر التاريخ)
-    async function sendReportNow() {
+    // 🆕 جدول تحليلات التشغيل: ساعات التشغيل، متوسط التصرف، الإجمالي، % من الإجمالي لكل خط
+    function computeOperatingAnalytics(rows) {
+      const stats = { 1: {hours:0,total:0}, 2: {hours:0,total:0}, 3: {hours:0,total:0} };
+      (rows || []).forEach(row => {
+        [1,2,3].forEach(ln => {
+          const l = row['line'+ln] || {};
+          if (l.status === 'stopped') return;
+          const f = parseFloat(l.flow);
+          if (!isNaN(f)) { stats[ln].hours++; stats[ln].total += f; }
+        });
+      });
+      const grandTotal = stats[1].total + stats[2].total + stats[3].total;
+      [1,2,3].forEach(ln => {
+        stats[ln].avg = stats[ln].hours ? stats[ln].total / stats[ln].hours : 0;
+        stats[ln].pct = grandTotal ? (stats[ln].total / grandTotal * 100) : 0;
+      });
+      return { stats, grandTotal };
+    }
+
+    function renderAnalyticsTable(rows) {
+      const { stats, grandTotal } = computeOperatingAnalytics(rows);
+      const tbody = document.getElementById('analyticsTableBody');
+      if (grandTotal === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-tertiary);padding:1rem;">-- لا توجد بيانات --</td></tr>';
+        return;
+      }
+      const names = { 1: 'خط 1', 2: 'خط 2', 3: 'خط 3 (جبل العفش)' };
+      tbody.innerHTML = [1,2,3].map(ln => `
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:0.55rem 0.3rem;font-weight:700;">${names[ln]}</td>
+          <td style="padding:0.55rem 0.3rem;">${stats[ln].hours} ساعة</td>
+          <td style="padding:0.55rem 0.3rem;">${stats[ln].avg.toFixed(0)} م³/س</td>
+          <td style="padding:0.55rem 0.3rem;color:var(--primary-light);font-weight:700;">${stats[ln].total.toFixed(0)} م³</td>
+          <td style="padding:0.55rem 0.3rem;">${stats[ln].pct.toFixed(1)}%</td>
+        </tr>
+      `).join('');
+    }
+
+    // 🆕 معاينة التقرير (اللي هيتبعت على تليجرام) قبل الإرسال — بيستخدم
+    // نفس نص التقرير + بيان المقارنة اللي بيتحسب فى الـ Apps Script، عشان
+    // اللي يظهر فى المعاينة يكون طبق الأصل من اللي هيوصل على تليجرام
+    async function previewReportNow() {
       if (!scriptUrl) {
         updateStatus('⚠️ أدخل الرابط أولاً', 'warning');
         return;
       }
       const date = document.getElementById('filterDate').value;
-      const btn = document.getElementById('sendReportBtn');
+      const modal = document.getElementById('previewModal');
+      const body = document.getElementById('previewModalBody');
+      modal.style.display = 'flex';
+      body.textContent = '⏳ جاري تجهيز التقرير...';
+
+      try {
+        const [reportRes, totalsRes] = await Promise.all([
+          fetch(scriptUrl + '?action=getReport&date=' + date + '&t=' + Date.now()),
+          fetch(scriptUrl + '?action=getTotals&date=' + date + '&t=' + Date.now())
+        ]);
+        const reportText = await reportRes.text();
+        const totalsResult = await totalsRes.json();
+
+        let fullText = reportText;
+        if (totalsResult.found && totalsResult.totals.meterClosed) {
+          const cmpRes = await fetch(scriptUrl + '?action=getComparisonReport&date=' + date + '&t=' + Date.now());
+          const cmpText = await cmpRes.text();
+          fullText += '\n\n' + cmpText;
+        }
+        body.textContent = fullText;
+      } catch (err) {
+        body.textContent = '❌ حصل خطأ أثناء تجهيز المعاينة. اتأكدي من الرابط والاتصال.';
+        console.error(err);
+      }
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewModal').style.display = 'none';
+    }
+
+    async function confirmSendReport() {
+      if (!scriptUrl) { updateStatus('⚠️ أدخل الرابط أولاً', 'warning'); return; }
+      const date = document.getElementById('filterDate').value;
+      const btn = document.getElementById('confirmSendBtn');
       const originalText = btn.innerHTML;
       btn.innerHTML = '⏳ جاري الإرسال...';
       btn.disabled = true;
@@ -963,6 +1089,7 @@
         const result = await res.json();
         if (result.status === 'ok') {
           alert('✅ تم إرسال التقرير على تليجرام بنجاح');
+          closePreviewModal();
         } else {
           alert('❌ ' + (result.message || 'حصل خطأ أثناء الإرسال'));
         }
@@ -1008,6 +1135,15 @@
 
     function renderCalibration(t) {
       lastTotals = t;
+
+      // 🆕 تحديث كروت الوارد المحسوب وصافي التكديس فى الشريط العلوي
+      document.getElementById('kpiInflowComputed').textContent = t.inflowComputed.toFixed(0) + ' م³';
+      const stackEl = document.getElementById('kpiStacking');
+      const stackCard = document.getElementById('kpiStackingCard');
+      stackEl.textContent = (t.stackingChangeM3 >= 0 ? '+' : '') + t.stackingChangeM3.toFixed(0);
+      stackCard.style.borderColor = t.stackingChangeM3 >= 0 ? 'rgba(0,230,118,0.35)' : 'rgba(255,179,0,0.35)';
+      document.getElementById('kpiStackingDetail').textContent =
+        (t.stackingChangeM3 >= 0 ? 'زيادة تخزين (م³)' : 'سحب من المخزون (م³)');
 
       // — معايرة عداد الوارد —
       document.getElementById('calibInflowManual').textContent =
@@ -1277,10 +1413,17 @@
       ['tank1', 'tank2'].forEach(tank => {
         document.getElementById(tank + 'Level').style.height = '0%';
         document.getElementById(tank + 'Value').textContent = '0 m';
+        document.getElementById(tank + 'Volume').textContent = '-- م³';
       });
-      ['cumLine1', 'cumLine2', 'cumLine3', 'cumTotal'].forEach(id => {
-        document.getElementById(id).textContent = '-- م³';
-      });
+      tankLevels = { tank1: 0, tank2: 0 };
+      document.getElementById('tanksTotalVolume').textContent = '-- م³';
+      document.getElementById('cumTotal').textContent = '-- م³';
+      document.getElementById('totalFlow').textContent = '0';
+      document.getElementById('kpiMeterOutflow').textContent = '--';
+      document.getElementById('kpiInflowComputed').textContent = '--';
+      document.getElementById('kpiStacking').textContent = '--';
+      document.getElementById('analyticsTableBody').innerHTML =
+        '<tr><td colspan="5" style="text-align:center;color:var(--text-tertiary);padding:1rem;">-- لا توجد بيانات --</td></tr>';
     }
 
     function toggleAutoRefresh() {
