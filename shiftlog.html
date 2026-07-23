@@ -1437,8 +1437,8 @@ function updateLiveStatus() {
 setInterval(updateLiveStatus, 30000);
 
 // ── SCRIPT URL ──
-let scriptUrl = localStorage.getItem('shiftlog_script_url') || 'https://script.google.com/macros/s/AKfycbzP_OGpigXKSz7RA9o4h0RdgNsYsQAMczvxob5axJSSVRKHlouvInqnM-vidDPwsLo/exec';
-
+let scriptUrl = localStorage.getItem('shiftlog_script_url') || 'https://script.google.com/macros/s/AKfycbzH9abO9m7O5Fip6J89VAQU3CB_Bq2ESbAJjlz3zl3NR-KF-poYBLaVzYs04C-o3FcL5A/exec
+';
 function saveScriptUrl() {
   const url = document.getElementById('scriptUrl').value.trim();
   if (!url || !url.startsWith('https://script.google.com')) {
