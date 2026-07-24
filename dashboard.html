@@ -1136,7 +1136,7 @@
     function renderCalibration(t) {
       lastTotals = t;
 
-      // 🆕 تحديث كروت الوارد المحسوب وصافي التكديس فى الشريط العلوي
+      // 🆕 تحديث كروت الوارد المحسوب و فرق التكديس من بداي اليوم فى الشريط العلوي
       document.getElementById('kpiInflowComputed').textContent = t.inflowComputed.toFixed(0) + ' م³';
       const stackEl = document.getElementById('kpiStacking');
       const stackCard = document.getElementById('kpiStackingCard');
