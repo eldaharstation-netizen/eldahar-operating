@@ -1180,6 +1180,9 @@
           <div class="rpt-notes-body">${esc(meta.generalNotes)}</div>
         </div>` : '';
 
+      const nowStr = new Date().toLocaleString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit', year:'numeric'});
+      const periodStr = t.meterClosed ? 'اليوم كامل (24 ساعة)' : 'من بداية اليوم حتى الآن';
+
       return `
         <div class="rpt">
           <div class="rpt-header">
@@ -1187,6 +1190,8 @@
             <div class="rpt-header-meta">
               <span>📅 ${esc(meta.date)} (${esc(meta.dayName || '')})</span>
               <span>👷 ${esc(meta.engineer || '--')}</span>
+              <span>🕐 وقت التوليد: ${nowStr}</span>
+              <span>📍 الفترة: ${periodStr}</span>
             </div>
           </div>
           <div class="rpt-body">
@@ -1512,6 +1517,8 @@
         </tr>
       `).join('');
 
+      const nowStrRg = new Date().toLocaleString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit', year:'numeric'});
+
       return `
         <div class="rpt">
           <div class="rpt-header">
@@ -1519,6 +1526,8 @@
             <div class="rpt-header-meta">
               <span>📅 من ${esc(result.from)} إلى ${esc(result.to)}</span>
               <span>🗓️ ${agg.days} يوم</span>
+              <span>🕐 وقت التوليد: ${nowStrRg}</span>
+              ${!agg.allMeterClosed ? '<span>⚠️ آخر يوم لسه مفتوح</span>' : ''}
             </div>
           </div>
           <div class="rpt-body">
