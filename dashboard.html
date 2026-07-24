@@ -481,29 +481,79 @@
       margin-bottom: 1.2rem;
     }
     #reportOutput {
-      background: rgba(0,180,255,0.04);
-      border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 1.2rem;
-      white-space: pre-wrap;
-      font-family: 'Monaco','Courier New',monospace;
-      font-size: 0.85rem;
-      color: var(--text);
-      line-height: 1.9;
       min-height: 80px;
     }
     .report-empty { color: var(--text-tertiary); text-align: center; padding: 1.5rem; }
+
+    /* ══════════════════════════════════════════════════════════
+       🆕 التقرير الاحترافي الملوّن (Report Card Theme)
+       ══════════════════════════════════════════════════════════ */
+    .rpt {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+    }
+    .rpt-header {
+      background: linear-gradient(120deg, #0072ff 0%, #00c6ff 100%);
+      padding: 1.3rem 1.5rem;
+      color: #fff;
+    }
+    .rpt-header-title { font-size: 1.15rem; font-weight: 800; display:flex; align-items:center; gap:0.5rem; }
+    .rpt-header-meta { margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.92; display:flex; gap:1.4rem; flex-wrap:wrap; }
+    .rpt-body { padding: 1.3rem 1.5rem; }
+    .rpt-section { margin-bottom: 1.4rem; border-radius: 10px; overflow:hidden; border:1px solid var(--border); }
+    .rpt-section:last-child { margin-bottom: 0; }
+    .rpt-section-title {
+      padding: 0.65rem 1rem;
+      font-weight: 800;
+      font-size: 0.92rem;
+      display:flex; align-items:center; gap:0.5rem;
+      color:#fff;
+    }
+    .rpt-section-body { padding: 1rem; background: rgba(255,255,255,0.02); }
+    .rpt-outflow .rpt-section-title { background: linear-gradient(90deg,#2563eb,#3b82f6); }
+    .rpt-inflow  .rpt-section-title { background: linear-gradient(90deg,#0891b2,#06b6d4); }
+    .rpt-tanks   .rpt-section-title { background: linear-gradient(90deg,#059669,#10b981); }
+    .rpt-notes   .rpt-section-title { background: linear-gradient(90deg,#d97706,#f59e0b); }
+    .rpt-lines { display:grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap:0.7rem; margin-bottom:0.9rem; }
+    .rpt-line-card {
+      background: rgba(0,0,0,0.15);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem 0.85rem;
+    }
+    .rpt-line-name { font-size: 0.78rem; color: var(--text-tertiary); font-weight:700; margin-bottom:0.35rem; }
+    .rpt-line-row { display:flex; justify-content:space-between; font-size:0.82rem; padding:0.15rem 0; }
+    .rpt-line-row b { color: var(--text); }
+    .rpt-totals { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:0.8rem; }
+    .rpt-total-card {
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      text-align:center;
+    }
+    .rpt-total-card .lbl { font-size:0.75rem; opacity:0.85; font-weight:700; }
+    .rpt-total-card .val { font-size:1.4rem; font-weight:800; margin-top:0.2rem; }
+    .rpt-total-blue { background: rgba(37,99,235,0.14); border:1px solid rgba(59,130,246,0.35); color:#93c5fd; }
+    .rpt-total-cyan { background: rgba(6,182,212,0.14); border:1px solid rgba(6,182,212,0.35); color:#67e8f9; }
+    .rpt-total-green{ background: rgba(16,185,129,0.14); border:1px solid rgba(16,185,129,0.35); color:#6ee7b7; }
+    .rpt-total-amber{ background: rgba(245,158,11,0.14); border:1px solid rgba(245,158,11,0.35); color:#fcd34d; }
+    .rpt-formula { margin-top:0.6rem; font-size:0.78rem; color: var(--text-tertiary); background:rgba(0,0,0,0.15); border-radius:6px; padding:0.5rem 0.7rem; }
+    .rpt-notes-body { padding:0.9rem 1rem; font-size:0.86rem; }
+    .rpt-day-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    .rpt-day-table th { text-align:right; padding:0.5rem 0.4rem; color:var(--text-tertiary); border-bottom:1px solid var(--border); }
+    .rpt-day-table td { padding:0.5rem 0.4rem; border-bottom:1px solid var(--border); }
 
     /* ── PRINT (PDF export) ── */
     #printArea { display: none; }
     @media print {
       body * { visibility: hidden; }
-      #printArea, #printArea * { visibility: visible; }
+      #printArea, #printArea * { visibility: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       #printArea {
         display: block;
         position: absolute; top: 0; left: 0; width: 100%;
-        background: white; color: #000; padding: 2rem;
-        white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12pt;
+        background: white; padding: 1.5rem;
       }
     }
   </style>
@@ -560,7 +610,7 @@
         <div class="info-detail">م³ (من التصرفات + التكديس)</div>
       </div>
       <div class="info-card" id="kpiStackingCard">
-        <div class="info-label">فرق التكديس من بداية اليوم </div>
+        <div class="info-label">فرق التكديس من بداية اليوم</div>
         <div class="info-value" id="kpiStacking">--</div>
         <div class="info-detail" id="kpiStackingDetail">م³</div>
       </div>
@@ -810,13 +860,13 @@
 
   <!-- ── MODAL: معاينة التقرير قبل الإرسال ── -->
   <div id="previewModal" style="display:none; position:fixed; inset:0; background:rgba(5,10,25,0.75); z-index:200; align-items:center; justify-content:center;">
-    <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:14px; width:min(640px,92vw); max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+    <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:14px; width:min(760px,94vw); max-height:88vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
       <div style="padding:1.2rem 1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
         <div style="font-weight:800; font-size:1.05rem;">👁️ معاينة التقرير قبل الإرسال</div>
         <button class="btn btn-secondary" style="padding:0.4rem 0.9rem;" onclick="closePreviewModal()">✖</button>
       </div>
-      <div id="previewModalBody" style="padding:1.5rem; overflow-y:auto; white-space:pre-wrap; font-family:'Monaco','Courier New',monospace; font-size:0.85rem; line-height:1.8; flex:1;">
-        ⏳ جاري تجهيز التقرير...
+      <div id="previewModalBody" style="padding:1.2rem 1.5rem; overflow-y:auto; flex:1;">
+        <div class="report-empty">⏳ جاري تجهيز التقرير...</div>
       </div>
       <div style="padding:1.2rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:0.8rem; justify-content:flex-end;">
         <button class="btn btn-secondary" onclick="closePreviewModal()">إلغاء</button>
@@ -827,6 +877,7 @@
 
   <!-- منطقة مخفية تُستخدم فقط عند الطباعة/تصدير PDF -->
   <div id="printArea"></div>
+
 
   <script>
     let scriptUrl = '';
@@ -1037,9 +1088,108 @@
       `).join('');
     }
 
-    // 🆕 معاينة التقرير (اللي هيتبعت على تليجرام) قبل الإرسال — بيستخدم
-    // نفس نص التقرير + بيان المقارنة اللي بيتحسب فى الـ Apps Script، عشان
-    // اللي يظهر فى المعاينة يكون طبق الأصل من اللي هيوصل على تليجرام
+    // ── HTML escape helper (أمان + عرض صحيح للنصوص المُدخلة يدويًا) ──
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function fmt(n) { return (n == null || isNaN(n)) ? '--' : Math.round(n).toLocaleString(); }
+
+    // 🆕 بناء التقرير اليومي كـ HTML ملوّن واحترافي (بدل النص العادي)
+    function buildDailyReportHTML(meta, t) {
+      const lineNames = { 1: 'خط 1', 2: 'خط 2', 3: 'خط 3 (جبل العفش)' };
+      const lineCards = [1,2,3].map(ln => {
+        const meter = t['outflow'+ln], pump = t['pumpOutflow'+ln];
+        const meterHtml = t.meterClosed
+          ? `<b>${fmt(meter)} م³</b>`
+          : `<span style="color:var(--text-tertiary);">فى انتظار قفل العداد</span>`;
+        let cmpBadge = '';
+        if (t.meterClosed) {
+          const pct = pump ? (t['diff'+ln] / pump * 100) : 0;
+          cmpBadge = `<div style="margin-top:0.4rem;">${calibBadge(t['diff'+ln], pct, null)}</div>`;
+        }
+        return `<div class="rpt-line-card">
+          <div class="rpt-line-name">${lineNames[ln]}</div>
+          <div class="rpt-line-row"><span>بالعداد</span>${meterHtml}</div>
+          <div class="rpt-line-row"><span>بتصرف الطلمبات</span><b>${fmt(pump)} م³</b></div>
+          ${cmpBadge}
+        </div>`;
+      }).join('');
+
+      const totalCards = `
+        ${t.meterClosed ? `<div class="rpt-total-card rpt-total-blue"><div class="lbl">💧 إجمالي المنصرف (بالعداد)</div><div class="val">${fmt(t.outflowTotal)} م³</div></div>` : ''}
+        <div class="rpt-total-card rpt-total-cyan"><div class="lbl">💧 إجمالي المنصرف (بالطلمبات)</div><div class="val">${fmt(t.pumpOutflowTotal)} م³</div></div>
+      `;
+
+      const inflowSection = `
+        <div class="rpt-totals" style="margin-bottom:0.7rem;">
+          <div class="rpt-total-card rpt-total-cyan"><div class="lbl">🌊 إجمالي الوارد بالعداد</div><div class="val">${fmt(t.sumManualInflow)} م³</div></div>
+          <div class="rpt-total-card rpt-total-blue"><div class="lbl">🧮 الوارد الفعلي المحسوب</div><div class="val">${fmt(t.inflowComputed)} م³</div></div>
+        </div>
+        <div class="rpt-formula">= المنصرف (${t.meterClosed ? 'بالعداد' : 'بتصرف الطلمبات'}) ${fmt(t.effectiveOutflowForInflow)} م³ + صافي التكديس اليومي ${t.stackingChangeM3>=0?'+':''}${fmt(t.stackingChangeM3)} م³</div>
+        ${t.avgManualInflow != null ? `<div class="rpt-formula">متوسط قراءة عداد الوارد: ${fmt(t.avgManualInflow)} م³/س (${t.manualInflowReadingsCount} قراءة)</div>` : ''}
+      `;
+
+      const tanksSection = `
+        <div class="rpt-lines">
+          <div class="rpt-line-card">
+            <div class="rpt-line-name">خزان 1</div>
+            <div class="rpt-line-row"><span>المنسوب</span><b>${t.tank1End != null ? t.tank1End.toFixed(2) + ' م' : '--'}</b></div>
+            <div class="rpt-line-row"><span>الكمية</span><b>${fmt(t.tank1CurrentM3)} م³</b></div>
+          </div>
+          <div class="rpt-line-card">
+            <div class="rpt-line-name">خزان 2</div>
+            <div class="rpt-line-row"><span>المنسوب</span><b>${t.tank2End != null ? t.tank2End.toFixed(2) + ' م' : '--'}</b></div>
+            <div class="rpt-line-row"><span>الكمية</span><b>${fmt(t.tank2CurrentM3)} م³</b></div>
+          </div>
+        </div>
+        <div class="rpt-totals">
+          <div class="rpt-total-card rpt-total-green"><div class="lbl">🛢️ إجمالي كمية المياه بالخزانات حاليًا</div><div class="val">${fmt(t.totalCurrentStackM3)} م³</div></div>
+          <div class="rpt-total-card ${t.stackingChangeM3 >= 0 ? 'rpt-total-green' : 'rpt-total-amber'}">
+            <div class="lbl">${t.stackingChangeM3 >= 0 ? '📈 صافي التغير (زيادة تخزين)' : '📉 صافي التغير (سحب من المخزون)'}</div>
+            <div class="val">${t.stackingChangeM3>=0?'+':''}${fmt(t.stackingChangeM3)} م³</div>
+          </div>
+        </div>
+      `;
+
+      const notesHtml = meta.generalNotes ? `
+        <div class="rpt-section rpt-notes">
+          <div class="rpt-section-title">📝 ملاحظات</div>
+          <div class="rpt-notes-body">${esc(meta.generalNotes)}</div>
+        </div>` : '';
+
+      return `
+        <div class="rpt">
+          <div class="rpt-header">
+            <div class="rpt-header-title">📊 تقرير محطة الدهار</div>
+            <div class="rpt-header-meta">
+              <span>📅 ${esc(meta.date)} (${esc(meta.dayName || '')})</span>
+              <span>👷 ${esc(meta.engineer || '--')}</span>
+            </div>
+          </div>
+          <div class="rpt-body">
+            <div class="rpt-section rpt-outflow">
+              <div class="rpt-section-title">💧 المنصرف لكل خط</div>
+              <div class="rpt-section-body">
+                <div class="rpt-lines">${lineCards}</div>
+                <div class="rpt-totals">${totalCards}</div>
+              </div>
+            </div>
+            <div class="rpt-section rpt-inflow">
+              <div class="rpt-section-title">🌊 الوارد</div>
+              <div class="rpt-section-body">${inflowSection}</div>
+            </div>
+            <div class="rpt-section rpt-tanks">
+              <div class="rpt-section-title">🛢️ الخزانات والتكديس</div>
+              <div class="rpt-section-body">${tanksSection}</div>
+            </div>
+            ${notesHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // 🆕 معاينة التقرير (اللي هيتبعت على تليجرام) قبل الإرسال — بيبني نفس
+    // البيانات اللي بيتحسب منها نص التقرير على تليجرام، لكن بعرض ملوّن واحترافي
     async function previewReportNow() {
       if (!scriptUrl) {
         updateStatus('⚠️ أدخل الرابط أولاً', 'warning');
@@ -1049,28 +1199,28 @@
       const modal = document.getElementById('previewModal');
       const body = document.getElementById('previewModalBody');
       modal.style.display = 'flex';
-      body.textContent = '⏳ جاري تجهيز التقرير...';
+      body.innerHTML = '<div class="report-empty">⏳ جاري تجهيز التقرير...</div>';
 
       try {
-        const [reportRes, totalsRes] = await Promise.all([
-          fetch(scriptUrl + '?action=getReport&date=' + date + '&t=' + Date.now()),
+        const [shiftRes, totalsRes] = await Promise.all([
+          fetch(scriptUrl + '?action=getShiftByDate&date=' + date + '&t=' + Date.now()),
           fetch(scriptUrl + '?action=getTotals&date=' + date + '&t=' + Date.now())
         ]);
-        const reportText = await reportRes.text();
+        const shiftResult = await shiftRes.json();
         const totalsResult = await totalsRes.json();
 
-        let fullText = reportText;
-        if (totalsResult.found && totalsResult.totals.meterClosed) {
-          const cmpRes = await fetch(scriptUrl + '?action=getComparisonReport&date=' + date + '&t=' + Date.now());
-          const cmpText = await cmpRes.text();
-          fullText += '\n\n' + cmpText;
+        if (!shiftResult.found || !totalsResult.found) {
+          body.innerHTML = '<div class="report-empty">لا توجد بيانات لهذا اليوم</div>';
+          return;
         }
-        body.textContent = fullText;
+        lastPreviewHTML = buildDailyReportHTML(shiftResult.data, totalsResult.totals);
+        body.innerHTML = lastPreviewHTML;
       } catch (err) {
-        body.textContent = '❌ حصل خطأ أثناء تجهيز المعاينة. اتأكدي من الرابط والاتصال.';
+        body.innerHTML = '<div class="report-empty">❌ حصل خطأ أثناء تجهيز المعاينة. اتأكدي من الرابط والاتصال.</div>';
         console.error(err);
       }
     }
+    let lastPreviewHTML = null;
 
     function closePreviewModal() {
       document.getElementById('previewModal').style.display = 'none';
@@ -1136,7 +1286,7 @@
     function renderCalibration(t) {
       lastTotals = t;
 
-      // 🆕 تحديث كروت الوارد المحسوب و فرق التكديس من بداي اليوم فى الشريط العلوي
+      // 🆕 تحديث كروت الوارد المحسوب و فرق التكديس من بداية اليوم فى الشريط العلوي
       document.getElementById('kpiInflowComputed').textContent = t.inflowComputed.toFixed(0) + ' م³';
       const stackEl = document.getElementById('kpiStacking');
       const stackCard = document.getElementById('kpiStackingCard');
@@ -1200,6 +1350,117 @@
     // ══════════════════════════════════════════════════════════
     let lastReportData = null;
 
+    // 🆕 بناء تقرير الفترة (من - إلى) كـ HTML ملوّن
+    function buildRangeReportHTML(result) {
+      const agg = result.totals;
+      const lineNames = { 1: 'خط 1', 2: 'خط 2', 3: 'خط 3 (جبل العفش)' };
+      const lineCards = [1,2,3].map(ln => {
+        const meter = agg['outflow'+ln], pump = agg['pumpOutflow'+ln];
+        const meterHtml = agg.allMeterClosed
+          ? `<b>${fmt(meter)} م³</b>`
+          : `<span style="color:var(--text-tertiary);">فيه أيام لسه من غير قفل عداد</span>`;
+        let cmpBadge = '';
+        if (agg.allMeterClosed) {
+          const pct = pump ? (agg['diff'+ln] / pump * 100) : 0;
+          cmpBadge = `<div style="margin-top:0.4rem;">${calibBadge(agg['diff'+ln], pct, null)}</div>`;
+        }
+        return `<div class="rpt-line-card">
+          <div class="rpt-line-name">${lineNames[ln]}</div>
+          <div class="rpt-line-row"><span>بالعداد</span>${meterHtml}</div>
+          <div class="rpt-line-row"><span>بتصرف الطلمبات</span><b>${fmt(pump)} م³</b></div>
+          ${cmpBadge}
+        </div>`;
+      }).join('');
+
+      const totalCards = `
+        ${agg.allMeterClosed ? `<div class="rpt-total-card rpt-total-blue"><div class="lbl">💧 إجمالي المنصرف (بالعداد)</div><div class="val">${fmt(agg.outflowTotal)} م³</div></div>` : ''}
+        <div class="rpt-total-card rpt-total-cyan"><div class="lbl">💧 إجمالي المنصرف (بالطلمبات)</div><div class="val">${fmt(agg.pumpOutflowTotal)} م³</div></div>
+      `;
+
+      let inflowCmp = '';
+      if (agg.sumManualInflow != null) {
+        const pct = agg.inflowDiffPct;
+        inflowCmp = `<div style="margin-top:0.6rem;">${calibBadge(agg.inflowDiff, pct || 0, pct == null ? 'غير كافٍ للمقارنة' : null)}</div>`;
+      }
+      const inflowSection = `
+        <div class="rpt-totals" style="margin-bottom:0.7rem;">
+          ${agg.sumManualInflow != null ? `<div class="rpt-total-card rpt-total-cyan"><div class="lbl">🌊 إجمالي الوارد بالعداد</div><div class="val">${fmt(agg.sumManualInflow)} م³</div></div>` : ''}
+          <div class="rpt-total-card rpt-total-blue"><div class="lbl">🧮 الوارد الفعلي المحسوب</div><div class="val">${fmt(agg.inflowComputedTotal)} م³</div></div>
+        </div>
+        <div class="rpt-formula">= المنصرف (${agg.allMeterClosed ? 'بالعداد' : 'بتصرف الطلمبات'}) ${fmt(agg.effectiveOutflowForInflowTotal)} م³ + صافي التكديس خلال الفترة ${agg.stackingChangeM3>=0?'+':''}${fmt(agg.stackingChangeM3)} م³</div>
+        ${inflowCmp}
+      `;
+
+      const tanksSection = `
+        <div class="rpt-lines">
+          <div class="rpt-line-card">
+            <div class="rpt-line-name">خزان 1</div>
+            <div class="rpt-line-row"><span>المنسوب الحالي</span><b>${agg.tank1End != null ? agg.tank1End.toFixed(2) + ' م' : '--'}</b></div>
+            <div class="rpt-line-row"><span>الكمية الحالية</span><b>${fmt(agg.tank1CurrentM3)} م³</b></div>
+          </div>
+          <div class="rpt-line-card">
+            <div class="rpt-line-name">خزان 2</div>
+            <div class="rpt-line-row"><span>المنسوب الحالي</span><b>${agg.tank2End != null ? agg.tank2End.toFixed(2) + ' م' : '--'}</b></div>
+            <div class="rpt-line-row"><span>الكمية الحالية</span><b>${fmt(agg.tank2CurrentM3)} م³</b></div>
+          </div>
+        </div>
+        <div class="rpt-totals">
+          <div class="rpt-total-card rpt-total-green"><div class="lbl">🛢️ إجمالي كمية المياه حاليًا</div><div class="val">${fmt(agg.totalCurrentStackM3)} م³</div></div>
+          <div class="rpt-total-card ${agg.stackingChangeM3 >= 0 ? 'rpt-total-green' : 'rpt-total-amber'}">
+            <div class="lbl">${agg.stackingChangeM3 >= 0 ? '📈 صافي التغير خلال الفترة' : '📉 صافي التغير خلال الفترة'}</div>
+            <div class="val">${agg.stackingChangeM3>=0?'+':''}${fmt(agg.stackingChangeM3)} م³</div>
+          </div>
+        </div>
+      `;
+
+      const dayRows = (result.byDay || []).map(d => `
+        <tr>
+          <td>${esc(d.date)} <span style="color:var(--text-tertiary);">(${esc(d.dayName||'')})</span></td>
+          <td>${fmt(d.totals.outflowTotal)}</td>
+          <td>${fmt(d.totals.pumpOutflowTotal)}</td>
+          <td style="color:${d.totals.stackingChangeM3 >= 0 ? '#6ee7b7' : '#fcd34d'};">${d.totals.stackingChangeM3>=0?'+':''}${fmt(d.totals.stackingChangeM3)}</td>
+        </tr>
+      `).join('');
+
+      return `
+        <div class="rpt">
+          <div class="rpt-header">
+            <div class="rpt-header-title">📊 تقرير محطة الدهار — فترة</div>
+            <div class="rpt-header-meta">
+              <span>📅 من ${esc(result.from)} إلى ${esc(result.to)}</span>
+              <span>🗓️ ${agg.days} يوم</span>
+            </div>
+          </div>
+          <div class="rpt-body">
+            <div class="rpt-section rpt-outflow">
+              <div class="rpt-section-title">💧 المنصرف لكل خط</div>
+              <div class="rpt-section-body">
+                <div class="rpt-lines">${lineCards}</div>
+                <div class="rpt-totals">${totalCards}</div>
+              </div>
+            </div>
+            <div class="rpt-section rpt-inflow">
+              <div class="rpt-section-title">🌊 الوارد</div>
+              <div class="rpt-section-body">${inflowSection}</div>
+            </div>
+            <div class="rpt-section rpt-tanks">
+              <div class="rpt-section-title">🛢️ الخزانات والتكديس</div>
+              <div class="rpt-section-body">${tanksSection}</div>
+            </div>
+            <div class="rpt-section rpt-outflow">
+              <div class="rpt-section-title">📅 تفصيل يومي</div>
+              <div class="rpt-section-body">
+                <table class="rpt-day-table">
+                  <thead><tr><th>التاريخ</th><th>منصرف (عداد)</th><th>منصرف (طلمبات)</th><th>تكديس</th></tr></thead>
+                  <tbody>${dayRows}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     async function generateProfessionalReport() {
       if (!scriptUrl) { updateStatus('⚠️ أدخل الرابط أولاً', 'warning'); return; }
       const from = document.getElementById('reportFrom').value;
@@ -1218,7 +1479,7 @@
           return;
         }
         lastReportData = result;
-        out.textContent = result.report;
+        out.innerHTML = buildRangeReportHTML(result);
       } catch (err) {
         out.innerHTML = '<div class="report-empty">❌ خطأ فى الاتصال بالسيرفر</div>';
         console.error(err);
@@ -1284,8 +1545,7 @@
     function exportReportPDF() {
       if (!lastReportData) { alert('⚠️ ولّدي التقرير أولاً'); return; }
       const printArea = document.getElementById('printArea');
-      printArea.textContent =
-        `محطة الدهار — تقرير من ${lastReportData.from} إلى ${lastReportData.to}\n\n` + lastReportData.report;
+      printArea.innerHTML = buildRangeReportHTML(lastReportData);
       window.print();
     }
 
