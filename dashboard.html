@@ -6,6 +6,7 @@
   <title>لوحة التحكم — محطة الدهار</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -610,7 +611,7 @@
         <div class="info-detail">م³ (من التصرفات + التكديس)</div>
       </div>
       <div class="info-card" id="kpiStackingCard">
-        <div class="info-label">فرق التكديس من بداية اليوم</div>
+        <div class="info-label">فرق التكديس نت بداي اليوم</div>
         <div class="info-value" id="kpiStacking">--</div>
         <div class="info-detail" id="kpiStackingDetail">م³</div>
       </div>
@@ -850,7 +851,9 @@
           <input type="date" id="reportTo" />
         </div>
         <button class="btn btn-primary" onclick="generateProfessionalReport()">📑 توليد التقرير</button>
-        <button class="btn btn-secondary" id="sendRangeReportBtn" onclick="sendRangeReportTelegram()">📤 إرسال على تليجرام</button>
+        <button class="btn btn-secondary" onclick="downloadRangeReportImage()">⬇️ تحميل كصورة</button>
+        <button class="btn btn-secondary" id="sendRangeImageBtn" onclick="sendRangeReportImageTelegram()">🖼️ إرسال كصورة على تليجرام</button>
+        <button class="btn btn-secondary" id="sendRangeReportBtn" onclick="sendRangeReportTelegram()">📤 إرسال نص على تليجرام</button>
         <button class="btn btn-secondary" onclick="exportReportExcel()">📊 تصدير Excel</button>
         <button class="btn btn-secondary" onclick="exportReportPDF()">🖨 تصدير PDF</button>
       </div>
@@ -868,12 +871,17 @@
       <div id="previewModalBody" style="padding:1.2rem 1.5rem; overflow-y:auto; flex:1;">
         <div class="report-empty">⏳ جاري تجهيز التقرير...</div>
       </div>
-      <div style="padding:1.2rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:0.8rem; justify-content:flex-end;">
+      <div style="padding:1.2rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:0.7rem; justify-content:flex-end; flex-wrap:wrap;">
         <button class="btn btn-secondary" onclick="closePreviewModal()">إلغاء</button>
-        <button class="btn btn-primary" id="confirmSendBtn" onclick="confirmSendReport()">📤 تأكيد الإرسال على تليجرام</button>
+        <button class="btn btn-secondary" onclick="downloadDailyReportImage()">⬇️ تحميل كصورة</button>
+        <button class="btn btn-primary" id="sendImageBtn" onclick="sendDailyReportImageTelegram()">🖼️ إرسال كصورة على تليجرام</button>
+        <button class="btn btn-secondary" id="confirmSendBtn" onclick="confirmSendReport()">📤 إرسال نص</button>
       </div>
     </div>
   </div>
+
+  <!-- منطقة مخفية (خارج الشاشة) تُستخدم لالتقاط التقرير كصورة PNG -->
+  <div id="imageRenderArea" style="position:fixed; top:0; left:-9999px; width:720px; background:var(--bg-primary); padding:1.2rem;"></div>
 
   <!-- منطقة مخفية تُستخدم فقط عند الطباعة/تصدير PDF -->
   <div id="printArea"></div>
@@ -1094,8 +1102,10 @@
     }
     function fmt(n) { return (n == null || isNaN(n)) ? '--' : Math.round(n).toLocaleString(); }
 
-    // 🆕 بناء التقرير اليومي كـ HTML ملوّن واحترافي (بدل النص العادي)
-    function buildDailyReportHTML(meta, t) {
+    // 🆕 بناء التقرير اليومي كـ HTML ملوّن واحترافي
+    // opts.simple = true → نسخة نظيفة من غير خطوات الحساب (للصورة/الإرسال الخارجي)
+    function buildDailyReportHTML(meta, t, opts) {
+      const simple = !!(opts && opts.simple);
       const lineNames = { 1: 'خط 1', 2: 'خط 2', 3: 'خط 3 (جبل العفش)' };
       const lineCards = [1,2,3].map(ln => {
         const meter = t['outflow'+ln], pump = t['pumpOutflow'+ln];
@@ -1120,13 +1130,26 @@
         <div class="rpt-total-card rpt-total-cyan"><div class="lbl">💧 إجمالي المنصرف (بالطلمبات)</div><div class="val">${fmt(t.pumpOutflowTotal)} م³</div></div>
       `;
 
+      let inflowCmpDaily = '';
+      if (t.sumManualInflow != null) {
+        // 🆕 بنحسب الفرق والنسبة هنا مباشرة (مش هنعتمد بس على قيمة جاهزة من
+        // السيرفر ممكن تبقى null فى حالات نادرة) عشان الشارة تظهر دايمًا
+        const diff = t.sumManualInflow - t.inflowComputed;
+        const base = t.inflowComputed || t.sumManualInflow || 0;
+        const pct = base ? (diff / base * 100) : null;
+        inflowCmpDaily = `<div style="margin-top:0.6rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+          <span style="font-size:0.78rem;color:var(--text-tertiary);">نسبة خطأ عداد الوارد:</span>
+          ${calibBadge(diff, pct || 0, pct == null ? 'غير كافٍ للمقارنة' : null)}
+        </div>`;
+      }
       const inflowSection = `
         <div class="rpt-totals" style="margin-bottom:0.7rem;">
           <div class="rpt-total-card rpt-total-cyan"><div class="lbl">🌊 إجمالي الوارد بالعداد</div><div class="val">${fmt(t.sumManualInflow)} م³</div></div>
           <div class="rpt-total-card rpt-total-blue"><div class="lbl">🧮 الوارد الفعلي المحسوب</div><div class="val">${fmt(t.inflowComputed)} م³</div></div>
         </div>
-        <div class="rpt-formula">= المنصرف (${t.meterClosed ? 'بالعداد' : 'بتصرف الطلمبات'}) ${fmt(t.effectiveOutflowForInflow)} م³ + صافي التكديس اليومي ${t.stackingChangeM3>=0?'+':''}${fmt(t.stackingChangeM3)} م³</div>
-        ${t.avgManualInflow != null ? `<div class="rpt-formula">متوسط قراءة عداد الوارد: ${fmt(t.avgManualInflow)} م³/س (${t.manualInflowReadingsCount} قراءة)</div>` : ''}
+        ${!simple ? `<div class="rpt-formula">= المنصرف (${t.meterClosed ? 'بالعداد' : 'بتصرف الطلمبات'}) ${fmt(t.effectiveOutflowForInflow)} م³ + صافي التكديس اليومي ${t.stackingChangeM3>=0?'+':''}${fmt(t.stackingChangeM3)} م³</div>` : ''}
+        ${(!simple && t.avgManualInflow != null) ? `<div class="rpt-formula">متوسط قراءة عداد الوارد: ${fmt(t.avgManualInflow)} م³/س (${t.manualInflowReadingsCount} قراءة)</div>` : ''}
+        ${inflowCmpDaily}
       `;
 
       const tanksSection = `
@@ -1211,9 +1234,12 @@
 
         if (!shiftResult.found || !totalsResult.found) {
           body.innerHTML = '<div class="report-empty">لا توجد بيانات لهذا اليوم</div>';
+          lastPreviewMeta = null; lastPreviewTotals = null;
           return;
         }
-        lastPreviewHTML = buildDailyReportHTML(shiftResult.data, totalsResult.totals);
+        lastPreviewMeta = shiftResult.data;
+        lastPreviewTotals = totalsResult.totals;
+        lastPreviewHTML = buildDailyReportHTML(lastPreviewMeta, lastPreviewTotals);
         body.innerHTML = lastPreviewHTML;
       } catch (err) {
         body.innerHTML = '<div class="report-empty">❌ حصل خطأ أثناء تجهيز المعاينة. اتأكدي من الرابط والاتصال.</div>';
@@ -1221,6 +1247,72 @@
       }
     }
     let lastPreviewHTML = null;
+    let lastPreviewMeta = null;
+    let lastPreviewTotals = null;
+
+    // ══════════════════════════════════════════════════════════
+    // 🆕 تصدير/إرسال التقرير كصورة (PNG) — نفس شكل المعاينة الملوّن
+    // بدون تفاصيل خطوات الحساب، مناسب للإرسال الخارجي على تليجرام
+    // ══════════════════════════════════════════════════════════
+
+    // بيرندر أي HTML جوه حاوية مخفية خارج الشاشة، وياخد لقطة PNG منها
+    async function renderHTMLToImage(html) {
+      const container = document.getElementById('imageRenderArea');
+      container.innerHTML = html;
+      // فرصة للمتصفح يرسم العناصر والخطوط قبل الالتقاط
+      await new Promise(r => setTimeout(r, 80));
+      const target = container.querySelector('.rpt') || container;
+      const bg = getComputedStyle(document.body).getPropertyValue('--bg-primary').trim() || '#0b1220';
+      const canvas = await html2canvas(target, { backgroundColor: bg, scale: 2, useCORS: true });
+      container.innerHTML = '';
+      return canvas.toDataURL('image/png');
+    }
+
+    async function downloadDailyReportImage() {
+      if (!lastPreviewMeta || !lastPreviewTotals) { alert('⚠️ ولّدي المعاينة أولاً'); return; }
+      const html = buildDailyReportHTML(lastPreviewMeta, lastPreviewTotals, {simple:true});
+      const dataUrl = await renderHTMLToImage(html);
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `تقرير_محطة_الدهار_${lastPreviewMeta.date}.png`;
+      a.click();
+    }
+
+    async function sendDailyReportImageTelegram() {
+      if (!scriptUrl) { updateStatus('⚠️ أدخل الرابط أولاً', 'warning'); return; }
+      if (!lastPreviewMeta || !lastPreviewTotals) { alert('⚠️ ولّدي المعاينة أولاً'); return; }
+
+      const btn = document.getElementById('sendImageBtn');
+      const original = btn.innerHTML;
+      btn.innerHTML = '⏳ جاري التجهيز والإرسال...';
+      btn.disabled = true;
+
+      try {
+        const html = buildDailyReportHTML(lastPreviewMeta, lastPreviewTotals, {simple:true});
+        const dataUrl = await renderHTMLToImage(html);
+        const res = await fetch(scriptUrl, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'sendReportImage',
+            image: dataUrl,
+            caption: `📊 تقرير محطة الدهار — ${lastPreviewMeta.date} (${lastPreviewMeta.dayName || ''})`
+          })
+        });
+        const result = await res.json();
+        if (result.status === 'ok') {
+          alert('✅ تم إرسال التقرير كصورة على تليجرام');
+          closePreviewModal();
+        } else {
+          alert('❌ ' + (result.message || 'حصل خطأ أثناء الإرسال'));
+        }
+      } catch (err) {
+        alert('❌ خطأ فى الاتصال بالسيرفر');
+        console.error(err);
+      } finally {
+        btn.innerHTML = original;
+        btn.disabled = false;
+      }
+    }
 
     function closePreviewModal() {
       document.getElementById('previewModal').style.display = 'none';
@@ -1286,7 +1378,7 @@
     function renderCalibration(t) {
       lastTotals = t;
 
-      // 🆕 تحديث كروت الوارد المحسوب و فرق التكديس من بداية اليوم فى الشريط العلوي
+      // 🆕 تحديث كروت الوارد المحسوب وفرق التكديس نت بداي اليوم فى الشريط العلوي
       document.getElementById('kpiInflowComputed').textContent = t.inflowComputed.toFixed(0) + ' م³';
       const stackEl = document.getElementById('kpiStacking');
       const stackCard = document.getElementById('kpiStackingCard');
@@ -1297,16 +1389,13 @@
 
       // — معايرة عداد الوارد —
       document.getElementById('calibInflowManual').textContent =
-        (t.avgManualInflow != null ? t.avgManualInflow.toFixed(0) + ' م³/س (متوسط)' : '--');
+        (t.sumManualInflow != null ? t.sumManualInflow.toFixed(0) + ' م³ (' + t.manualInflowReadingsCount + ' قراءة)' : '--');
       document.getElementById('calibInflowComputed').textContent =
-        t.inflowComputed.toFixed(0) + ' م³/يوم';
+        t.inflowComputed.toFixed(0) + ' م³';
 
-      if (t.avgManualInflow != null && t.elapsedHours > 0) {
-        // نحول المتوسط الساعي لإجمالي يومي تقريبي للمقارنة العادلة
-        const manualDaily = t.avgManualInflow * t.elapsedHours;
-        const diff = manualDaily - t.inflowComputed;
-        const pct = t.inflowComputed ? (diff / t.inflowComputed * 100) : 0;
-        document.getElementById('calibInflowBadge').innerHTML = calibBadge(diff, pct, null);
+      if (t.sumManualInflow != null) {
+        document.getElementById('calibInflowBadge').innerHTML =
+          calibBadge(t.inflowDiff, t.inflowDiffPct || 0, t.inflowDiffPct == null ? 'بيانات غير كافية للمقارنة' : null);
       } else {
         document.getElementById('calibInflowBadge').innerHTML = calibBadge(0, 0, 'بيانات غير كافية للمقارنة');
       }
@@ -1351,7 +1440,8 @@
     let lastReportData = null;
 
     // 🆕 بناء تقرير الفترة (من - إلى) كـ HTML ملوّن
-    function buildRangeReportHTML(result) {
+    function buildRangeReportHTML(result, opts) {
+      const simple = !!(opts && opts.simple);
       const agg = result.totals;
       const lineNames = { 1: 'خط 1', 2: 'خط 2', 3: 'خط 3 (جبل العفش)' };
       const lineCards = [1,2,3].map(ln => {
@@ -1387,7 +1477,7 @@
           ${agg.sumManualInflow != null ? `<div class="rpt-total-card rpt-total-cyan"><div class="lbl">🌊 إجمالي الوارد بالعداد</div><div class="val">${fmt(agg.sumManualInflow)} م³</div></div>` : ''}
           <div class="rpt-total-card rpt-total-blue"><div class="lbl">🧮 الوارد الفعلي المحسوب</div><div class="val">${fmt(agg.inflowComputedTotal)} م³</div></div>
         </div>
-        <div class="rpt-formula">= المنصرف (${agg.allMeterClosed ? 'بالعداد' : 'بتصرف الطلمبات'}) ${fmt(agg.effectiveOutflowForInflowTotal)} م³ + صافي التكديس خلال الفترة ${agg.stackingChangeM3>=0?'+':''}${fmt(agg.stackingChangeM3)} م³</div>
+        ${!simple ? `<div class="rpt-formula">= المنصرف (${agg.allMeterClosed ? 'بالعداد' : 'بتصرف الطلمبات'}) ${fmt(agg.effectiveOutflowForInflowTotal)} م³ + صافي التكديس خلال الفترة ${agg.stackingChangeM3>=0?'+':''}${fmt(agg.stackingChangeM3)} م³</div>` : ''}
         ${inflowCmp}
       `;
 
@@ -1483,6 +1573,48 @@
       } catch (err) {
         out.innerHTML = '<div class="report-empty">❌ خطأ فى الاتصال بالسيرفر</div>';
         console.error(err);
+      }
+    }
+
+    async function downloadRangeReportImage() {
+      if (!lastReportData) { alert('⚠️ ولّدي التقرير أولاً'); return; }
+      const html = buildRangeReportHTML(lastReportData, {simple:true});
+      const dataUrl = await renderHTMLToImage(html);
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `تقرير_محطة_الدهار_${lastReportData.from}_${lastReportData.to}.png`;
+      a.click();
+    }
+
+    async function sendRangeReportImageTelegram() {
+      if (!scriptUrl) { updateStatus('⚠️ أدخل الرابط أولاً', 'warning'); return; }
+      if (!lastReportData) { alert('⚠️ ولّدي التقرير أولاً'); return; }
+
+      const btn = document.getElementById('sendRangeImageBtn');
+      const original = btn.innerHTML;
+      btn.innerHTML = '⏳ جاري التجهيز والإرسال...';
+      btn.disabled = true;
+
+      try {
+        const html = buildRangeReportHTML(lastReportData, {simple:true});
+        const dataUrl = await renderHTMLToImage(html);
+        const res = await fetch(scriptUrl, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'sendReportImage',
+            image: dataUrl,
+            caption: `📊 تقرير محطة الدهار — من ${lastReportData.from} إلى ${lastReportData.to}`
+          })
+        });
+        const result = await res.json();
+        if (result.status === 'ok') alert('✅ تم إرسال التقرير كصورة على تليجرام');
+        else alert('❌ ' + (result.message || 'حصل خطأ أثناء الإرسال'));
+      } catch (err) {
+        alert('❌ خطأ فى الاتصال بالسيرفر');
+        console.error(err);
+      } finally {
+        btn.innerHTML = original;
+        btn.disabled = false;
       }
     }
 
