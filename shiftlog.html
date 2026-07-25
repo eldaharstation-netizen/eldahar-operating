@@ -621,6 +621,24 @@ header {
     </div>
   </div>
 
+  <!-- 🆕 قراءة الخزانات الرسمية عند قفل العداد (7ص غد) -->
+  <div class="meters-section">
+    <div class="sec-title">🏗 قراءة الخزانات عند القفل (7ص غد)</div>
+    <div class="meters-grid">
+      <div class="field">
+        <label>خزان 1 — قراءة القفل م</label>
+        <input type="number" id="tank1Close" placeholder="--" step="0.01" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--purple);">
+      </div>
+      <div class="field">
+        <label>خزان 2 — قراءة القفل م</label>
+        <input type="number" id="tank2Close" placeholder="--" step="0.01" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--purple);">
+      </div>
+    </div>
+    <div style="font-size:0.75rem;color:var(--txt3);margin-top:0.5rem;">
+      ℹ️ تتسجل في نفس لحظة قراءة "نهاية العداد" (الساعة 7ص غد) — مختلفة عن آخر قراءة ساعية للخزان (6ص) بساعة كاملة، وبتُستخدم في حساب فرق التكديس بدل قراءة 6ص لضمان تطابق فترة 24 ساعة كاملة مع فترة العداد.
+    </div>
+  </div>
+
   <!-- SCRIPT URL -->
   <div class="meters-section">
     <div class="sec-title">🔗 ربط Google Sheets</div>
@@ -1117,6 +1135,11 @@ function collectData() {
       line2: { start: document.getElementById('meter2Start').value, end: document.getElementById('meter2End').value, flow: getFlow(2), areas: collectAreaMeters(2) },
       line3: { start: document.getElementById('meter3Start').value, end: document.getElementById('meter3End').value, flow: getFlow(3), areas: collectAreaMeters(3) },
     },
+    // 🆕 قراءة الخزانات الرسمية وقت قفل العداد (7ص غد)
+    tankClose: {
+      tank1: document.getElementById('tank1Close').value || '',
+      tank2: document.getElementById('tank2Close').value || ''
+    },
     config: {
       line1: { areas: aggregateLineValues('area',1), pumps: aggregateLineValues('pump',1) },
       line2: { areas: aggregateLineValues('area',2), pumps: aggregateLineValues('pump',2) },
@@ -1200,6 +1223,10 @@ function restoreShift(data) {
   document.getElementById('dayBadge').textContent = data.dayName || '';
   document.getElementById('engineer').value = data.engineer || '';
   document.getElementById('generalNotes').value = data.generalNotes || '';
+
+  // 🆕 قراءة الخزانات الرسمية عند القفل
+  document.getElementById('tank1Close').value = data.tankClose?.tank1 || '';
+  document.getElementById('tank2Close').value = data.tankClose?.tank2 || '';
 
   // meters
   [1,2,3].forEach(l => {
@@ -1554,57 +1581,115 @@ function saveScriptUrl() {
   showToast('✅ تم حفظ رابط الـ Script');
 }
 
+// ── حسابات موحدة (نسخة JS من computeDailyTotals فى الباك إند) ──
+// بتُستخدم فى تقرير الواتساب عشان الأرقام تتطابق مع الداشبورد بدل ما
+// تبقى نسخة مصغّرة منفصلة بمنطق تاني.
+function computeShiftTotalsJS() {
+  const m1 = getFlow(1), m2 = getFlow(2), m3 = getFlow(3);
+  const outflowTotal = m1 + m2 + m3;
+  const pf = getPumpFlowTotals();
+
+  const meterClosed = !!(parseFloat(document.getElementById('meter1End').value) ||
+                          parseFloat(document.getElementById('meter2End').value) ||
+                          parseFloat(document.getElementById('meter3End').value));
+
+  // 🆕 قراءة الخزان: أول قيمة فى الجدول = بداية (7ص)، آخر قيمة = نهاية (6ص)
+  // إلا لو موجودة قراءة قفل رسمية (7ص غد) فبتحل محل قراءة الـ6ص
+  function tankStartEnd(col, closeInputId) {
+    const vals = [];
+    document.querySelectorAll(`input[data-col="${col}"]`).forEach(inp => {
+      const v = parseFloat(inp.value);
+      if (!isNaN(v)) vals.push(v);
+    });
+    const start = vals.length ? vals[0] : null;
+    let end = vals.length ? vals[vals.length - 1] : null;
+    const closeVal = parseFloat(document.getElementById(closeInputId)?.value);
+    if (!isNaN(closeVal)) end = closeVal;
+    return { start, end };
+  }
+  const t1 = tankStartEnd('tank1', 'tank1Close');
+  const t2 = tankStartEnd('tank2', 'tank2Close');
+
+  const TANK_M3_PER_METER = 1250;
+  const tank1ChangeM3 = (t1.start != null && t1.end != null) ? (t1.end - t1.start) * TANK_M3_PER_METER : 0;
+  const tank2ChangeM3 = (t2.start != null && t2.end != null) ? (t2.end - t2.start) * TANK_M3_PER_METER : 0;
+  const stackingChangeM3 = tank1ChangeM3 + tank2ChangeM3;
+  const tank1CurrentM3 = t1.end != null ? t1.end * TANK_M3_PER_METER : null;
+  const tank2CurrentM3 = t2.end != null ? t2.end * TANK_M3_PER_METER : null;
+  const totalCurrentStackM3 = (tank1CurrentM3 || 0) + (tank2CurrentM3 || 0);
+
+  const effectiveOutflowForInflow = meterClosed ? outflowTotal : pf.total;
+  const inflowComputed = effectiveOutflowForInflow + stackingChangeM3;
+
+  const inflowReadings = [];
+  document.querySelectorAll('input[data-col="inflow"]').forEach(inp => {
+    const v = parseFloat(inp.value);
+    if (!isNaN(v)) inflowReadings.push(v);
+  });
+  const sumManualInflow = inflowReadings.length ? inflowReadings.reduce((a, b) => a + b, 0) : null;
+
+  return {
+    m1, m2, m3, outflowTotal, pf, meterClosed, t1, t2,
+    tank1ChangeM3, tank2ChangeM3, stackingChangeM3,
+    tank1CurrentM3, tank2CurrentM3, totalCurrentStackM3,
+    effectiveOutflowForInflow, inflowComputed,
+    sumManualInflow, inflowReadingsCount: inflowReadings.length
+  };
+}
+
 // ── WHATSAPP REPORT ──
 function generateWhatsAppReport() {
-  const date    = document.getElementById('shiftDate')?.value || '';
-  const dayName = document.getElementById('dayNameEl')?.textContent || '';
-  const engineer = document.getElementById('engineerName')?.value || '--';
+  const date     = document.getElementById('shiftDate')?.value || '';
+  const dayName  = document.getElementById('dayBadge')?.textContent || '';
+  const engineer = document.getElementById('engineer')?.value || '--';
 
-  // إجماليات العدادات
-  const m1 = parseFloat(document.getElementById('meter1End')?.value||0) - parseFloat(document.getElementById('meter1Start')?.value||0);
-  const m2 = parseFloat(document.getElementById('meter2End')?.value||0) - parseFloat(document.getElementById('meter2Start')?.value||0);
-  const m3 = parseFloat(document.getElementById('meter3End')?.value||0) - parseFloat(document.getElementById('meter3Start')?.value||0);
-  const totalMeter = Math.max(0,m1) + Math.max(0,m2) + Math.max(0,m3);
-
-  // الوارد (آخر قراءة في الجدول)
-  let lastInflow = '--';
-  document.querySelectorAll('input[data-col="inflow"]').forEach(inp => {
-    if (inp.value) lastInflow = inp.value;
-  });
-
-  // آخر قراءة خزانات
-  let lastTank1 = '--', lastTank2 = '--';
-  document.querySelectorAll('input[data-col="tank1"]').forEach(inp => { if(inp.value) lastTank1 = inp.value; });
-  document.querySelectorAll('input[data-col="tank2"]').forEach(inp => { if(inp.value) lastTank2 = inp.value; });
+  const t = computeShiftTotalsJS();
 
   // المناطق الشغالة
   const areas = new Set();
-  [1,2,3].forEach(l => aggregateLineValues('area', l).forEach(a => areas.add(a)));
+  [1, 2, 3].forEach(l => aggregateLineValues('area', l).forEach(a => areas.add(a)));
+
+  function outflowLine(label, meterVal, pumpVal) {
+    const meterPart = t.meterClosed ? `${Math.round(meterVal).toLocaleString()} م³ عداد` : 'فى انتظار قفل العداد';
+    return `${label}: ${meterPart} | ${Math.round(pumpVal).toLocaleString()} م³ طلمبات`;
+  }
+
+  const periodStr = t.meterClosed
+    ? `من 7:00ص ${date} إلى 7:00ص اليوم التالي (24 ساعة كاملة)`
+    : `من 7:00ص ${date} حتى الآن`;
 
   const msg =
 `📊 *تقرير محطة الدهار — ${date} ${dayName}*
-المهندس: ${engineer}
+👷 المهندس: ${engineer}
+📍 الفترة: ${periodStr}
+━━━━━━━━━━━━━━━━━
+💧 *المنصرف لكل خط:*
+🔵 ${outflowLine('خط 1', t.m1, t.pf.line1)}
+🟢 ${outflowLine('خط 2', t.m2, t.pf.line2)}
+🟠 ${outflowLine('خط 3', t.m3, t.pf.line3)}
+━━━━━━━━━━━━━━━━━
+${t.meterClosed
+  ? `💧 *الإجمالي: ${Math.round(t.outflowTotal).toLocaleString()} م³ عداد* | ${Math.round(t.pf.total).toLocaleString()} م³ طلمبات`
+  : `💧 *الإجمالي (بتصرف الطلمبات): ${Math.round(t.pf.total).toLocaleString()} م³*`}
 
-💧 *المنصرف اليومي (7ص→7ص):*
-• خط 1: ${Math.max(0,m1).toLocaleString()} م³
-• خط 2: ${Math.max(0,m2).toLocaleString()} م³
-• خط 3: ${Math.max(0,m3).toLocaleString()} م³
-• *الإجمالي: ${totalMeter.toLocaleString()} م³*
+🌊 *الوارد:*
+${t.sumManualInflow != null ? `بالعداد: ${Math.round(t.sumManualInflow).toLocaleString()} م³ (${t.inflowReadingsCount} قراءة)\n` : ''}المحسوب: ${Math.round(t.inflowComputed).toLocaleString()} م³ (= المنصرف ${t.meterClosed ? 'بالعداد' : 'بتصرف الطلمبات'} ${Math.round(t.effectiveOutflowForInflow).toLocaleString()} + التكديس ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()})
 
-🏗 *مناسيب الخزانات (8ص):*
-• خزان 1: ${lastTank1} م
-• خزان 2: ${lastTank2} م
-
-🌊 *معدل الوارد:* ${lastInflow} م³/س
+🏗 *الخزانات والتكديس:*
+• خزان 1: ${t.t1.end != null ? t.t1.end.toFixed(2) : '--'} م (≈ ${t.tank1CurrentM3 != null ? Math.round(t.tank1CurrentM3).toLocaleString() : '--'} م³)
+• خزان 2: ${t.t2.end != null ? t.t2.end.toFixed(2) : '--'} م (≈ ${t.tank2CurrentM3 != null ? Math.round(t.tank2CurrentM3).toLocaleString() : '--'} م³)
+• الإجمالي الحالي: ${Math.round(t.totalCurrentStackM3).toLocaleString()} م³
+${t.stackingChangeM3 >= 0 ? '📈' : '📉'} التغير اليوم: ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()} م³
 
 🗺 *المناطق المخدومة:*
-${[...areas].filter(Boolean).map(a=>'• '+a).join('\n') || '• --'}
+${[...areas].filter(Boolean).map(a => '• ' + a).join('\n') || '• --'}
 
-⏰ _تقرير تلقائي — ${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}_`;
+⏰ _تقرير — ${new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute: '2-digit'})}_`;
 
   const encoded = encodeURIComponent(msg);
   window.open(`https://wa.me/?text=${encoded}`, '_blank');
 }
+
 
 // جدولة التقرير التلقائي الساعة 8ص
 function scheduleReport() {
