@@ -807,6 +807,7 @@
           <div class="calib-name">النتيجة</div>
           <div id="calibInflowBadge"><span class="calib-badge calib-na">لا توجد بيانات كافية</span></div>
         </div>
+        <div id="calibInflowNote" style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.4rem;line-height:1.5;"></div>
       </div>
 
       <div class="card">
@@ -1401,8 +1402,12 @@
       if (t.sumManualInflow != null) {
         document.getElementById('calibInflowBadge').innerHTML =
           calibBadge(t.inflowDiff, t.inflowDiffPct || 0, t.inflowDiffPct == null ? 'بيانات غير كافية للمقارنة' : null);
+        document.getElementById('calibInflowNote').textContent = (t.inflowDiffPct != null)
+          ? `يعني الفرق ${t.inflowDiff>=0?'+':''}${Math.round(t.inflowDiff)} م³ بين قراءة العداد والمحسوب، وده يعادل ${t.inflowDiff>=0?'زيادة':'نقص'} عن القيمة المحسوبة (المرجعية) بنسبة ${Math.abs(t.inflowDiffPct).toFixed(1)}%.`
+          : '';
       } else {
         document.getElementById('calibInflowBadge').innerHTML = calibBadge(0, 0, 'بيانات غير كافية للمقارنة');
+        document.getElementById('calibInflowNote').textContent = '';
       }
 
       // — معايرة عدادات المنصرف (لكل خط + الإجمالي) —
@@ -1475,7 +1480,8 @@
       let inflowCmp = '';
       if (agg.sumManualInflow != null) {
         const pct = agg.inflowDiffPct;
-        inflowCmp = `<div style="margin-top:0.6rem;">${calibBadge(agg.inflowDiff, pct || 0, pct == null ? 'غير كافٍ للمقارنة' : null)}</div>`;
+        inflowCmp = `<div style="margin-top:0.6rem;">${calibBadge(agg.inflowDiff, pct || 0, pct == null ? 'غير كافٍ للمقارنة' : null)}</div>` +
+          (pct != null ? `<div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.35rem;">يعني الفرق ${agg.inflowDiff>=0?'+':''}${fmt(agg.inflowDiff)} م³ بين قراءة العداد والمحسوب، وده يعادل ${agg.inflowDiff>=0?'زيادة':'نقص'} عن القيمة المحسوبة (المرجعية) بنسبة ${Math.abs(pct).toFixed(1)}%.</div>` : '');
       }
       const inflowSection = `
         <div class="rpt-totals" style="margin-bottom:0.7rem;">
