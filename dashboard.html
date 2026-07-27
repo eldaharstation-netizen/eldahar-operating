@@ -807,7 +807,17 @@
           <div class="calib-name">النتيجة</div>
           <div id="calibInflowBadge"><span class="calib-badge calib-na">لا توجد بيانات كافية</span></div>
         </div>
-        <div id="calibInflowNote" style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.4rem;line-height:1.5;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title" style="border:none;padding:0;margin-bottom:1rem;">🔧 معايرة عدادات المنصرف</div>
+        <div id="calibOutflowLines">
+          <div class="calib-row"><div class="calib-name">خط 1</div><div id="calibOutflow1"><span class="calib-badge calib-na">--</span></div></div>
+          <div class="calib-row"><div class="calib-name">خط 2</div><div id="calibOutflow2"><span class="calib-badge calib-na">--</span></div></div>
+          <div class="calib-row"><div class="calib-name">خط 3 (جبل العفش)</div><div id="calibOutflow3"><span class="calib-badge calib-na">--</span></div></div>
+          <div class="calib-row"><div class="calib-name"><b>الإجمالي</b></div><div id="calibOutflowTotal"><span class="calib-badge calib-na">--</span></div></div>
+        </div>
+        <div class="info-detail" style="margin-top:0.6rem;">مقارنة قراءة العداد الكلي (نهاية − بداية) بمجموع التصرفات المسجلة ساعة بساعة</div>
       </div>
 
       <div class="card">
@@ -1099,17 +1109,25 @@
       const lineNames = { 1: 'خط 1', 2: 'خط 2', 3: 'خط 3 (جبل العفش)' };
       const lineCards = [1,2,3].map(ln => {
         const meter = t['outflow'+ln], pump = t['pumpOutflow'+ln];
-        const valHtml = t.meterClosed
+        const meterHtml = t.meterClosed
           ? `<b>${fmt(meter)} م³</b>`
-          : `<b>${fmt(pump)} م³</b> <span style="color:var(--text-tertiary); font-size:0.75rem;">(تقديري لحد الآن)</span>`;
+          : `<span style="color:var(--text-tertiary);">فى انتظار قفل العداد</span>`;
+        let cmpBadge = '';
+        if (t.meterClosed) {
+          const pct = pump ? (t['diff'+ln] / pump * 100) : 0;
+          cmpBadge = `<div style="margin-top:0.4rem;">${calibBadge(t['diff'+ln], pct, null)}</div>`;
+        }
         return `<div class="rpt-line-card">
           <div class="rpt-line-name">${lineNames[ln]}</div>
-          <div class="rpt-line-row"><span>المنصرف</span>${valHtml}</div>
+          <div class="rpt-line-row"><span>بالعداد</span>${meterHtml}</div>
+          <div class="rpt-line-row"><span>بتصرف الطلمبات</span><b>${fmt(pump)} م³</b></div>
+          ${cmpBadge}
         </div>`;
       }).join('');
 
       const totalCards = `
-        <div class="rpt-total-card rpt-total-blue"><div class="lbl">💧 إجمالي المنصرف</div><div class="val">${fmt(t.meterClosed ? t.outflowTotal : t.pumpOutflowTotal)} م³</div></div>
+        ${t.meterClosed ? `<div class="rpt-total-card rpt-total-blue"><div class="lbl">💧 إجمالي المنصرف (بالعداد)</div><div class="val">${fmt(t.outflowTotal)} م³</div></div>` : ''}
+        <div class="rpt-total-card rpt-total-cyan"><div class="lbl">💧 إجمالي المنصرف (بالطلمبات)</div><div class="val">${fmt(t.pumpOutflowTotal)} م³</div></div>
       `;
 
       let inflowCmpDaily = '';
@@ -1383,12 +1401,30 @@
       if (t.sumManualInflow != null) {
         document.getElementById('calibInflowBadge').innerHTML =
           calibBadge(t.inflowDiff, t.inflowDiffPct || 0, t.inflowDiffPct == null ? 'بيانات غير كافية للمقارنة' : null);
-        document.getElementById('calibInflowNote').textContent = (t.inflowDiffPct != null)
-          ? `يعني الفرق ${t.inflowDiff>=0?'+':''}${Math.round(t.inflowDiff)} م³ بين قراءة العداد والمحسوب، وده يعادل ${t.inflowDiff>=0?'زيادة':'نقص'} عن القيمة المحسوبة (المرجعية) بنسبة ${Math.abs(t.inflowDiffPct).toFixed(1)}%.`
-          : '';
       } else {
         document.getElementById('calibInflowBadge').innerHTML = calibBadge(0, 0, 'بيانات غير كافية للمقارنة');
-        document.getElementById('calibInflowNote').textContent = '';
+      }
+
+      // — معايرة عدادات المنصرف (لكل خط + الإجمالي) —
+      [1, 2, 3].forEach(ln => {
+        const pump = t['pumpOutflow' + ln], meter = t['outflow' + ln];
+        const el = document.getElementById('calibOutflow' + ln);
+        if (!t.meterClosed || (!pump && !meter)) {
+          el.innerHTML = calibBadge(0, 0, 'فى انتظار قفل العداد');
+          return;
+        }
+        const diff = t['diff' + ln];
+        const pct = pump ? (diff / pump * 100) : 0;
+        el.innerHTML = calibBadge(diff, pct, null) +
+          `<div class="calib-values" style="margin-top:0.3rem;">عداد: ${meter.toFixed(0)} | طلمبات: ${pump.toFixed(0)}</div>`;
+      });
+      const elT = document.getElementById('calibOutflowTotal');
+      if (!t.meterClosed) {
+        elT.innerHTML = calibBadge(0, 0, 'فى انتظار قفل العداد');
+      } else {
+        const pct = t.pumpOutflowTotal ? (t.diffTotal / t.pumpOutflowTotal * 100) : 0;
+        elT.innerHTML = calibBadge(t.diffTotal, pct, null) +
+          `<div class="calib-values" style="margin-top:0.3rem;">عداد: ${t.outflowTotal.toFixed(0)} | طلمبات: ${t.pumpOutflowTotal.toFixed(0)}</div>`;
       }
 
       // — فرق التكديس —
@@ -1415,24 +1451,31 @@
       const lineNames = { 1: 'خط 1', 2: 'خط 2', 3: 'خط 3 (جبل العفش)' };
       const lineCards = [1,2,3].map(ln => {
         const meter = agg['outflow'+ln], pump = agg['pumpOutflow'+ln];
-        const valHtml = agg.allMeterClosed
+        const meterHtml = agg.allMeterClosed
           ? `<b>${fmt(meter)} م³</b>`
-          : `<b>${fmt(pump)} م³</b> <span style="color:var(--text-tertiary); font-size:0.75rem;">(فيه أيام لسه من غير قفل عداد — تقديري)</span>`;
+          : `<span style="color:var(--text-tertiary);">فيه أيام لسه من غير قفل عداد</span>`;
+        let cmpBadge = '';
+        if (agg.allMeterClosed) {
+          const pct = pump ? (agg['diff'+ln] / pump * 100) : 0;
+          cmpBadge = `<div style="margin-top:0.4rem;">${calibBadge(agg['diff'+ln], pct, null)}</div>`;
+        }
         return `<div class="rpt-line-card">
           <div class="rpt-line-name">${lineNames[ln]}</div>
-          <div class="rpt-line-row"><span>المنصرف</span>${valHtml}</div>
+          <div class="rpt-line-row"><span>بالعداد</span>${meterHtml}</div>
+          <div class="rpt-line-row"><span>بتصرف الطلمبات</span><b>${fmt(pump)} م³</b></div>
+          ${cmpBadge}
         </div>`;
       }).join('');
 
       const totalCards = `
-        <div class="rpt-total-card rpt-total-blue"><div class="lbl">💧 إجمالي المنصرف</div><div class="val">${fmt(agg.allMeterClosed ? agg.outflowTotal : agg.pumpOutflowTotal)} م³</div></div>
+        ${agg.allMeterClosed ? `<div class="rpt-total-card rpt-total-blue"><div class="lbl">💧 إجمالي المنصرف (بالعداد)</div><div class="val">${fmt(agg.outflowTotal)} م³</div></div>` : ''}
+        <div class="rpt-total-card rpt-total-cyan"><div class="lbl">💧 إجمالي المنصرف (بالطلمبات)</div><div class="val">${fmt(agg.pumpOutflowTotal)} م³</div></div>
       `;
 
       let inflowCmp = '';
       if (agg.sumManualInflow != null) {
         const pct = agg.inflowDiffPct;
-        inflowCmp = `<div style="margin-top:0.6rem;">${calibBadge(agg.inflowDiff, pct || 0, pct == null ? 'غير كافٍ للمقارنة' : null)}</div>` +
-          (pct != null ? `<div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.35rem;">يعني الفرق ${agg.inflowDiff>=0?'+':''}${fmt(agg.inflowDiff)} م³ بين قراءة العداد والمحسوب، وده يعادل ${agg.inflowDiff>=0?'زيادة':'نقص'} عن القيمة المحسوبة (المرجعية) بنسبة ${Math.abs(pct).toFixed(1)}%.</div>` : '');
+        inflowCmp = `<div style="margin-top:0.6rem;">${calibBadge(agg.inflowDiff, pct || 0, pct == null ? 'غير كافٍ للمقارنة' : null)}</div>`;
       }
       const inflowSection = `
         <div class="rpt-totals" style="margin-bottom:0.7rem;">
