@@ -495,7 +495,6 @@ header {
     <button class="btn btn-green" onclick="saveShift()">💾 حفظ السجل</button>
     <button class="btn btn-amber" onclick="generateWhatsAppReport()">📲 تقرير واتساب</button>
     <button class="btn btn-outline" onclick="generateLiveFlowReport()">📡 تقرير لحظي (تصرف الطلمبات)</button>
-    <button class="btn btn-outline" onclick="generateComparisonReport()">⚖️ مقارنة العداد/الطلمبات</button>
     <button class="btn btn-outline" onclick="window.print()">🖨 طباعة</button>
   </div>
 </header>
@@ -773,7 +772,6 @@ header {
     <button class="btn btn-primary" onclick="loadShift()">📥 تحميل سجل محفوظ</button>
     <button class="btn btn-amber" onclick="generateWhatsAppReport()">📲 تقرير واتساب</button>
     <button class="btn btn-outline" onclick="generateLiveFlowReport()">📡 تقرير لحظي (تصرف الطلمبات)</button>
-    <button class="btn btn-outline" onclick="generateComparisonReport()">⚖️ مقارنة العداد/الطلمبات</button>
     <button class="btn btn-outline" onclick="window.print()">🖨 طباعة</button>
     <button class="btn btn-outline" onclick="exportCSV()">📊 تصدير Excel</button>
   </div>
@@ -1102,6 +1100,7 @@ function collectData() {
   const rows = [];
   document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
     const row = { time: HOURS[i] };
+    row.enteredAt = tr.dataset.enteredAt || '';
     row.tech = tr.querySelector('.tech-sel')?.value || '';
     const powerBtn = tr.querySelector('.power-btn');
     row.powerSource = powerBtn?.dataset.mode === 'diesel' ? 'ديزل' : 'شبكة';
@@ -1264,6 +1263,7 @@ function restoreShift(data) {
   data.rows?.forEach((row, i) => {
     const tr = document.querySelectorAll('#tableBody tr')[i];
     if (!tr) return;
+    if (row.enteredAt) tr.dataset.enteredAt = row.enteredAt;
     const techSel = tr.querySelector('.tech-sel');
     if (techSel) techSel.value = row.tech || '';
 
@@ -1361,41 +1361,6 @@ function generateLiveFlowReport() {
 ℹ️ الرقم ده تراكمي من مجموع تصرف الطلمبات ساعة بساعة، ومختلف عن رقم العداد النهائي اللي بيظهر فى تقرير 8ص.`;
 
   if (confirm('📱 فتح واتساب لإرسال التقرير اللحظي؟')) {
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-  }
-}
-
-// ── مقارنة: تصرف الطلمبات مقابل العداد الكلي (بيان مستقل منعا لأي لخبطة) ──
-function generateComparisonReport() {
-  const p = getPumpFlowTotals();
-  const m1 = getFlow(1), m2 = getFlow(2), m3 = getFlow(3);
-  const meterTotal = m1 + m2 + m3;
-  const date = document.getElementById('shiftDate')?.value || '';
-  const dayName = document.getElementById('dayBadge')?.textContent || '';
-  const meterClosed = m1 > 0 || m2 > 0 || m3 > 0;
-
-  function diffBlock(label, meterVal, pumpVal) {
-    const diff = meterVal - pumpVal;
-    const pct = pumpVal ? (diff/pumpVal*100) : 0;
-    return `${label}\n  العداد: ${meterVal.toLocaleString()} م³\n  الطلمبات: ${pumpVal.toLocaleString()} م³\n  الفرق: ${diff>=0?'+':''}${diff.toLocaleString()} م³ (${pct>=0?'+':''}${pct.toFixed(1)}%)`;
-  }
-
-  const msg =
-`⚖️ *مقارنة العداد الكلي / تصرف الطلمبات*
-📅 ${date} ${dayName}
-${!meterClosed ? '⚠ قراءة نهاية العداد لسه ما اتسجلتش — المقارنة مبدئية' : ''}
-━━━━━━━━━━━━━━━━━
-🔵 ${diffBlock('خط 1', m1, p.line1)}
-
-🟢 ${diffBlock('خط 2', m2, p.line2)}
-
-🟠 ${diffBlock('خط 3', m3, p.line3)}
-━━━━━━━━━━━━━━━━━
-💧 ${diffBlock('*الإجمالي*', meterTotal, p.total)}
-
-ℹ️ الفرق الطبيعي وارد بسبب دقة قراءة العداد مقابل تقدير التصرف الساعي بالطلمبات.`;
-
-  if (confirm('📱 فتح واتساب لإرسال بيان المقارنة؟')) {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   }
 }
@@ -1650,8 +1615,9 @@ function generateWhatsAppReport() {
   [1, 2, 3].forEach(l => aggregateLineValues('area', l).forEach(a => areas.add(a)));
 
   function outflowLine(label, meterVal, pumpVal) {
-    const meterPart = t.meterClosed ? `${Math.round(meterVal).toLocaleString()} م³ عداد` : 'فى انتظار قفل العداد';
-    return `${label}: ${meterPart} | ${Math.round(pumpVal).toLocaleString()} م³ طلمبات`;
+    return t.meterClosed
+      ? `${label}: ${Math.round(meterVal).toLocaleString()} م³`
+      : `${label}: ${Math.round(pumpVal).toLocaleString()} م³ (تقديري لحد الآن)`;
   }
 
   const periodStr = t.meterClosed
@@ -1668,9 +1634,7 @@ function generateWhatsAppReport() {
 🟢 ${outflowLine('خط 2', t.m2, t.pf.line2)}
 🟠 ${outflowLine('خط 3', t.m3, t.pf.line3)}
 ━━━━━━━━━━━━━━━━━
-${t.meterClosed
-  ? `💧 *الإجمالي: ${Math.round(t.outflowTotal).toLocaleString()} م³ عداد* | ${Math.round(t.pf.total).toLocaleString()} م³ طلمبات`
-  : `💧 *الإجمالي (بتصرف الطلمبات): ${Math.round(t.pf.total).toLocaleString()} م³*`}
+💧 *الإجمالي: ${Math.round(t.meterClosed ? t.outflowTotal : t.pf.total).toLocaleString()} م³*${t.meterClosed ? '' : ' (تقديري لحد الآن)'}
 
 🌊 *الوارد:*
 ${t.sumManualInflow != null ? `بالعداد: ${Math.round(t.sumManualInflow).toLocaleString()} م³ (${t.inflowReadingsCount} قراءة)\n` : ''}المحسوب: ${Math.round(t.inflowComputed).toLocaleString()} م³ (= المنصرف ${t.meterClosed ? 'بالعداد' : 'بتصرف الطلمبات'} ${Math.round(t.effectiveOutflowForInflow).toLocaleString()} + التكديس ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()})
@@ -1932,6 +1896,24 @@ document.addEventListener('click', e => {
     document.querySelectorAll('.multi-dropdown').forEach(d => d.style.display='none');
   }
 });
+
+// 🆕 ── تسجيل وقت أول إدخال فعلي لكل صف ساعي (لتقييم الالتزام بالمواعيد) ──
+// بيتسجل مرة واحدة بس (أول لمسة حقيقية من الفني: كتابة رقم، اختيار من
+// الليستة، أو تبديل حالة خط) — تحميل سجل قديم عن طريق restoreShift()
+// بيحصل بتعيين .value مباشرة من غير أحداث، فمش بيفعّل التسجيل ده.
+document.getElementById('tableBody')?.addEventListener('input', stampRowEntryTime, true);
+document.getElementById('tableBody')?.addEventListener('change', stampRowEntryTime, true);
+document.getElementById('tableBody')?.addEventListener('click', function(e) {
+  if (e.target.closest('.line-status-btn') || e.target.closest('.power-btn') || e.target.closest('input[type="checkbox"]')) {
+    stampRowEntryTime(e);
+  }
+}, true);
+function stampRowEntryTime(e) {
+  const tr = e.target.closest('tr[data-hour]');
+  if (tr && !tr.dataset.enteredAt) {
+    tr.dataset.enteredAt = new Date().toISOString();
+  }
+}
 
 // ── INIT ──
 window.addEventListener('load', () => {
