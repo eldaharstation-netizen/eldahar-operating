@@ -1361,6 +1361,7 @@ function generateLiveFlowReport() {
 ℹ️ الرقم ده تراكمي من مجموع تصرف الطلمبات ساعة بساعة، ومختلف عن رقم العداد النهائي اللي بيظهر فى تقرير 8ص.`;
 
   if (confirm('📱 فتح واتساب لإرسال التقرير اللحظي؟')) {
+    showToast('📌 ابعتيها لجروب: تشغيل روافع مياه الغردقة');
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   }
 }
@@ -1651,6 +1652,7 @@ ${[...areas].filter(Boolean).map(a => '• ' + a).join('\n') || '• --'}
 ⏰ _تقرير — ${new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute: '2-digit'})}_`;
 
   const encoded = encodeURIComponent(msg);
+  showToast('📌 ابعتيها لجروب: تشغيل روافع مياه الغردقة');
   window.open(`https://wa.me/?text=${encoded}`, '_blank');
 }
 
