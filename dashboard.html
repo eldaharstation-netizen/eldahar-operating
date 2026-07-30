@@ -923,7 +923,8 @@
           updateStatus('⚠️ لا توجد بيانات', 'warning');
           clearDashboard();
         }
-        loadCalibration(date);
+        // 🔧 تصحيح: انتظري loadCalibration حتى تنتهي عشان التكديس يتحدّث تلقائي
+        await loadCalibration(date);
       } catch (err) {
         updateStatus('❌ خطأ في الاتصال', 'error');
         console.error(err);
