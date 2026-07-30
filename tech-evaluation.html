@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقييم الفنيين — محطة الدهار</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --primary:#0077b6; --primary-light:#00b4ff; --success:#00e676;
+    --warning:#ffb300; --danger:#ff3b5c; --dark-bg:#0a0e27; --card-bg:#0f1a3a;
+    --border:rgba(0,180,255,0.15); --text:#e8f4ff; --text-secondary:#9bbcd4; --text-tertiary:#4a7a9b;
+  }
+  html,body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:var(--dark-bg); color:var(--text); line-height:1.6; }
+  header {
+    background: linear-gradient(135deg, rgba(0,30,70,.95), rgba(0,15,40,.98));
+    border-bottom:2px solid var(--border); padding:1.2rem 2rem;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;
+    position:sticky; top:0; z-index:50; box-shadow:0 4px 20px rgba(0,119,182,.1);
+  }
+  .header-left { display:flex; align-items:center; gap:1.2rem; }
+  .logo-box {
+    width:50px; height:50px; background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.8rem;
+    box-shadow:0 4px 15px rgba(0,180,255,.3);
+  }
+  .header-title h1 { font-size:1.4rem; font-weight:700; }
+  .header-title p { font-size:.8rem; color:var(--text-tertiary); }
+  input, select, button, textarea {
+    font-family:inherit; background:var(--card-bg); color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:.55rem .8rem; font-size:.85rem;
+  }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--primary-light); }
+  button.btn {
+    background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff; border:none;
+    font-weight:700; cursor:pointer; transition:.2s;
+  }
+  button.btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+  button.btn-outline { background:transparent; border:1px solid var(--border); color:var(--text-secondary); font-weight:600; cursor:pointer; }
+  button.btn-outline:hover { border-color:var(--primary-light); color:var(--primary-light); }
+  main { padding:1.5rem 2rem 3rem; max-width:1300px; margin:0 auto; }
+
+  .section {
+    background:var(--card-bg); border:1px solid var(--border); border-radius:14px;
+    padding:1.3rem; margin-bottom:1.5rem;
+  }
+  .section-title { font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--primary-light); display:flex; align-items:center; gap:.5rem; justify-content:space-between; }
+
+  .assign-form { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
+  .field { display:flex; flex-direction:column; gap:.35rem; }
+  .field label { font-size:.75rem; color:var(--text-secondary); }
+  .field select, .field input { min-width:170px; }
+  .field input[type="text"] { min-width:220px; }
+
+  .training-badge {
+    display:inline-block; background:rgba(255,179,0,.12); border:1px solid rgba(255,179,0,.35);
+    color:var(--warning); font-size:.75rem; padding:.3rem .7rem; border-radius:8px; margin-bottom:1rem;
+  }
+
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  th { text-align:right; padding:.55rem .5rem; color:var(--text-tertiary); border-bottom:1px solid var(--border); font-weight:600; }
+  td { padding:.55rem .5rem; border-bottom:1px solid rgba(255,255,255,.04); }
+  tr:hover td { background:rgba(0,180,255,.04); }
+
+  .score-pill { display:inline-block; padding:.25rem .7rem; border-radius:20px; font-weight:700; font-size:.8rem; }
+  .score-good { background:rgba(0,230,118,.15); color:var(--success); }
+  .score-mid  { background:rgba(255,179,0,.15); color:var(--warning); }
+  .score-bad  { background:rgba(255,59,92,.15); color:var(--danger); }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:.9rem; }
+  .kpi-card { background:rgba(0,180,255,.05); border:1px solid var(--border); border-radius:12px; padding:.9rem 1.1rem; }
+  .kpi-label { font-size:.72rem; color:var(--text-tertiary); margin-bottom:.3rem; }
+  .kpi-value { font-size:1.35rem; font-weight:800; color:var(--primary-light); }
+
+  .empty-state { text-align:center; padding:2.5rem 1rem; color:var(--text-tertiary); }
+  .url-bar { display:flex; gap:.5rem; align-items:center; }
+  .url-bar input { width:280px; }
+
+  .tech-detail-row { cursor:pointer; }
+  .tech-detail-row:hover td { background:rgba(0,180,255,.07); }
+  .period-sub-table { display:none; }
+  .period-sub-table.open { display:table-row; }
+
+  @media (max-width:700px){
+    main{padding:1rem;} .field select,.field input{min-width:130px;} .url-bar input{width:170px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-box">📋</div>
+    <div class="header-title">
+      <h1>تقييم الفنيين</h1>
+      <p>محطة الدهار — الالتزام بالمواعيد واكتمال البيانات لكل فترة (12 ساعة)</p>
+    </div>
+  </div>
+  <div class="url-bar">
+    <input type="text" id="scriptUrlInput" placeholder="رابط Google Apps Script...">
+    <button class="btn" onclick="saveScriptUrl()">حفظ</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── تخصيص الفنيين ── -->
+  <div class="section">
+    <div class="section-title">
+      <span>👷 تخصيص الفني المسؤول عن الفترة</span>
+    </div>
+    <div class="assign-form">
+      <div class="field">
+        <label>التاريخ</label>
+        <input type="date" id="assignDate">
+      </div>
+      <div class="field">
+        <label>الفترة</label>
+        <select id="assignPeriod">
+          <option value="صباحية">صباحية (7ص → 6م)</option>
+          <option value="مسائية">مسائية (7م → 6ص)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>الفني المسؤول</label>
+        <select id="assignTech"></select>
+      </div>
+      <div class="field">
+        <label>ملاحظات (اختياري)</label>
+        <input type="text" id="assignNotes" placeholder="مثلاً: غطى بدل زميله">
+      </div>
+      <button class="btn" onclick="saveAssignment()">💾 حفظ التخصيص</button>
+    </div>
+  </div>
+
+  <!-- ── تخصيصات مسجلة ── -->
+  <div class="section">
+    <div class="section-title">
+      <span>📅 التخصيصات المسجلة</span>
+      <div style="display:flex; gap:.5rem; align-items:center;">
+        <input type="date" id="assignFrom" style="min-width:140px;">
+        <span style="color:var(--text-tertiary); font-size:.8rem;">إلى</span>
+        <input type="date" id="assignTo" style="min-width:140px;">
+        <button class="btn-outline" onclick="loadAssignments()">🔄 تحديث</button>
+      </div>
+    </div>
+    <div id="assignmentsTable"><div class="empty-state">حددي فترة واضغطي تحديث</div></div>
+  </div>
+
+  <!-- ── تقييم الفنيين ── -->
+  <div class="section">
+    <div class="section-title">
+      <span>🎯 التقييم المجمّع</span>
+      <div style="display:flex; gap:.5rem; align-items:center;">
+        <input type="date" id="evalFrom" style="min-width:140px;">
+        <span style="color:var(--text-tertiary); font-size:.8rem;">إلى</span>
+        <input type="date" id="evalTo" style="min-width:140px;">
+        <button class="btn" onclick="loadEvaluation()">📊 احسب التقييم</button>
+      </div>
+    </div>
+    <div id="evalResult"><div class="empty-state">حددي الفترة واضغطي "احسب التقييم"</div></div>
+  </div>
+
+</main>
+
+<script>
+const TECHNICIANS = [
+  'اسلام اشرف','احمد خير','عمر عبد المتجلى','احمد عبد الخالق',
+  'اسلام عطية','محمد ابو السعود','حسن عبد القادر','طاهر سكوت','يسري',
+  'محمد حافظ','خالد السكي','محمود سيد'
+];
+
+let scriptUrl = '';
+
+window.addEventListener('load', () => {
+  document.getElementById('assignTech').innerHTML = TECHNICIANS.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  scriptUrl = localStorage.getItem('dashboard_script_url') || '';
+  document.getElementById('scriptUrlInput').value = scriptUrl;
+
+  const today = new Date().toLocaleDateString('en-CA');
+  document.getElementById('assignDate').value = today;
+
+  // ── فترة تدريب: يوليو 2026 بالكامل بيتجمع بس من غير تقييم ظاهر ──
+  // التقييم الفعلي (المعروض) بيبدأ افتراضيًا من 1 أغسطس 2026
+  const trainingEnd = '2026-07-31';
+  const evalStart = '2026-08-01';
+  document.getElementById('assignFrom').value = evalStart <= today ? evalStart : trainingEnd;
+  document.getElementById('assignTo').value = today;
+  document.getElementById('evalFrom').value = evalStart;
+  document.getElementById('evalTo').value = today;
+
+  loadAssignments();
+});
+
+function saveScriptUrl() {
+  scriptUrl = document.getElementById('scriptUrlInput').value.trim();
+  localStorage.setItem('dashboard_script_url', scriptUrl);
+  showToast('✔ اتحفظ رابط السكريبت');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card-bg);border:1px solid var(--border);padding:.7rem 1.4rem;border-radius:10px;z-index:999;font-size:.85rem;';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ── حفظ تخصيص ──
+async function saveAssignment() {
+  if (!scriptUrl) { showToast('⚠ محتاجة تحطي رابط السكريبت الأول'); return; }
+  const date = document.getElementById('assignDate').value;
+  const period = document.getElementById('assignPeriod').value;
+  const tech = document.getElementById('assignTech').value;
+  const notes = document.getElementById('assignNotes').value;
+  if (!date) { showToast('⚠ حددي التاريخ'); return; }
+
+  try {
+    await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveTechAssignment', date, period, tech, notes })
+    });
+    showToast(`✔ اتسجل: ${tech} — ${date} (${period})`);
+    document.getElementById('assignNotes').value = '';
+    loadAssignments();
+  } catch (err) {
+    console.error(err);
+    showToast('⚠ تعذر الحفظ');
+  }
+}
+
+// ── عرض التخصيصات ──
+async function loadAssignments() {
+  if (!scriptUrl) return;
+  const from = document.getElementById('assignFrom').value;
+  const to = document.getElementById('assignTo').value;
+  const container = document.getElementById('assignmentsTable');
+  container.innerHTML = '<div class="empty-state">⏳ جاري التحميل...</div>';
+  try {
+    const res = await fetch(`${scriptUrl}?action=getTechAssignments&from=${from}&to=${to}&t=${Date.now()}`);
+    const data = await res.json();
+    const list = (data.assignments || []).sort((a,b) => a.date < b.date ? 1 : -1);
+    if (!list.length) {
+      container.innerHTML = '<div class="empty-state">مفيش تخصيصات مسجلة فى الفترة دي</div>';
+      return;
+    }
+    container.innerHTML = `
+      <table>
+        <thead><tr><th>التاريخ</th><th>الفترة</th><th>الفني</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          ${list.map(a => `
+            <tr>
+              <td>${a.date}</td>
+              <td>${a.period}</td>
+              <td>${a.tech}</td>
+              <td style="color:var(--text-tertiary);">${a.notes || '--'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state">⚠ تعذر الاتصال بالشيت</div>';
+  }
+}
+
+// ── حساب التقييم ──
+async function loadEvaluation() {
+  if (!scriptUrl) { showToast('⚠ محتاجة تحطي رابط السكريبت الأول'); return; }
+  const from = document.getElementById('evalFrom').value;
+  const to = document.getElementById('evalTo').value;
+  const container = document.getElementById('evalResult');
+  container.innerHTML = '<div class="empty-state">⏳ جاري الحساب...</div>';
+
+  try {
+    const res = await fetch(`${scriptUrl}?action=getTechEvaluation&from=${from}&to=${to}&t=${Date.now()}`);
+    const data = await res.json();
+    renderEvaluation(from, to, data);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state">⚠ تعذر الاتصال بالشيت</div>';
+  }
+}
+
+function scoreClass(score) {
+  if (score == null) return '';
+  if (score >= 85) return 'score-good';
+  if (score >= 65) return 'score-mid';
+  return 'score-bad';
+}
+
+function renderEvaluation(from, to, data) {
+  const container = document.getElementById('evalResult');
+  const techs = data.techs || {};
+  const names = Object.keys(techs);
+
+  if (!names.length) {
+    container.innerHTML = `<div class="empty-state">مفيش تخصيصات فنيين مسجلة فى الفترة من ${from} إلى ${to} — سجّلي تخصيصات الأول من القسم اللي فوق</div>`;
+    return;
+  }
+
+  // ترتيب حسب الدرجة الإجمالية
+  names.sort((a,b) => (techs[b].overallScore||0) - (techs[a].overallScore||0));
+
+  const periodsByTech = {};
+  (data.periods || []).forEach(p => {
+    if (!periodsByTech[p.tech]) periodsByTech[p.tech] = [];
+    periodsByTech[p.tech].push(p);
+  });
+
+  container.innerHTML = `
+    <div class="training-badge">ℹ️ التقييم بيغطي بس الفترات اللي اتخصص فيها فني بالاسم — الفترات اللي مش متخصصة اتجاهلت</div>
+    <table>
+      <thead>
+        <tr>
+          <th>الفني</th>
+          <th>عدد الفترات</th>
+          <th>⏱️ الالتزام بالمواعيد</th>
+          <th>⏱️ متوسط التأخير</th>
+          <th>✅ اكتمال البيانات</th>
+          <th>🎯 الدرجة الإجمالية</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${names.map(name => {
+          const t = techs[name];
+          return `
+          <tr class="tech-detail-row" onclick="toggleTechDetail('${name.replace(/'/g,"\\'")}')">
+            <td><b>${name}</b></td>
+            <td>${t.periodsCount}</td>
+            <td>${t.onTimePct != null ? t.onTimePct + '%' : '--'}</td>
+            <td>${t.avgDelayMinutes != null ? (t.avgDelayMinutes >= 0 ? '+' : '') + t.avgDelayMinutes + ' د' : '--'}</td>
+            <td>${t.completenessPct != null ? t.completenessPct + '%' : '--'}</td>
+            <td><span class="score-pill ${scoreClass(t.overallScore)}">${t.overallScore != null ? t.overallScore : '--'}</span></td>
+          </tr>
+          <tr class="period-sub-table" id="detail-${cssSafe(name)}">
+            <td colspan="6" style="padding:0;">
+              <div style="padding:.8rem 1.2rem; background:rgba(0,0,0,.15);">
+                <table style="font-size:.78rem;">
+                  <thead><tr><th>التاريخ</th><th>الفترة</th><th>التزام</th><th>متوسط تأخير</th><th>اكتمال</th></tr></thead>
+                  <tbody>
+                    ${(periodsByTech[name]||[]).sort((a,b)=>a.date<b.date?1:-1).map(p => `
+                      <tr>
+                        <td>${p.date}</td>
+                        <td>${p.period}</td>
+                        <td>${p.onTimePct}%</td>
+                        <td>${p.avgDelay != null ? (p.avgDelay>=0?'+':'') + p.avgDelay + ' د' : '--'}</td>
+                        <td>${p.completenessPct != null ? p.completenessPct + '%' : '--'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function cssSafe(name) {
+  return name.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+}
+
+function toggleTechDetail(name) {
+  const el = document.getElementById('detail-' + cssSafe(name));
+  if (el) el.classList.toggle('open');
+}
+</script>
+</body>
+</html>

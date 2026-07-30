@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أداء الطلمبات — محطة الدهار</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --primary:#0077b6; --primary-light:#00b4ff; --success:#00e676;
+    --warning:#ffb300; --danger:#ff3b5c; --dark-bg:#0a0e27; --card-bg:#0f1a3a;
+    --border:rgba(0,180,255,0.15); --text:#e8f4ff; --text-secondary:#9bbcd4; --text-tertiary:#4a7a9b;
+  }
+  html,body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:var(--dark-bg); color:var(--text); line-height:1.6; }
+  header {
+    background: linear-gradient(135deg, rgba(0,30,70,.95), rgba(0,15,40,.98));
+    border-bottom:2px solid var(--border); padding:1.2rem 2rem;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;
+    position:sticky; top:0; z-index:50; box-shadow:0 4px 20px rgba(0,119,182,.1);
+  }
+  .header-left { display:flex; align-items:center; gap:1.2rem; }
+  .logo-box {
+    width:50px; height:50px; background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.8rem;
+    box-shadow:0 4px 15px rgba(0,180,255,.3);
+  }
+  .header-title h1 { font-size:1.4rem; font-weight:700; }
+  .header-title p { font-size:.8rem; color:var(--text-tertiary); }
+  input, select, button {
+    font-family:inherit; background:var(--card-bg); color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:.55rem .8rem; font-size:.85rem;
+  }
+  input:focus, select:focus { outline:none; border-color:var(--primary-light); }
+  button.btn {
+    background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff; border:none;
+    font-weight:700; cursor:pointer; transition:.2s;
+  }
+  button.btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+  main { padding:1.5rem 2rem 3rem; max-width:1300px; margin:0 auto; }
+
+  .section {
+    background:var(--card-bg); border:1px solid var(--border); border-radius:14px;
+    padding:1.3rem; margin-bottom:1.5rem;
+  }
+  .section-title { font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--primary-light); }
+
+  .calc-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+  @media (max-width:800px) { .calc-grid { grid-template-columns:1fr; } }
+
+  .calc-inputs { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; align-content:start; }
+  .calc-field { display:flex; flex-direction:column; gap:.35rem; }
+  .calc-field label { font-size:.78rem; color:var(--text-secondary); }
+  .calc-field input {
+    font-size:1.1rem; font-weight:700; text-align:center; padding:.7rem;
+    border:1.5px solid var(--border);
+  }
+  .calc-field input:focus { border-color:var(--primary-light); box-shadow:0 0 0 3px rgba(0,180,255,.1); }
+
+  .calc-outputs { display:flex; flex-direction:column; gap:.7rem; }
+  .out-row {
+    display:flex; justify-content:space-between; align-items:center;
+    background:rgba(0,180,255,.05); border:1px solid var(--border); border-radius:10px;
+    padding:.7rem 1rem;
+  }
+  .out-row .lbl { font-size:.8rem; color:var(--text-secondary); }
+  .out-row .val { font-size:1.15rem; font-weight:800; color:var(--primary-light); }
+  .out-row.highlight { background:rgba(0,230,118,.08); border-color:rgba(0,230,118,.3); }
+  .out-row.highlight .val { color:var(--success); }
+  .out-row.warn-row { background:rgba(255,59,92,.08); border-color:rgba(255,59,92,.3); }
+  .out-row.warn-row .val { color:var(--danger); }
+
+  .badge-dev { font-size:.75rem; padding:.15rem .5rem; border-radius:6px; margin-right:.4rem; }
+  .badge-good { background:rgba(0,230,118,.15); color:var(--success); }
+  .badge-mid { background:rgba(255,179,0,.15); color:var(--warning); }
+  .badge-bad { background:rgba(255,59,92,.15); color:var(--danger); }
+
+  .ref-note {
+    font-size:.75rem; color:var(--text-tertiary); background:rgba(255,179,0,.06);
+    border:1px solid rgba(255,179,0,.2); border-radius:8px; padding:.7rem 1rem; margin-top:1rem; line-height:1.6;
+  }
+
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  th { text-align:right; padding:.55rem .5rem; color:var(--text-tertiary); border-bottom:1px solid var(--border); font-weight:600; }
+  td { padding:.55rem .5rem; border-bottom:1px solid rgba(255,255,255,.04); }
+  tr:hover td { background:rgba(0,180,255,.04); }
+
+  .filter-bar {
+    background:var(--card-bg); border:1px solid var(--border); border-radius:14px;
+    padding:1.2rem; display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; margin-bottom:1.5rem;
+  }
+  .filter-field { display:flex; flex-direction:column; gap:.35rem; }
+  .filter-field label { font-size:.75rem; color:var(--text-secondary); }
+
+  .chart-wrap { position:relative; height:340px; }
+  .empty-state { text-align:center; padding:2.5rem 1rem; color:var(--text-tertiary); }
+  .url-bar { display:flex; gap:.5rem; align-items:center; }
+  .url-bar input { width:280px; }
+
+  @media (max-width:700px){
+    main{padding:1rem;} .calc-inputs{grid-template-columns:1fr;} .url-bar input{width:170px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-box">⚙️</div>
+    <div class="header-title">
+      <h1>أداء الطلمبات</h1>
+      <p>محطة الدهار — كفاءة تقديرية، انحراف عن التصميم، استهلاك الطاقة</p>
+    </div>
+  </div>
+  <div class="url-bar">
+    <input type="text" id="scriptUrlInput" placeholder="رابط Google Apps Script...">
+    <button class="btn" onclick="saveScriptUrl()">حفظ</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── الحاسبة التفاعلية ── -->
+  <div class="section">
+    <div class="section-title">🧮 حاسبة الأداء الحية — غيّري أي رقم وشوفي التأثير فورًا</div>
+    <div class="calc-grid">
+      <div class="calc-inputs">
+        <div class="calc-field">
+          <label>التردد (هرتز)</label>
+          <input type="number" id="calcFreq" value="50" step="0.5" oninput="runCalc()">
+        </div>
+        <div class="calc-field">
+          <label>الجهد (فولت)</label>
+          <input type="number" id="calcVoltage" value="380" step="1" oninput="runCalc()">
+        </div>
+        <div class="calc-field">
+          <label>الأمبير (A)</label>
+          <input type="number" id="calcAmp" value="190" step="0.5" oninput="runCalc()">
+        </div>
+        <div class="calc-field">
+          <label>التصرف الفعلي (م³/س)</label>
+          <input type="number" id="calcFlow" value="450" step="1" oninput="runCalc()">
+        </div>
+        <div class="calc-field" style="grid-column:1/-1;">
+          <label>الضغط الفعلي (بار)</label>
+          <input type="number" id="calcPressure" value="7" step="0.05" oninput="runCalc()">
+        </div>
+      </div>
+
+      <div class="calc-outputs" id="calcOutputs"></div>
+    </div>
+    <div class="ref-note">
+      ⚠️ القدرة الكهربية والكفاءة هنا <b>تقديرية</b>، محسوبة من معامل قدرة مفترض (0.95) بناءً على تأكيد مهندس الكهرباء —
+      مش قياس مباشر بعداد قدرة حقيقي. الموديل المرجعي: <b>CD 150-450 I1</b> — نقطة التصميم 450 م³/س @ 70م @ كفاءة 77.7% @ 111.9 ك.و عند 50 هرتز.
+    </div>
+  </div>
+
+  <!-- ── منحنى التصميم ونقاط التشغيل الفعلية ── -->
+  <div class="section">
+    <div class="section-title">📈 منحنى التصميم (تصرف/ضغط) — من جدول الـVFD</div>
+    <div class="chart-wrap"><canvas id="designCurveChart"></canvas></div>
+  </div>
+
+  <!-- ── الأداء التاريخي لكل طلمبة ── -->
+  <div class="filter-bar">
+    <div class="filter-field">
+      <label>من تاريخ</label>
+      <input type="date" id="fromDate">
+    </div>
+    <div class="filter-field">
+      <label>إلى تاريخ</label>
+      <input type="date" id="toDate">
+    </div>
+    <button class="btn" onclick="loadPerformance()" style="padding:.6rem 1.6rem;">📊 حمّلي الأداء</button>
+    <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(7)">آخر 7 أيام</button>
+    <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(30)">آخر 30 يوم</button>
+  </div>
+
+  <div id="perfResult">
+    <div class="empty-state">حددي الفترة واضغطي "حمّلي الأداء"</div>
+  </div>
+
+</main>
+
+<script>
+let scriptUrl = '';
+let designChart = null;
+
+const VFD_TABLE = [
+  { freq: 30,   pressureBar: 2.45,  flow: 270 },
+  { freq: 32.5, pressureBar: 2.8,   flow: 292.5 },
+  { freq: 35,   pressureBar: 3.15,  flow: 315 },
+  { freq: 37.5, pressureBar: 3.675, flow: 337.5 },
+  { freq: 40,   pressureBar: 4.2,   flow: 360 },
+  { freq: 42.5, pressureBar: 4.725, flow: 382.5 },
+  { freq: 45,   pressureBar: 5.25,  flow: 405 },
+  { freq: 47.5, pressureBar: 6.125, flow: 427.5 },
+  { freq: 50,   pressureBar: 7.0,   flow: 450 }
+];
+const RATED = { flow: 450, head: 70, efficiency: 77.7, shaftPower: 111.9, freq: 50 };
+const BAR_TO_M = 10.197;
+const POWER_FACTOR = 0.95;
+
+function vfdExpectedAt(freq) {
+  if (freq <= VFD_TABLE[0].freq) return { flow: VFD_TABLE[0].flow, pressureBar: VFD_TABLE[0].pressureBar };
+  if (freq >= VFD_TABLE[VFD_TABLE.length-1].freq) return { flow: VFD_TABLE[VFD_TABLE.length-1].flow, pressureBar: VFD_TABLE[VFD_TABLE.length-1].pressureBar };
+  for (let i = 0; i < VFD_TABLE.length - 1; i++) {
+    if (freq >= VFD_TABLE[i].freq && freq <= VFD_TABLE[i+1].freq) {
+      const r = (freq - VFD_TABLE[i].freq) / (VFD_TABLE[i+1].freq - VFD_TABLE[i].freq);
+      return {
+        flow: VFD_TABLE[i].flow + r * (VFD_TABLE[i+1].flow - VFD_TABLE[i].flow),
+        pressureBar: VFD_TABLE[i].pressureBar + r * (VFD_TABLE[i+1].pressureBar - VFD_TABLE[i].pressureBar)
+      };
+    }
+  }
+  return { flow: null, pressureBar: null };
+}
+
+function devBadge(pct) {
+  if (pct == null) return '';
+  const abs = Math.abs(pct);
+  const cls = abs < 5 ? 'badge-good' : abs < 15 ? 'badge-mid' : 'badge-bad';
+  return `<span class="badge-dev ${cls}">${pct>=0?'+':''}${pct.toFixed(1)}%</span>`;
+}
+
+function runCalc() {
+  const freq = parseFloat(document.getElementById('calcFreq').value);
+  const voltage = parseFloat(document.getElementById('calcVoltage').value);
+  const amp = parseFloat(document.getElementById('calcAmp').value);
+  const flow = parseFloat(document.getElementById('calcFlow').value);
+  const pressureBar = parseFloat(document.getElementById('calcPressure').value);
+
+  const expected = !isNaN(freq) ? vfdExpectedAt(freq) : { flow: null, pressureBar: null };
+  const flowDevPct = (expected.flow && !isNaN(flow)) ? (flow - expected.flow) / expected.flow * 100 : null;
+  const pressDevPct = (expected.pressureBar && !isNaN(pressureBar)) ? (pressureBar - expected.pressureBar) / expected.pressureBar * 100 : null;
+
+  const headM = !isNaN(pressureBar) ? pressureBar * BAR_TO_M : null;
+  const hydraulicKW = (!isNaN(flow) && headM != null) ? 9.81 * (flow / 3600) * headM : null;
+  const electricalKW = (!isNaN(voltage) && !isNaN(amp)) ? Math.sqrt(3) * voltage * amp * POWER_FACTOR / 1000 : null;
+  const efficiencyPct = (hydraulicKW != null && electricalKW) ? (hydraulicKW / electricalKW * 100) : null;
+  const expectedShaftKW = !isNaN(freq) ? RATED.shaftPower * Math.pow(freq / RATED.freq, 3) : null;
+  const specificEnergy = (electricalKW != null && flow) ? electricalKW / flow : null;
+
+  const effBadgeClass = efficiencyPct == null ? '' :
+    efficiencyPct >= RATED.efficiency - 5 ? 'highlight' : efficiencyPct >= RATED.efficiency - 15 ? '' : 'warn-row';
+
+  document.getElementById('calcOutputs').innerHTML = `
+    <div class="out-row">
+      <span class="lbl">التصرف المتوقع عند ${!isNaN(freq)?freq:'--'} هرتز</span>
+      <span class="val">${expected.flow!=null?expected.flow.toFixed(0):'--'} م³/س ${devBadge(flowDevPct)}</span>
+    </div>
+    <div class="out-row">
+      <span class="lbl">الضغط المتوقع عند ${!isNaN(freq)?freq:'--'} هرتز</span>
+      <span class="val">${expected.pressureBar!=null?expected.pressureBar.toFixed(2):'--'} بار ${devBadge(pressDevPct)}</span>
+    </div>
+    <div class="out-row">
+      <span class="lbl">القدرة الهيدروليكية الفعلية</span>
+      <span class="val">${hydraulicKW!=null?hydraulicKW.toFixed(1):'--'} ك.و</span>
+    </div>
+    <div class="out-row">
+      <span class="lbl">القدرة الكهربية التقديرية</span>
+      <span class="val">${electricalKW!=null?electricalKW.toFixed(1):'--'} ك.و</span>
+    </div>
+    <div class="out-row">
+      <span class="lbl">القدرة المتوقعة (كتالوج عند نفس التردد)</span>
+      <span class="val">${expectedShaftKW!=null?expectedShaftKW.toFixed(1):'--'} ك.و</span>
+    </div>
+    <div class="out-row ${effBadgeClass}">
+      <span class="lbl">⭐ الكفاءة الفعلية التقديرية</span>
+      <span class="val">${efficiencyPct!=null?efficiencyPct.toFixed(1)+'%':'--'} <span style="font-size:.7rem;color:var(--text-tertiary);">(تصميمية: ${RATED.efficiency}%)</span></span>
+    </div>
+    <div class="out-row">
+      <span class="lbl">الاستهلاك النوعي للطاقة</span>
+      <span class="val">${specificEnergy!=null?specificEnergy.toFixed(3):'--'} ك.و.س/م³</span>
+    </div>
+  `;
+
+  drawDesignCurve(!isNaN(freq)?freq:null, !isNaN(flow)?flow:null, !isNaN(pressureBar)?pressureBar*BAR_TO_M:null);
+}
+
+function drawDesignCurve(currentFreq, currentFlow, currentHeadM) {
+  const ctx = document.getElementById('designCurveChart');
+  const curvePoints = VFD_TABLE.map(p => ({ x: p.flow, y: p.pressureBar * BAR_TO_M }));
+
+  const datasets = [
+    {
+      label: 'منحنى التصميم (VFD Table)',
+      data: curvePoints,
+      showLine: true, borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,.15)',
+      tension: .3, pointRadius: 4, pointBackgroundColor: '#00b4ff'
+    }
+  ];
+  if (currentFlow != null && currentHeadM != null) {
+    datasets.push({
+      label: 'نقطة التشغيل الحالية (الحاسبة)',
+      data: [{ x: currentFlow, y: currentHeadM }],
+      showLine: false, pointRadius: 9, pointBackgroundColor: '#ffb300', pointBorderColor: '#fff', pointBorderWidth: 2
+    });
+  }
+
+  if (designChart) designChart.destroy();
+  designChart = new Chart(ctx, {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { title: { display:true, text:'التصرف (م³/س)', color:'#9bbcd4' }, ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'} },
+        y: { title: { display:true, text:'الرفع (م)', color:'#9bbcd4' }, ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'} }
+      },
+      plugins: { legend:{ labels:{ color:'#e8f4ff' } } }
+    }
+  });
+}
+
+window.addEventListener('load', () => {
+  scriptUrl = localStorage.getItem('dashboard_script_url') || '';
+  document.getElementById('scriptUrlInput').value = scriptUrl;
+  setQuickRange(7);
+  runCalc();
+});
+
+function saveScriptUrl() {
+  scriptUrl = document.getElementById('scriptUrlInput').value.trim();
+  localStorage.setItem('dashboard_script_url', scriptUrl);
+  showToast('✔ اتحفظ رابط السكريبت');
+}
+
+function setQuickRange(days) {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - (days - 1));
+  document.getElementById('toDate').value = to.toLocaleDateString('en-CA');
+  document.getElementById('fromDate').value = from.toLocaleDateString('en-CA');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card-bg);border:1px solid var(--border);padding:.7rem 1.4rem;border-radius:10px;z-index:999;font-size:.85rem;';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+async function loadPerformance() {
+  if (!scriptUrl) { showToast('⚠ محتاجة تحطي رابط السكريبت الأول'); return; }
+  const from = document.getElementById('fromDate').value;
+  const to = document.getElementById('toDate').value;
+  const container = document.getElementById('perfResult');
+  container.innerHTML = '<div class="empty-state">⏳ جاري التحميل...</div>';
+
+  try {
+    const res = await fetch(`${scriptUrl}?action=getPumpPerformance&from=${from}&to=${to}&t=${Date.now()}`);
+    const data = await res.json();
+    renderPerformance(data);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state">⚠ تعذر الاتصال بالشيت</div>';
+  }
+}
+
+function renderPerformance(d) {
+  const container = document.getElementById('perfResult');
+  const pumps = d.pumps || {};
+  const names = Object.keys(pumps);
+
+  if (!names.length) {
+    container.innerHTML = '<div class="empty-state">مفيش بيانات تردد/ضغط/تصرف كافية فى الفترة دي</div>';
+    return;
+  }
+
+  names.sort((a,b) => (pumps[b].avgEstimatedEfficiencyPct||0) - (pumps[a].avgEstimatedEfficiencyPct||0));
+
+  container.innerHTML = `
+    <div class="section">
+      <div class="section-title">🏆 ترتيب الطلمبات حسب الكفاءة التقديرية</div>
+      <table>
+        <thead>
+          <tr>
+            <th>الطلمبة</th>
+            <th>ساعات التشغيل</th>
+            <th>⭐ الكفاءة التقديرية</th>
+            <th>انحراف التصرف</th>
+            <th>انحراف الضغط</th>
+            <th>متوسط القدرة الهيدروليكية</th>
+            <th>متوسط القدرة الكهربية</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${names.map(name => {
+            const p = pumps[name];
+            const effClass = p.avgEstimatedEfficiencyPct == null ? '' :
+              p.avgEstimatedEfficiencyPct >= RATED.efficiency - 5 ? 'badge-good' :
+              p.avgEstimatedEfficiencyPct >= RATED.efficiency - 15 ? 'badge-mid' : 'badge-bad';
+            return `
+            <tr>
+              <td><b>${name}</b></td>
+              <td>${p.operatingHours}</td>
+              <td>${p.avgEstimatedEfficiencyPct!=null ? `<span class="badge-dev ${effClass}">${p.avgEstimatedEfficiencyPct}%</span>` : '--'}</td>
+              <td>${devBadge(p.avgFlowDeviationPct)}</td>
+              <td>${devBadge(p.avgPressureDeviationPct)}</td>
+              <td>${p.avgHydraulicPowerKW!=null?p.avgHydraulicPowerKW+' ك.و':'--'}</td>
+              <td>${p.avgElectricalPowerKW!=null?p.avgElectricalPowerKW+' ك.و':'--'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div class="ref-note">الكفاءة التصميمية المرجعية عند نقطة التشغيل الأساسية: ${RATED.efficiency}% — أي طلمبة كفاءتها التقديرية أقل بأكتر من 15% نقطة عن الرقم ده تستحق مراجعة فنية.</div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
