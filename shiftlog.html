@@ -1052,6 +1052,9 @@ HOURS.forEach((h, i) => {
 }
 
 function initShift() {
+  // 🆕 مسح قراءة قفل الخزانات القديمة عشان متفضلش من اليوم اللي فات
+  document.getElementById('tank1Close').value = '';
+  document.getElementById('tank2Close').value = '';
   buildTable();
   updateSummary();
   showToast('✅ تم فتح اليوم التشغيلي');
@@ -1547,6 +1550,78 @@ function saveScriptUrl() {
   showToast('✅ تم حفظ رابط الـ Script');
 }
 
+// 🆕 إحصائيات كل خط (نسخة JS من lineStats فى computeDailyTotals بالباك إند):
+// المناطق، أسماء وعدد الطلمبات المختلفة، وساعات التشغيل التراكمي
+function computeLineStatsJS() {
+  const acc = { 1: { areas: new Set(), pumps: new Set(), hours: 0, flow: null, press: null },
+                2: { areas: new Set(), pumps: new Set(), hours: 0, flow: null, press: null },
+                3: { areas: new Set(), pumps: new Set(), hours: 0, flow: null, press: null } };
+  document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
+    [1, 2, 3].forEach(l => {
+      const statusBtn = tr.querySelector(`.line-status-btn[data-line="${l}"]`);
+      const stopped = statusBtn?.classList.contains('stopped-btn');
+      const areas = getRowChecklist('area', l, i);
+      if (stopped || areas.length === 0) return;
+      areas.forEach(a => acc[l].areas.add(a));
+      getRowChecklist('pump', l, i).forEach(p => acc[l].pumps.add(p));
+      acc[l].hours++;
+      const flowVal = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value;
+      const pressVal = tr.querySelector(`input[data-line="${l}"][data-col="press"]`)?.value;
+      if (flowVal) acc[l].flow = flowVal;
+      if (pressVal) acc[l].press = pressVal;
+    });
+  });
+  const out = {};
+  [1, 2, 3].forEach(l => {
+    out['line' + l] = {
+      areas: [...acc[l].areas],
+      pumpNames: [...acc[l].pumps],
+      pumpCount: acc[l].pumps.size,
+      hours: acc[l].hours,
+      currentFlow: acc[l].flow,
+      currentPress: acc[l].press
+    };
+  });
+  return out;
+}
+
+// 🆕 فني بداية اليوم (7ص) وآخر فني سجّل بيانات (نسخة JS من نفس منطق الباك إند)
+function computeTechInfoJS() {
+  const trs = [...document.querySelectorAll('#tableBody tr')];
+  const tech7am = trs[0]?.querySelector('.tech-sel')?.value || null;
+
+  let latestTr = null, latestIdx = -1, latestTime = null;
+  trs.forEach((tr, idx) => {
+    const ea = tr.dataset.enteredAt;
+    if (ea) {
+      const tms = new Date(ea).getTime();
+      if (!latestTime || tms > latestTime) { latestTime = tms; latestTr = tr; latestIdx = idx; }
+    }
+  });
+  if (!latestTr) {
+    for (let i = trs.length - 1; i >= 0; i--) {
+      const tr = trs[i];
+      const hasData = [1, 2, 3].some(l => {
+        const flowInp = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`);
+        const freqInp = tr.querySelector(`input[data-line="${l}"][data-col="freq"]`);
+        return !!(flowInp?.value || freqInp?.value);
+      }) || !!(tr.querySelector('input[data-col="tank1"]')?.value ||
+               tr.querySelector('input[data-col="tank2"]')?.value ||
+               tr.querySelector('input[data-col="inflow"]')?.value);
+      if (hasData) { latestTr = tr; latestIdx = i; break; }
+    }
+  }
+  const techLast = latestTr?.querySelector('.tech-sel')?.value || null;
+  const techLastTimeLabel = latestIdx >= 0 ? HOURS[latestIdx] : null;
+  return { tech7am, techLast, techLastTimeLabel };
+}
+
+// 🆕 سطر "🔧 الفني" الموحّد: اليوم مقفول → فني 7ص، اليوم لسه مفتوح → آخر فني سجّل
+function formatTechHeaderLineJS(t) {
+  const name = t.meterClosed ? t.tech7am : t.techLast;
+  return `🔧 الفني: ${name || '--'}`;
+}
+
 // ── حسابات موحدة (نسخة JS من computeDailyTotals فى الباك إند) ──
 // بتُستخدم فى تقرير الواتساب عشان الأرقام تتطابق مع الداشبورد بدل ما
 // تبقى نسخة مصغّرة منفصلة بمنطق تاني.
@@ -1594,12 +1669,21 @@ function computeShiftTotalsJS() {
   });
   const sumManualInflow = inflowReadings.length ? inflowReadings.reduce((a, b) => a + b, 0) : null;
 
+  // 🆕 نسبة خطأ عداد الوارد (نفس منطق الباك إند)
+  const inflowDiff = (sumManualInflow != null) ? (sumManualInflow - inflowComputed) : null;
+  const inflowDiffPct = (inflowDiff != null && inflowComputed) ? (inflowDiff / inflowComputed * 100) : null;
+
+  const lineStats = computeLineStatsJS();
+  const techInfo = computeTechInfoJS();
+
   return {
     m1, m2, m3, outflowTotal, pf, meterClosed, t1, t2,
     tank1ChangeM3, tank2ChangeM3, stackingChangeM3,
     tank1CurrentM3, tank2CurrentM3, totalCurrentStackM3,
     effectiveOutflowForInflow, inflowComputed,
-    sumManualInflow, inflowReadingsCount: inflowReadings.length
+    sumManualInflow, inflowReadingsCount: inflowReadings.length,
+    inflowDiff, inflowDiffPct,
+    lineStats, tech7am: techInfo.tech7am, techLast: techInfo.techLast, techLastTimeLabel: techInfo.techLastTimeLabel
   };
 }
 
@@ -1611,46 +1695,69 @@ function generateWhatsAppReport() {
 
   const t = computeShiftTotalsJS();
 
-  // المناطق الشغالة
-  const areas = new Set();
-  [1, 2, 3].forEach(l => aggregateLineValues('area', l).forEach(a => areas.add(a)));
-
-  function outflowLine(label, meterVal, pumpVal) {
-    return t.meterClosed
-      ? `${label}: ${Math.round(meterVal).toLocaleString()} م³`
-      : `${label}: ${Math.round(pumpVal).toLocaleString()} م³ (تقديري لحد الآن)`;
-  }
-
+  const genTimeStr = new Date().toLocaleString('ar-EG', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+  });
   const periodStr = t.meterClosed
     ? `من 7:00ص ${date} إلى 7:00ص اليوم التالي (24 ساعة كاملة)`
-    : `من 7:00ص ${date} حتى الآن`;
+    : `من 7:00ص ${date} حتى الساعة ${t.techLastTimeLabel || '--'}`;
 
-  const msg =
-`📊 *تقرير محطة الدهار — ${date} ${dayName}*
-👷 المهندس: ${engineer}
-📍 الفترة: ${periodStr}
-━━━━━━━━━━━━━━━━━
-💧 *المنصرف لكل خط:*
-🔵 ${outflowLine('خط 1', t.m1, t.pf.line1)}
-🟢 ${outflowLine('خط 2', t.m2, t.pf.line2)}
-🟠 ${outflowLine('خط 3', t.m3, t.pf.line3)}
-━━━━━━━━━━━━━━━━━
-💧 *الإجمالي: ${Math.round(t.meterClosed ? t.outflowTotal : t.pf.total).toLocaleString()} م³*${t.meterClosed ? '' : ' (تقديري لحد الآن)'}
+  const lines = [];
+  lines.push('📊 *تقرير محطة الدهار*');
+  lines.push(`📅 ${date} (${dayName})`);
+  lines.push(`👷 المهندس: ${engineer}`);
+  lines.push(formatTechHeaderLineJS(t));
+  lines.push(`🕐 وقت إصدار التقرير: ${genTimeStr}   📍 الفترة: ${periodStr}`);
+  lines.push('');
 
-🌊 *الوارد:*
-${t.sumManualInflow != null ? `بالعداد: ${Math.round(t.sumManualInflow).toLocaleString()} م³ (${t.inflowReadingsCount} قراءة)\n` : ''}المحسوب: ${Math.round(t.inflowComputed).toLocaleString()} م³ (= المنصرف ${t.meterClosed ? 'بالعداد' : 'بتصرف الطلمبات'} ${Math.round(t.effectiveOutflowForInflow).toLocaleString()} + التكديس ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()})
+  // ── المنصرف ──
+  lines.push('💧 *المنصرف لكل خط*');
+  function lineBlock(label, ln, meterVal, pumpVal) {
+    const s = t.lineStats['line' + ln];
+    if (!s || s.hours === 0) {
+      lines.push(`${label} — متوقف`);
+      return;
+    }
+    const totalVal = t.meterClosed ? Math.round(meterVal) : Math.round(pumpVal);
+    const totalSuffix = t.meterClosed ? '' : ' (تراكمي من بداية التشغيل)';
+    lines.push(`${label} — ${s.areas.join('+') || '--'}`);
+    lines.push(`   ⚙️ الطلمبات: ${s.pumpCount} (${s.pumpNames.join('، ') || '--'})`);
+    lines.push(`   📟 التصرف الحالي: ${s.currentFlow || '--'} م³/س | الضغط: ${s.currentPress || '--'} بار`);
+    lines.push(`   💧 الإجمالي: ${totalVal.toLocaleString()} م³${totalSuffix}`);
+    lines.push(`   ⏱ ساعات التشغيل: ${s.hours} ساعة`);
+  }
+  lineBlock('🔵 خط 1', 1, t.m1, t.pf.line1);
+  lineBlock('🟢 خط 2', 2, t.m2, t.pf.line2);
+  lineBlock('🟠 خط 3 (جبل العفش)', 3, t.m3, t.pf.line3);
+  lines.push(`*الإجمالي الكلي:* ${Math.round(t.meterClosed ? t.outflowTotal : t.pf.total).toLocaleString()} م³${t.meterClosed ? '' : ' (تراكمي من بداية التشغيل)'}`);
+  lines.push('');
 
-🏗 *الخزانات والتكديس:*
-• خزان 1: ${t.t1.end != null ? t.t1.end.toFixed(2) : '--'} م (≈ ${t.tank1CurrentM3 != null ? Math.round(t.tank1CurrentM3).toLocaleString() : '--'} م³)
-• خزان 2: ${t.t2.end != null ? t.t2.end.toFixed(2) : '--'} م (≈ ${t.tank2CurrentM3 != null ? Math.round(t.tank2CurrentM3).toLocaleString() : '--'} م³)
-• الإجمالي الحالي: ${Math.round(t.totalCurrentStackM3).toLocaleString()} م³
-${t.stackingChangeM3 >= 0 ? '📈' : '📉'} التغير اليوم: ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()} م³
+  // ── الوارد ──
+  lines.push('🌊 *الوارد*');
+  if (t.sumManualInflow != null) {
+    lines.push(`بالعداد: ${Math.round(t.sumManualInflow).toLocaleString()} م³ (${t.inflowReadingsCount} قراءة)`);
+  }
+  lines.push(`المحسوب: ${Math.round(t.inflowComputed).toLocaleString()} م³ (= المنصرف ${t.meterClosed ? 'بالعداد' : 'بتصرف الطلمبات'} ${Math.round(t.effectiveOutflowForInflow).toLocaleString()} + التكديس ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()})`);
+  if (t.inflowDiffPct != null) {
+    lines.push(`⚖️ نسبة خطأ عداد الوارد: ${Math.abs(t.inflowDiffPct).toFixed(1)}% ${Math.abs(t.inflowDiffPct) < 5 ? '✅' : '⚠️ يستحق المراجعة'}`);
+    lines.push(`_يعني الفرق ${t.inflowDiff >= 0 ? '+' : ''}${Math.round(t.inflowDiff).toLocaleString()} م³ بين قراءة العداد والمحسوب، وده يعادل ${t.inflowDiff >= 0 ? 'زيادة' : 'نقص'} عن القيمة المحسوبة (المرجعية) بنسبة ${Math.abs(t.inflowDiffPct).toFixed(1)}%._`);
+  }
+  lines.push('');
 
-🗺 *المناطق المخدومة:*
-${[...areas].filter(Boolean).map(a => '• ' + a).join('\n') || '• --'}
+  // ── الخزانات والتكديس ──
+  lines.push('🏗 *الخزانات والتكديس*');
+  lines.push(`• خزان 1: ${t.t1.end != null ? t.t1.end.toFixed(2) : '--'} م (≈ ${t.tank1CurrentM3 != null ? Math.round(t.tank1CurrentM3).toLocaleString() : '--'} م³)`);
+  lines.push(`• خزان 2: ${t.t2.end != null ? t.t2.end.toFixed(2) : '--'} م (≈ ${t.tank2CurrentM3 != null ? Math.round(t.tank2CurrentM3).toLocaleString() : '--'} م³)`);
+  lines.push(`*الإجمالي الحالي:* ${Math.round(t.totalCurrentStackM3).toLocaleString()} م³`);
+  lines.push(`${t.stackingChangeM3 >= 0 ? '📈' : '📉'} التغير اليوم: ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()} م³`);
 
-⏰ _تقرير — ${new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute: '2-digit'})}_`;
+  const generalNotes = document.getElementById('generalNotes')?.value || '';
+  if (generalNotes) {
+    lines.push('');
+    lines.push(`📝 *ملاحظات:* ${generalNotes}`);
+  }
 
+  const msg = lines.join('\n');
   const encoded = encodeURIComponent(msg);
   showToast('📌 ابعتيها لجروب: تشغيل روافع مياه الغردقة');
   window.open(`https://wa.me/?text=${encoded}`, '_blank');
@@ -1956,8 +2063,12 @@ async function syncFromSheet(silent) {
     if (result && result.found && result.data) {
       restoreShift(result.data);
       if (!silent) showToast('☁ تم تحميل بيانات يوم '+date+' من الشيت');
-    } else if (!silent) {
-      showToast('⚠ لا يوجد سجل محفوظ في الشيت لهذا التاريخ', 'warn');
+    } else {
+      // 🆕 يوم جديد لسه مالوش سجل محفوظ — نمسح قراءة قفل الخزانات
+      // عشان متفضلش قراءة اليوم اللي فات ظاهرة وكإنها خاصة باليوم الجديد
+      document.getElementById('tank1Close').value = '';
+      document.getElementById('tank2Close').value = '';
+      if (!silent) showToast('⚠ لا يوجد سجل محفوظ في الشيت لهذا التاريخ', 'warn');
     }
   } catch (err) {
     console.error('syncFromSheet error:', err);
