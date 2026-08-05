@@ -149,20 +149,13 @@ header {
 
 .meters-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.8rem;
-}
-/* 🆕 الكارت التالت (خط 3) يتمركز تحت الاتنين بدل ما يضغط جنبهم ويطلع بره الواجهة */
-.meters-grid .meter-card.line3 {
-  grid-column: 1 / -1;
-  max-width: 380px;
-  width: 100%;
-  margin: 0 auto;
+  grid-template-columns: repeat(3,1fr);
+  gap: 1rem;
 }
 
 .meter-card {
   border-radius: 12px;
-  padding: 0.7rem 0.85rem;
+  padding: 0.9rem 1rem;
   border: 1px solid;
 }
 
@@ -174,11 +167,11 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.8rem;
 }
 
 .meter-title {
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   font-weight: 900;
 }
 .meter-card.line1 .meter-title { color:var(--line1); }
@@ -187,24 +180,24 @@ header {
 
 .meter-flow {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--amber);
 }
 
-.meter-fields { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;align-items:end; }
-.meter-fields .field label { font-size:0.64rem; }
+.meter-fields { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;align-items:end; }
+.meter-fields .field label { font-size:0.68rem; }
 
 .meter-result {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 800;
   text-align: center;
-  padding: 0.35rem;
+  padding: 0.4rem;
   background: rgba(0,0,0,0.2);
   border-radius: 6px;
 }
-.meter-result-label { font-size:0.6rem;color:var(--txt3);text-align:center;margin-top:0.1rem; }
+.meter-result-label { font-size:0.62rem;color:var(--txt3);text-align:center;margin-top:0.1rem; }
 
 /* ── LINE HEADER ── */
 .line-config {
