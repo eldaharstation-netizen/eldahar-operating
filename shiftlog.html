@@ -149,13 +149,20 @@ header {
 
 .meters-grid {
   display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+/* 🆕 الكارت التالت (خط 3) يتمركز تحت الاتنين بدل ما يضغط جنبهم ويطلع بره الواجهة */
+.meters-grid .meter-card.line3 {
+  grid-column: 1 / -1;
+  max-width: 380px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .meter-card {
   border-radius: 12px;
-  padding: 0.9rem 1rem;
+  padding: 0.7rem 0.85rem;
   border: 1px solid;
 }
 
@@ -167,11 +174,11 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.6rem;
 }
 
 .meter-title {
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   font-weight: 900;
 }
 .meter-card.line1 .meter-title { color:var(--line1); }
@@ -180,24 +187,24 @@ header {
 
 .meter-flow {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--amber);
 }
 
-.meter-fields { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;align-items:end; }
-.meter-fields .field label { font-size:0.68rem; }
+.meter-fields { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;align-items:end; }
+.meter-fields .field label { font-size:0.64rem; }
 
 .meter-result {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 800;
   text-align: center;
-  padding: 0.4rem;
+  padding: 0.35rem;
   background: rgba(0,0,0,0.2);
   border-radius: 6px;
 }
-.meter-result-label { font-size:0.62rem;color:var(--txt3);text-align:center;margin-top:0.1rem; }
+.meter-result-label { font-size:0.6rem;color:var(--txt3);text-align:center;margin-top:0.1rem; }
 
 /* ── LINE HEADER ── */
 .line-config {
@@ -448,6 +455,61 @@ header {
   color: var(--red);
 }
 
+/* 🆕 تبويبات عرض خط واحد بس */
+.line-view-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+.line-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--brd);
+  background: var(--card);
+  color: var(--txt2);
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 40px;
+}
+.line-tab.active {
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04121e;
+  border-color: transparent;
+}
+/* إخفاء أعمدة الخطوط الغير مختارة */
+.shift-table.view-line1 .th-line2, .shift-table.view-line1 .cell-line2,
+.shift-table.view-line1 .th-line3, .shift-table.view-line1 .cell-line3 { display: none; }
+.shift-table.view-line2 .th-line1, .shift-table.view-line2 .cell-line1,
+.shift-table.view-line2 .th-line3, .shift-table.view-line2 .cell-line3 { display: none; }
+.shift-table.view-line3 .th-line1, .shift-table.view-line3 .cell-line1,
+.shift-table.view-line3 .th-line2, .shift-table.view-line3 .cell-line2 { display: none; }
+
+/* 🆕 تمييز صف الساعة الحالية */
+tr.current-hour-row td {
+  background: rgba(255,179,0,0.12) !important;
+  box-shadow: inset 0 0 0 2px rgba(255,179,0,0.55);
+}
+tr.current-hour-row .time-cell {
+  color: var(--amber);
+  font-weight: 900;
+}
+
+/* 🆕 مساحات لمس أكبر للموبايل */
+@media (max-width: 768px) {
+  .line-status-btn, .power-btn { min-height: 38px; font-size: 0.75rem !important; padding: 6px 8px !important; }
+  .multi-select-display { min-height: 38px; display:flex; align-items:center; padding: 6px 8px; }
+  .multi-dropdown label { padding: 10px 8px; min-height: 40px; display:flex; align-items:center; gap:8px; font-size: 0.85rem; }
+  .shift-table input[type="number" inputmode="decimal"], .shift-table input[type="text"], .shift-table select {
+    min-height: 38px; font-size: 0.9rem !important;
+  }
+  .line-tab { flex: 1 1 40%; text-align: center; }
+}
+
+
 /* ── TOAST ── */
 .toast {
   position: fixed;
@@ -538,11 +600,11 @@ header {
         <div class="meter-fields">
           <div class="field">
             <label>قراءة البداية (7ص) م³</label>
-            <input type="number" id="meter1Start" placeholder="0" oninput="calcFlow(1)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line1);">
+            <input type="number" inputmode="decimal" id="meter1Start" placeholder="0" oninput="calcFlow(1)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line1);">
           </div>
           <div class="field">
             <label>قراءة النهاية (7ص غد) م³</label>
-            <input type="number" id="meter1End" placeholder="0" oninput="calcFlow(1)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
+            <input type="number" inputmode="decimal" id="meter1End" placeholder="0" oninput="calcFlow(1)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
           </div>
           <div class="field">
             <div class="meter-result" id="meter1Result" style="color:var(--line1);">--</div>
@@ -568,11 +630,11 @@ header {
         <div class="meter-fields">
           <div class="field">
             <label>قراءة البداية (7ص) م³</label>
-            <input type="number" id="meter2Start" placeholder="0" oninput="calcFlow(2)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line2);">
+            <input type="number" inputmode="decimal" id="meter2Start" placeholder="0" oninput="calcFlow(2)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line2);">
           </div>
           <div class="field">
             <label>قراءة النهاية (7ص غد) م³</label>
-            <input type="number" id="meter2End" placeholder="0" oninput="calcFlow(2)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
+            <input type="number" inputmode="decimal" id="meter2End" placeholder="0" oninput="calcFlow(2)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
           </div>
           <div class="field">
             <div class="meter-result" id="meter2Result" style="color:var(--line2);">--</div>
@@ -597,11 +659,11 @@ header {
         <div class="meter-fields">
           <div class="field">
             <label>قراءة البداية (7ص) م³</label>
-            <input type="number" id="meter3Start" placeholder="0" oninput="calcFlow(3)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line3);">
+            <input type="number" inputmode="decimal" id="meter3Start" placeholder="0" oninput="calcFlow(3)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line3);">
           </div>
           <div class="field">
             <label>قراءة النهاية (7ص غد) م³</label>
-            <input type="number" id="meter3End" placeholder="0" oninput="calcFlow(3)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
+            <input type="number" inputmode="decimal" id="meter3End" placeholder="0" oninput="calcFlow(3)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
           </div>
           <div class="field">
             <div class="meter-result" id="meter3Result" style="color:var(--line3);">--</div>
@@ -626,11 +688,11 @@ header {
     <div class="meters-grid">
       <div class="field">
         <label>خزان 1 — قراءة القفل م</label>
-        <input type="number" id="tank1Close" placeholder="--" step="0.01" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--purple);">
+        <input type="number" inputmode="decimal" id="tank1Close" placeholder="--" step="0.01" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--purple);">
       </div>
       <div class="field">
         <label>خزان 2 — قراءة القفل م</label>
-        <input type="number" id="tank2Close" placeholder="--" step="0.01" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--purple);">
+        <input type="number" inputmode="decimal" id="tank2Close" placeholder="--" step="0.01" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--purple);">
       </div>
     </div>
     <div style="font-size:0.75rem;color:var(--txt3);margin-top:0.5rem;">
@@ -672,6 +734,15 @@ header {
   <!-- MAIN TABLE -->
   <div class="table-section">
     <div class="sec-title">📋 سجل التشغيل الساعي (7ص → 6ص)</div>
+
+    <!-- 🆕 تبويبات لعرض خط واحد بس وقت التسجيل، تقليل الزحمة على الموبايل -->
+    <div class="line-view-tabs" role="tablist">
+      <button type="button" class="line-tab active" data-view="all" onclick="setLineView('all', this)">📊 عرض الكل</button>
+      <button type="button" class="line-tab" data-view="line1" onclick="setLineView('line1', this)">🔵 خط الشمال</button>
+      <button type="button" class="line-tab" data-view="line2" onclick="setLineView('line2', this)">🟢 شبكات الدهار</button>
+      <button type="button" class="line-tab" data-view="line3" onclick="setLineView('line3', this)">🟠 جبل العفش</button>
+    </div>
+
     <table class="shift-table" id="shiftTable">
       <thead>
         <tr>
@@ -700,23 +771,23 @@ header {
           <th class="th-line1">تردد Hz</th>
           <th class="th-line1">أمبير A</th>
           <th class="th-line1">تصرف م³/س</th>
-          <th class="th-line1">ضغط بار</th>
+          <th class="th-line1">ضغط الطلمبة (بار)</th>
           <!-- خط 2 -->
-          <th class="th-line1">الحالة</th>
+          <th class="th-line2">الحالة</th>
           <th class="th-line2">منطقة</th>
           <th class="th-line2">طلمبة</th>
           <th class="th-line2">تردد Hz</th>
           <th class="th-line2">أمبير A</th>
           <th class="th-line2">تصرف م³/س</th>
-          <th class="th-line2">ضغط بار</th>
+          <th class="th-line2">ضغط الطلمبة (بار)</th>
           <!-- خط 3 -->
-          <th class="th-line1">الحالة</th>
+          <th class="th-line3">الحالة</th>
           <th class="th-line3">منطقة</th>
           <th class="th-line3">طلمبة</th>
           <th class="th-line3">تردد Hz</th>
           <th class="th-line3">أمبير A</th>
           <th class="th-line3">تصرف م³/س</th>
-          <th class="th-line3">ضغط بار</th>
+          <th class="th-line3">ضغط الطلمبة (بار)</th>
           <!-- خزانات -->
           <th class="th-tank">خزان 1 م</th>
           <th class="th-tank">خزان 2 م</th>
@@ -813,6 +884,35 @@ function updateDayName() {
   const el = document.getElementById('dayBadge');
   if (d) {
     el.textContent = DAYS_AR[new Date(d+'T12:00:00').getDay()];
+  }
+}
+
+// 🆕 setLineView — تبديل عرض عمود خط واحد بس (أو الكل) لتقليل الزحمة وقت التسجيل من الموبايل
+function setLineView(mode, btn) {
+  const table = document.getElementById('shiftTable');
+  table.classList.remove('view-line1', 'view-line2', 'view-line3');
+  if (mode !== 'all') table.classList.add('view-' + mode);
+  document.querySelectorAll('.line-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+// 🆕 تمييز صف الساعة الحالية + سكرول ليها تلقائي أول ما الجدول يتبني
+function highlightCurrentHourRow() {
+  document.querySelectorAll('#tableBody tr').forEach(tr => tr.classList.remove('current-hour-row'));
+  const now = new Date();
+  const h = now.getHours(); // 0-23
+  // تحويل الساعة الفعلية لتسمية زي HOURS (7ص، 8ص، ...، 12ظ، 1م، ...، 12م، 1ص...6ص)
+  let label;
+  if (h === 0) label = '12م';
+  else if (h < 12) label = h + 'ص';
+  else if (h === 12) label = '12ظ';
+  else label = (h - 12) + 'م';
+  const idx = HOURS.indexOf(label);
+  if (idx === -1) return;
+  const tr = document.querySelectorAll('#tableBody tr')[idx];
+  if (tr) {
+    tr.classList.add('current-hour-row');
+    tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
 }
 
@@ -920,9 +1020,9 @@ function buildTable() {
         </button>
       </td>
       <!-- الجهد -->
-      <td class="cell-tank"><input type="number" data-col="voltage" placeholder="380" step="1" style="color:var(--amber);font-family:Rajdhani,sans-serif;"></td>
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="voltage" placeholder="380" step="1" style="color:var(--amber);font-family:Rajdhani,sans-serif;"></td>
       <!-- الوارد -->
-      <td class="cell-tank"><input type="number" data-col="inflow" placeholder="--" step="0.1" style="color:var(--purple);font-family:Rajdhani,sans-serif;"></td>
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="inflow" placeholder="--" step="0.1" style="color:var(--purple);font-family:Rajdhani,sans-serif;"></td>
       <!-- خط 1 -->
       <td class="cell-line1" style="vertical-align:middle;text-align:center;">
         <button class="line-status-btn active-btn" data-line="1" data-status="active"
@@ -943,10 +1043,10 @@ function buildTable() {
           <div class="multi-dropdown" id="pumpDD_1_${i}"></div>
         </div>
       </td>
-      <td class="cell-line1"><input type="number" data-line="1" data-col="freq" placeholder="--" step="0.5"></td>
-      <td class="cell-line1"><input type="number" data-line="1" data-col="amp" placeholder="--" step="1"></td>
-      <td class="cell-line1"><input type="number" data-line="1" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
-      <td class="cell-line1"><input type="number" data-line="1" data-col="press" placeholder="--" step="0.1"></td>
+      <td class="cell-line1"><input type="number" inputmode="decimal" data-line="1" data-col="freq" placeholder="--" step="0.5"></td>
+      <td class="cell-line1"><input type="number" inputmode="decimal" data-line="1" data-col="amp" placeholder="--" step="1"></td>
+      <td class="cell-line1"><input type="number" inputmode="decimal" data-line="1" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
+      <td class="cell-line1"><input type="number" inputmode="decimal" data-line="1" data-col="press" placeholder="--" step="0.1"></td>
       <!-- خط 2 -->
       <td class="cell-line2" style="vertical-align:middle;text-align:center;">
         <button class="line-status-btn active-btn" data-line="2" data-status="active"
@@ -967,10 +1067,10 @@ function buildTable() {
           <div class="multi-dropdown" id="pumpDD_2_${i}"></div>
         </div>
       </td>
-      <td class="cell-line2"><input type="number" data-line="2" data-col="freq" placeholder="--" step="0.5"></td>
-      <td class="cell-line2"><input type="number" data-line="2" data-col="amp" placeholder="--" step="1"></td>
-      <td class="cell-line2"><input type="number" data-line="2" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
-      <td class="cell-line2"><input type="number" data-line="2" data-col="press" placeholder="--" step="0.1"></td>
+      <td class="cell-line2"><input type="number" inputmode="decimal" data-line="2" data-col="freq" placeholder="--" step="0.5"></td>
+      <td class="cell-line2"><input type="number" inputmode="decimal" data-line="2" data-col="amp" placeholder="--" step="1"></td>
+      <td class="cell-line2"><input type="number" inputmode="decimal" data-line="2" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
+      <td class="cell-line2"><input type="number" inputmode="decimal" data-line="2" data-col="press" placeholder="--" step="0.1"></td>
       <!-- خط 3 -->
       <td class="cell-line3" style="vertical-align:middle;text-align:center;">
         <button class="line-status-btn active-btn" data-line="3" data-status="active"
@@ -991,13 +1091,13 @@ function buildTable() {
           <div class="multi-dropdown" id="pumpDD_3_${i}"></div>
         </div>
       </td>
-      <td class="cell-line3"><input type="number" data-line="3" data-col="freq" placeholder="--" step="0.5"></td>
-      <td class="cell-line3"><input type="number" data-line="3" data-col="amp" placeholder="--" step="1"></td>
-      <td class="cell-line3"><input type="number" data-line="3" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
-      <td class="cell-line3"><input type="number" data-line="3" data-col="press" placeholder="--" step="0.1"></td>
+      <td class="cell-line3"><input type="number" inputmode="decimal" data-line="3" data-col="freq" placeholder="--" step="0.5"></td>
+      <td class="cell-line3"><input type="number" inputmode="decimal" data-line="3" data-col="amp" placeholder="--" step="1"></td>
+      <td class="cell-line3"><input type="number" inputmode="decimal" data-line="3" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
+      <td class="cell-line3"><input type="number" inputmode="decimal" data-line="3" data-col="press" placeholder="--" step="0.1"></td>
       <!-- خزانات -->
-      <td class="cell-tank"><input type="number" data-col="tank1" placeholder="--" step="0.01" style="color:var(--purple);"></td>
-      <td class="cell-tank"><input type="number" data-col="tank2" placeholder="--" step="0.01" style="color:var(--purple);"></td>
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="tank1" placeholder="--" step="0.01" style="color:var(--purple);"></td>
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="tank2" placeholder="--" step="0.01" style="color:var(--purple);"></td>
       <!-- ملاحظات -->
       <td><input type="text" data-col="notes" placeholder="..." style="font-family:Cairo,sans-serif;font-size:0.75rem;min-width:100px;"></td>
     </tr>`;
@@ -1022,8 +1122,14 @@ HOURS.forEach((h, i) => {
         </label>`).join('');
     }
   });
+  // 🆕 خط 3 دايماً بيغذي منطقة واحدة ثابتة (جبل العفش) — نحددها افتراضياً
+  // من غير ما الفني يحتاج يختارها يدوي كل ساعة
+  setRowChecklist('area', 3, i, 'خط جبل العفش');
 });
   // ملحوظة: تعبئة المنطقة/الطلمبة التلقائية من الصف السابق بتحصل عند فتح قائمة التشيك نفسها (toggleDropdown)
+
+  // 🆕 تمييز الساعة الحالية والسكرول ليها
+  highlightCurrentHourRow();
 
   // تملية تلقائية للكهرباء والجهد لما تتحرك للصف التالي
   document.querySelectorAll('#tableBody tr').forEach((row, rowIdx) => {
@@ -1475,17 +1581,17 @@ function addAreaMeter(line) {
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;">
       <div>
         <div style="font-size:0.65rem;color:var(--txt3);margin-bottom:0.2rem;">قراءة قبل م³</div>
-        <input type="number" class="am-before" placeholder="0" oninput="calcAreaMeter(${line},${idx})"
+        <input type="number" inputmode="decimal" class="am-before" placeholder="0" oninput="calcAreaMeter(${line},${idx})"
           style="width:100%;padding:0.3rem;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:Rajdhani,sans-serif;font-size:0.82rem;">
       </div>
       <div>
         <div style="font-size:0.65rem;color:var(--txt3);margin-bottom:0.2rem;">قراءة بعد م³</div>
-        <input type="number" class="am-after" placeholder="0" oninput="calcAreaMeter(${line},${idx})"
+        <input type="number" inputmode="decimal" class="am-after" placeholder="0" oninput="calcAreaMeter(${line},${idx})"
           style="width:100%;padding:0.3rem;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:Rajdhani,sans-serif;font-size:0.82rem;">
       </div>
       <div>
         <div style="font-size:0.65rem;color:var(--txt3);margin-bottom:0.2rem;">المنصرف م³</div>
-        <input type="number" class="am-diff" readonly
+        <input type="number" inputmode="decimal" class="am-diff" readonly
           style="width:100%;padding:0.3rem;background:rgba(0,212,255,0.05);border:1px solid var(--brd);border-radius:6px;color:${color};font-family:Rajdhani,sans-serif;font-size:0.85rem;font-weight:700;">
       </div>
     </div>`;
@@ -1733,15 +1839,10 @@ function generateWhatsAppReport() {
   lines.push('');
 
   // ── الوارد ──
+  // 🆕 التقرير بيعرض قراءة العداد بس. الحسابات التانية (المحسوب/نسبة الخطأ)
+  // لسه محسوبة جوه t (computeShiftTotalsJS) ومتاحة للداشبورد، بس مبتتطبعش هنا.
   lines.push('🌊 *الوارد*');
-  if (t.sumManualInflow != null) {
-    lines.push(`بالعداد: ${Math.round(t.sumManualInflow).toLocaleString()} م³ (${t.inflowReadingsCount} قراءة)`);
-  }
-  lines.push(`المحسوب: ${Math.round(t.inflowComputed).toLocaleString()} م³ (= المنصرف ${t.meterClosed ? 'بالعداد' : 'بتصرف الطلمبات'} ${Math.round(t.effectiveOutflowForInflow).toLocaleString()} + التكديس ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()})`);
-  if (t.inflowDiffPct != null) {
-    lines.push(`⚖️ نسبة خطأ عداد الوارد: ${Math.abs(t.inflowDiffPct).toFixed(1)}% ${Math.abs(t.inflowDiffPct) < 5 ? '✅' : '⚠️ يستحق المراجعة'}`);
-    lines.push(`_يعني الفرق ${t.inflowDiff >= 0 ? '+' : ''}${Math.round(t.inflowDiff).toLocaleString()} م³ بين قراءة العداد والمحسوب، وده يعادل ${t.inflowDiff >= 0 ? 'زيادة' : 'نقص'} عن القيمة المحسوبة (المرجعية) بنسبة ${Math.abs(t.inflowDiffPct).toFixed(1)}%._`);
-  }
+  lines.push(`بالعداد: ${t.sumManualInflow != null ? (Math.round(t.sumManualInflow).toLocaleString() + ' م³ (' + t.inflowReadingsCount + ' قراءة)') : '--'}`);
   lines.push('');
 
   // ── الخزانات والتكديس ──
