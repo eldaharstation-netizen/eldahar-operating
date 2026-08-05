@@ -203,6 +203,9 @@ function renderResult(area, from, to, d) {
   const maxPumpHrs = pumpEntries.length ? pumpEntries[0][1] : 1;
 
   container.innerHTML = `
+    <div style="font-size:0.78rem; color:var(--text-tertiary); background:rgba(255,179,0,.06); border:1px solid rgba(255,179,0,.2); border-radius:10px; padding:0.7rem 1rem; margin-bottom:1rem; line-height:1.6;">
+      ℹ️ الاستهلاك هنا محسوب من تصرف الخطوط الساعي (نفس مصدر ساعات التشغيل) — لو خط واحد بيخدم أكتر من منطقة فى نفس الساعة، بيتقسم تصرفه بالتساوي بينهم.
+    </div>
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-label">💧 إجمالي الاستهلاك</div>
