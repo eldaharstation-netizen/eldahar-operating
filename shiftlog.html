@@ -1320,6 +1320,9 @@ function loadShift() {
 }
 
 function restoreShift(data) {
+  const today = new Date().toLocaleDateString('en-CA');
+  const isNewDay = data.date !== today;
+  
   document.getElementById('shiftDate').value = data.date;
   document.getElementById('dayBadge').textContent = data.dayName || '';
   document.getElementById('engineer').value = data.engineer || '';
@@ -1333,8 +1336,15 @@ function restoreShift(data) {
   [1,2,3].forEach(l => {
     const m = data.meters?.['line'+l];
     if (m) {
-      document.getElementById('meter'+l+'Start').value = m.start || '';
-      document.getElementById('meter'+l+'End').value = m.end || '';
+      // 🆕 إذا كان يوم جديد: البداية = نهاية أمس، النهاية = فارغة
+      if (isNewDay) {
+        document.getElementById('meter'+l+'Start').value = m.end || ''; // البداية = النهاية السابقة
+        document.getElementById('meter'+l+'End').value = ''; // النهاية فارغة
+      } else {
+        // نفس اليوم: احمل البيانات كما هي
+        document.getElementById('meter'+l+'Start').value = m.start || '';
+        document.getElementById('meter'+l+'End').value = m.end || '';
+      }
       calcFlow(l);
 
       // استرجاع قراءات عدادات المناطق الفرعية
@@ -2158,10 +2168,16 @@ async function syncFromSheet(silent) {
       restoreShift(result.data);
       if (!silent) showToast('☁ تم تحميل بيانات يوم '+date+' من الشيت');
     } else {
-      // 🆕 يوم جديد لسه مالوش سجل محفوظ — نمسح قراءة قفل الخزانات
+      // 🆕 يوم جديد لسه مالوش سجل محفوظ — نمسح قراءة قفل الخزانات والعدادات
       // عشان متفضلش قراءة اليوم اللي فات ظاهرة وكإنها خاصة باليوم الجديد
       document.getElementById('tank1Close').value = '';
       document.getElementById('tank2Close').value = '';
+      
+      // 🆕 مسح النهاية للعدادات في يوم جديد (البداية تبقى من اليوم السابق)
+      [1,2,3].forEach(l => {
+        document.getElementById('meter'+l+'End').value = '';
+      });
+      
       if (!silent) showToast('⚠ لا يوجد سجل محفوظ في الشيت لهذا التاريخ', 'warn');
     }
   } catch (err) {
