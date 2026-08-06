@@ -132,6 +132,7 @@ header {
   border-radius: 14px;
   padding: 1rem 1.2rem;
   margin-bottom: 1rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
 }
 
 .sec-title {
@@ -156,12 +157,33 @@ header {
 .meter-card {
   border-radius: 12px;
   padding: 0.9rem 1rem;
-  border: 1px solid;
+  border: 2px solid;
 }
 
-.meter-card.line1 { background:var(--line1-bg); border-color:var(--line1-brd); }
-.meter-card.line2 { background:var(--line2-bg); border-color:var(--line2-brd); }
-.meter-card.line3 { background:var(--line3-bg); border-color:var(--line3-brd); }
+/* ── TANK CLOSE (قفل الخزانات) ── */
+.tank-close-section {
+  border: 2px solid rgba(179,136,255,0.45);
+  background: linear-gradient(180deg, rgba(179,136,255,0.06), transparent 60%);
+}
+.tank-close-field label {
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  color: var(--purple) !important;
+}
+.tank-close-input {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem !important;
+  color: var(--purple) !important;
+  border: 2px solid rgba(179,136,255,0.5) !important;
+  background: rgba(179,136,255,0.08) !important;
+  text-align: center;
+}
+.tank-close-input:focus { border-color: var(--purple) !important; }
+
+.meter-card.line1 { background:var(--line1-bg); border-color:var(--line1); }
+.meter-card.line2 { background:var(--line2-bg); border-color:var(--line2); }
+.meter-card.line3 { background:var(--line3-bg); border-color:var(--line3); }
 
 .meter-header {
   display: flex;
@@ -371,34 +393,42 @@ header {
   border-radius: 14px;
   padding: 1rem 1.2rem;
   margin-bottom: 1rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
 }
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(2,1fr);
+  gap: 0.7rem;
 }
 
 .summary-card {
   border-radius: 10px;
-  padding: 0.8rem;
+  padding: 0.55rem 0.6rem;
   text-align: center;
-  border: 1px solid;
+  border: 2px solid;
+  transition: transform 0.15s ease;
 }
-.summary-card.line1 { background:var(--line1-bg);border-color:var(--line1-brd); }
-.summary-card.line2 { background:var(--line2-bg);border-color:var(--line2-brd); }
-.summary-card.line3 { background:var(--line3-bg);border-color:var(--line3-brd); }
+.summary-card:nth-child(3) {
+  grid-column: 1 / -1;
+  max-width: 55%;
+  margin: 0 auto;
+}
+.summary-card.line1 { background:var(--line1-bg);border-color:var(--line1); }
+.summary-card.line2 { background:var(--line2-bg);border-color:var(--line2); }
+.summary-card.line3 { background:var(--line3-bg);border-color:var(--line3); }
 
 .summary-val {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 800;
+  line-height: 1.1;
 }
 .summary-card.line1 .summary-val { color:var(--line1); }
 .summary-card.line2 .summary-val { color:var(--line2); }
 .summary-card.line3 .summary-val { color:var(--line3); }
-.summary-lbl { font-size:0.75rem;color:var(--txt3);margin-top:0.2rem; }
-.summary-area { font-size:0.78rem;font-weight:700;color:var(--txt2);margin-bottom:0.3rem; }
+.summary-lbl { font-size:0.68rem;color:var(--txt3);margin-top:0.1rem; }
+.summary-area { font-size:0.72rem;font-weight:700;color:var(--txt2);margin-bottom:0.1rem; }
 
 .total-box {
   margin-top: 1rem;
@@ -491,6 +521,81 @@ tr.current-hour-row .time-cell {
   font-weight: 900;
 }
 
+/* 🆕 تلوين الصف اللي اكتملت بياناته الأساسية */
+tr.row-complete td {
+  background: rgba(0,230,118,0.07);
+}
+tr.row-complete .time-cell {
+  position: relative;
+}
+tr.row-complete .time-cell::before {
+  content: '✅';
+  display: block;
+  font-size: 0.7rem;
+  margin-bottom: 1px;
+}
+/* لو نفس الصف هو الساعة الحالية وكمان مكتمل، يفضل شكل الساعة الحالية غالب */
+tr.current-hour-row.row-complete td {
+  background: rgba(255,179,0,0.12) !important;
+}
+
+/* 🆕 مودال تنبيهات اكتمال/نطاق البيانات */
+.validation-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(4,10,20,0.72);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.validation-overlay.show { display: flex; }
+.validation-modal {
+  background: var(--card);
+  border: 2px solid rgba(255,179,0,0.5);
+  border-radius: 14px;
+  padding: 1.2rem;
+  max-width: 560px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.validation-modal-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--amber);
+  margin-bottom: 0.8rem;
+}
+.validation-modal-body {
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+.validation-modal-body .vgroup { margin-bottom: 0.7rem; }
+.validation-modal-body .vgroup-title {
+  font-weight: 800;
+  font-size: 0.82rem;
+  margin-bottom: 0.3rem;
+}
+.validation-modal-body .vgroup-title.missing { color: var(--red); }
+.validation-modal-body .vgroup-title.range { color: var(--amber); }
+.validation-modal-body .vitem {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+  background: rgba(255,255,255,0.03);
+}
+.validation-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 /* 🆕 مساحات لمس أكبر للموبايل */
 @media (max-width: 768px) {
   .line-status-btn, .power-btn { min-height: 38px; font-size: 0.75rem !important; padding: 6px 8px !important; }
@@ -524,7 +629,7 @@ tr.current-hour-row .time-cell {
 @media (max-width: 768px) {
   .info-bar { grid-template-columns: 1fr 1fr; }
   .meters-grid { grid-template-columns: 1fr; }
-  .summary-grid { grid-template-columns: 1fr; }
+  .summary-card:nth-child(3) { max-width: 75%; }
   .main { padding: 0.7rem; }
 }
 
@@ -676,16 +781,16 @@ tr.current-hour-row .time-cell {
   </div>
 
   <!-- 🆕 قراءة الخزانات الرسمية عند قفل العداد (7ص غد) -->
-  <div class="meters-section">
+  <div class="meters-section tank-close-section">
     <div class="sec-title">🏗 قراءة الخزانات عند القفل (7ص غد)</div>
     <div class="meters-grid">
-      <div class="field">
+      <div class="field tank-close-field">
         <label>خزان 1 — قراءة القفل م</label>
-        <input type="number" inputmode="decimal" id="tank1Close" placeholder="--" step="0.01" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--purple);">
+        <input type="number" inputmode="decimal" id="tank1Close" placeholder="--" step="0.01" class="tank-close-input">
       </div>
-      <div class="field">
+      <div class="field tank-close-field">
         <label>خزان 2 — قراءة القفل م</label>
-        <input type="number" inputmode="decimal" id="tank2Close" placeholder="--" step="0.01" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--purple);">
+        <input type="number" inputmode="decimal" id="tank2Close" placeholder="--" step="0.01" class="tank-close-input">
       </div>
     </div>
     <div style="font-size:0.75rem;color:var(--txt3);margin-top:0.5rem;">
@@ -844,6 +949,18 @@ tr.current-hour-row .time-cell {
 
 <div class="toast" id="toast"></div>
 
+<!-- 🆕 مودال تنبيهات اكتمال/نطاق البيانات قبل الحفظ -->
+<div class="validation-overlay" id="validationOverlay">
+  <div class="validation-modal">
+    <div class="validation-modal-title">⚠️ في بيانات محتاجة مراجعة قبل الحفظ</div>
+    <div class="validation-modal-body" id="validationModalBody"></div>
+    <div class="validation-modal-actions">
+      <button class="btn btn-outline" onclick="closeValidationModal()">🔙 رجوع للتعديل</button>
+      <button class="btn btn-amber" id="validationConfirmBtn" onclick="confirmSaveDespiteIssues()">✔ تأكيد الحفظ رغم النواقص</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const AREAS = [
   'شبكات الدهار كامله - تشغيل مستمر','السلام','الكنيسه','الشيخ محمود','مجاهد','الموظفين','الزراعه','النجدة و الشيخ شحات',
@@ -862,6 +979,20 @@ const HOURS = [
 ];
 
 const DAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+// 🆕 النطاقات الطبيعية للبيانات الأساسية (تُستخدم في تنبيه اكتمال/سلامة البيانات قبل الحفظ)
+const NORMAL_RANGES = {
+  voltage: [380, 420],
+  freq:    [30, 50],
+  amp:     [100, 250],
+  press:   [1, 5.5],
+  inflow:  [0, 2000],
+  tank:    [0, 8]
+};
+const FIELD_LABELS_AR = {
+  voltage: 'الجهد', freq: 'التردد', amp: 'الأمبير', press: 'الضغط',
+  inflow: 'الوارد', tank1: 'خزان 1', tank2: 'خزان 2'
+};
 
 const TECHNICIANS = [
   'اسلام اشرف','احمد خير','عمر عبد المتجلى','احمد عبد الخالق',
@@ -889,18 +1020,22 @@ function setLineView(mode, btn) {
   if (btn) btn.classList.add('active');
 }
 
-// 🆕 تمييز صف الساعة الحالية + سكرول ليها تلقائي أول ما الجدول يتبني
-function highlightCurrentHourRow() {
-  document.querySelectorAll('#tableBody tr').forEach(tr => tr.classList.remove('current-hour-row'));
+// 🆕 استخراج انديكس الساعة الحالية في مصفوفة HOURS (يوم الشيفت من 7ص لـ 6ص تاني يوم)
+function getCurrentHourIndex() {
   const now = new Date();
   const h = now.getHours(); // 0-23
-  // تحويل الساعة الفعلية لتسمية زي HOURS (7ص، 8ص، ...، 12ظ، 1م، ...، 12م، 1ص...6ص)
   let label;
   if (h === 0) label = '12م';
   else if (h < 12) label = h + 'ص';
   else if (h === 12) label = '12ظ';
   else label = (h - 12) + 'م';
-  const idx = HOURS.indexOf(label);
+  return HOURS.indexOf(label);
+}
+
+// 🆕 تمييز صف الساعة الحالية + سكرول ليها تلقائي أول ما الجدول يتبني
+function highlightCurrentHourRow() {
+  document.querySelectorAll('#tableBody tr').forEach(tr => tr.classList.remove('current-hour-row'));
+  const idx = getCurrentHourIndex();
   if (idx === -1) return;
   const tr = document.querySelectorAll('#tableBody tr')[idx];
   if (tr) {
@@ -1269,7 +1404,17 @@ function collectAreaMeters(line) {
   return result;
 }
 
-async function saveShift() {
+// ── SAVE (مع فحص الاكتمال والنطاق الطبيعي قبل الحفظ) ──
+function saveShift() {
+  const { missingIssues, rangeIssues } = validateShiftBeforeSave();
+  if (missingIssues.length || rangeIssues.length) {
+    openValidationModal(missingIssues, rangeIssues);
+    return;
+  }
+  doSaveShift();
+}
+
+async function doSaveShift() {
   const data = collectData();
   const key = 'dahar_shift_' + data.date;
   localStorage.setItem(key, JSON.stringify(data));
@@ -1421,6 +1566,7 @@ function restoreShift(data) {
   });
 
   updateSummary();
+  refreshAllRowCompletion();
   showToast('✅ تم تحميل سجل '+data.date);
 }
 
@@ -2095,6 +2241,7 @@ function copyRowDown(btn) {
   });
 
   showToast('📋 تم نسخ بيانات الصف للصف التالي');
+  updateRowCompletionClass(nextRow);
 }
 
 // ── CLOCK ──
@@ -2128,6 +2275,142 @@ function stampRowEntryTime(e) {
   }
 }
 
+// 🆕 تلوين الصف اللي اكتملت بياناته الأساسية + إعادة الفحص عند أي تعديل
+document.getElementById('tableBody')?.addEventListener('input', markRowCompletionFromEvent, true);
+document.getElementById('tableBody')?.addEventListener('change', markRowCompletionFromEvent, true);
+document.getElementById('tableBody')?.addEventListener('click', function(e) {
+  if (e.target.closest('.line-status-btn')) {
+    // تأخير بسيط لحد ما toggleLineStatus يخلص شغله على الـ classList
+    setTimeout(() => markRowCompletionFromEvent(e), 0);
+  }
+}, true);
+
+function markRowCompletionFromEvent(e) {
+  const tr = e.target.closest('tr[data-hour]');
+  if (tr) updateRowCompletionClass(tr);
+}
+
+// بترجع true لو الخط ده نشط في الصف ده
+function isLineActiveInRow(tr, line) {
+  const btn = tr.querySelector(`.line-status-btn[data-line="${line}"]`);
+  if (!btn) return false;
+  return !btn.classList.contains('stopped-btn');
+}
+
+// بتفحص لو الصف مكتمل البيانات الأساسية المطلوبة (الجهد/الوارد/الخزانات + بيانات كل خط نشط)
+function isRowComplete(tr) {
+  const voltage = tr.querySelector('input[data-col="voltage"]')?.value;
+  const inflow  = tr.querySelector('input[data-col="inflow"]')?.value;
+  const tank1   = tr.querySelector('input[data-col="tank1"]')?.value;
+  const tank2   = tr.querySelector('input[data-col="tank2"]')?.value;
+  if (!voltage || !inflow || !tank1 || !tank2) return false;
+
+  for (const l of [1,2,3]) {
+    if (!isLineActiveInRow(tr, l)) continue;
+    const freq  = tr.querySelector(`input[data-line="${l}"][data-col="freq"]`)?.value;
+    const amp   = tr.querySelector(`input[data-line="${l}"][data-col="amp"]`)?.value;
+    const flow  = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value;
+    const press = tr.querySelector(`input[data-line="${l}"][data-col="press"]`)?.value;
+    if (!freq || !amp || !flow || !press) return false;
+  }
+  return true;
+}
+
+function updateRowCompletionClass(tr) {
+  tr.classList.toggle('row-complete', isRowComplete(tr));
+}
+
+function refreshAllRowCompletion() {
+  document.querySelectorAll('#tableBody tr[data-hour]').forEach(tr => updateRowCompletionClass(tr));
+}
+
+// 🆕 فحص اكتمال وسلامة نطاق البيانات الأساسية قبل الحفظ (حتى الساعة الحالية)
+function validateShiftBeforeSave() {
+  const rows = [...document.querySelectorAll('#tableBody tr[data-hour]')];
+  const currentIdx = getCurrentHourIndex();
+  const lastIdx = currentIdx === -1 ? rows.length - 1 : currentIdx;
+
+  const missingIssues = [];
+  const rangeIssues = [];
+
+  const checkRange = (hourLabel, fieldKey, value, rangeKey, displayLabel) => {
+    if (value === '' || value === null || value === undefined) return;
+    const num = parseFloat(value);
+    if (isNaN(num)) return;
+    const [min, max] = NORMAL_RANGES[rangeKey];
+    if (num < min || num > max) {
+      rangeIssues.push(`الساعة ${hourLabel} — ${displayLabel}: ${num} (النطاق الطبيعي ${min}–${max})`);
+    }
+  };
+
+  rows.forEach((tr, i) => {
+    if (i > lastIdx) return; // ساعات لسه ما جاش وقتها — مش مطلوب نتحقق منها
+    const hourLabel = tr.dataset.hour;
+
+    const voltage = tr.querySelector('input[data-col="voltage"]')?.value || '';
+    const inflow  = tr.querySelector('input[data-col="inflow"]')?.value  || '';
+    const tank1   = tr.querySelector('input[data-col="tank1"]')?.value   || '';
+    const tank2   = tr.querySelector('input[data-col="tank2"]')?.value   || '';
+
+    if (!voltage) missingIssues.push(`الساعة ${hourLabel} — الجهد فاضي`);
+    if (!inflow)  missingIssues.push(`الساعة ${hourLabel} — الوارد فاضي`);
+    if (!tank1)   missingIssues.push(`الساعة ${hourLabel} — قراءة خزان 1 فاضية`);
+    if (!tank2)   missingIssues.push(`الساعة ${hourLabel} — قراءة خزان 2 فاضية`);
+
+    checkRange(hourLabel, 'voltage', voltage, 'voltage', 'الجهد');
+    checkRange(hourLabel, 'inflow',  inflow,  'inflow',  'الوارد');
+    checkRange(hourLabel, 'tank1',   tank1,   'tank',    'خزان 1');
+    checkRange(hourLabel, 'tank2',   tank2,   'tank',    'خزان 2');
+
+    [1,2,3].forEach(l => {
+      if (!isLineActiveInRow(tr, l)) return;
+      const freq  = tr.querySelector(`input[data-line="${l}"][data-col="freq"]`)?.value  || '';
+      const amp   = tr.querySelector(`input[data-line="${l}"][data-col="amp"]`)?.value   || '';
+      const flow  = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value  || '';
+      const press = tr.querySelector(`input[data-line="${l}"][data-col="press"]`)?.value || '';
+
+      if (!freq)  missingIssues.push(`الساعة ${hourLabel} — خط ${l}: التردد فاضي`);
+      if (!amp)   missingIssues.push(`الساعة ${hourLabel} — خط ${l}: الأمبير فاضي`);
+      if (!flow)  missingIssues.push(`الساعة ${hourLabel} — خط ${l}: التصرف فاضي`);
+      if (!press) missingIssues.push(`الساعة ${hourLabel} — خط ${l}: الضغط فاضي`);
+
+      checkRange(hourLabel, 'freq',  freq,  'freq',  `خط ${l} — التردد`);
+      checkRange(hourLabel, 'amp',   amp,   'amp',   `خط ${l} — الأمبير`);
+      checkRange(hourLabel, 'press', press, 'press', `خط ${l} — الضغط`);
+    });
+  });
+
+  return { missingIssues, rangeIssues };
+}
+
+function openValidationModal(missingIssues, rangeIssues) {
+  const body = document.getElementById('validationModalBody');
+  let html = '';
+  if (missingIssues.length) {
+    html += `<div class="vgroup"><div class="vgroup-title missing">❌ بيانات ناقصة (${missingIssues.length})</div>`;
+    html += missingIssues.slice(0, 30).map(m => `<div class="vitem">${m}</div>`).join('');
+    if (missingIssues.length > 30) html += `<div class="vitem">... و${missingIssues.length - 30} أخرى</div>`;
+    html += `</div>`;
+  }
+  if (rangeIssues.length) {
+    html += `<div class="vgroup"><div class="vgroup-title range">⚠️ قيم خارج النطاق الطبيعي (${rangeIssues.length})</div>`;
+    html += rangeIssues.slice(0, 30).map(m => `<div class="vitem">${m}</div>`).join('');
+    if (rangeIssues.length > 30) html += `<div class="vitem">... و${rangeIssues.length - 30} أخرى</div>`;
+    html += `</div>`;
+  }
+  body.innerHTML = html;
+  document.getElementById('validationOverlay').classList.add('show');
+}
+
+function closeValidationModal() {
+  document.getElementById('validationOverlay').classList.remove('show');
+}
+
+function confirmSaveDespiteIssues() {
+  closeValidationModal();
+  doSaveShift();
+}
+
 // ── INIT ──
 window.addEventListener('load', () => {
   document.getElementById('shiftDate').value = new Date().toLocaleDateString('en-CA');
@@ -2143,12 +2426,17 @@ window.addEventListener('load', () => {
   if (urlInput) urlInput.value = savedUrl;
   if (urlStatus) { urlStatus.textContent = '✅ رابط محفوظ'; urlStatus.style.color = 'var(--green)'; }
 
-  // تحميل آخر سجل تلقائياً (احتياطي محلي لحد ما نتأكد من الشيت)
+  // تحميل آخر سجل تلقائياً (احتياطي محلي — فقط لو خاص بيوم النهاردة نفسه)
+  // 🆕 مبنعملش استرجاع لو آخر سجل محفوظ خاص بيوم قديم، عشان الصفحة تفتح دايمًا على يوم النهاردة
+  const today = new Date().toLocaleDateString('en-CA');
   const last = localStorage.getItem('dahar_last_shift');
-  if (last) {
+  if (last === today) {
     const data = JSON.parse(localStorage.getItem('dahar_shift_'+last)||'null');
     if (data) restoreShift(data);
   }
+  // 🆕 تأكيد إن حقل التاريخ فضل على يوم النهاردة مهما حصل فوق
+  document.getElementById('shiftDate').value = today;
+  updateDayName();
 
   // 🆕 مزامنة تلقائية من شيت جوجل لنفس تاريخ اليوم (المصدر الأدق لو موجود)
   syncFromSheet(true);
