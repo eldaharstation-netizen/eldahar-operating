@@ -150,13 +150,18 @@ header {
 
 .meters-grid {
   display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(2,1fr);
+  gap: 0.7rem;
+}
+.meters-grid > .meter-card:nth-child(3) {
+  grid-column: 1 / -1;
+  max-width: 55%;
+  margin: 0 auto;
 }
 
 .meter-card {
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
   border: 2px solid;
 }
 
@@ -187,13 +192,15 @@ header {
 
 .meter-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.8rem;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .meter-title {
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   font-weight: 900;
 }
 .meter-card.line1 .meter-title { color:var(--line1); }
@@ -202,12 +209,12 @@ header {
 
 .meter-flow {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--amber);
 }
 
-.meter-fields { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;align-items:end; }
+.meter-fields { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;align-items:end; }
 .meter-fields .field label { font-size:0.68rem; }
 
 .meter-result {
@@ -628,7 +635,9 @@ tr.current-hour-row.row-complete td {
 
 @media (max-width: 768px) {
   .info-bar { grid-template-columns: 1fr 1fr; }
-  .meters-grid { grid-template-columns: 1fr; }
+  .meter-fields { grid-template-columns: 1fr 1fr; }
+  .meter-fields > .field:nth-child(3) { grid-column: 1 / -1; }
+  .meters-grid > .meter-card:nth-child(3) { max-width: 100%; }
   .summary-card:nth-child(3) { max-width: 75%; }
   .main { padding: 0.7rem; }
 }
