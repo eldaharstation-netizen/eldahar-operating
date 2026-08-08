@@ -176,17 +176,21 @@
           <input type="number" id="calcPressure" value="7" step="0.05" oninput="runCalc()">
         </div>
         <div class="calc-field" style="grid-column:1/-1;">
-          <label>معامل القدرة PF (الجهاز راكب على كل طلمبة — القيمة الافتراضية <span id="pfDefaultLabel">0.95</span> جايه من إعدادات السكريبت، وتقدري تغيّريها هنا للتجربة)</label>
-          <input type="number" id="calcPF" value="0.95" step="0.01" min="0.5" max="1" oninput="onPFChange()">
+          <label>معامل القدرة PF (الجهاز راكب على كل طلمبة — القيمة الافتراضية الحالية <span id="pfDefaultLabel">0.95</span>)</label>
+          <div style="display:flex; gap:.5rem; align-items:center;">
+            <input type="number" id="calcPF" value="0.95" step="0.01" min="0.5" max="1" oninput="onPFChange()" style="flex:1;">
+            <button class="btn" style="white-space:nowrap; padding:.55rem .9rem; font-size:.8rem;" onclick="saveDefaultPF()">💾 حفظ كافتراضي جديد</button>
+          </div>
+          <div id="pfSaveStatus" style="font-size:.75rem; color:var(--text-tertiary); margin-top:.3rem;"></div>
         </div>
       </div>
 
       <div class="calc-outputs" id="calcOutputs"></div>
     </div>
     <div class="ref-note">
-      ⚠️ القدرة الكهربية والكفاءة هنا <b>تقديرية</b>. القيمة الافتراضية لمعامل القدرة (<span id="pfDefaultLabel2">0.95</span>) بتيجي مباشرة من ملف الـ.gs (PUMP_REF.POWER_FACTOR) —
-      لو غيّرتِيها هناك، هتتحدّث هنا تلقائيًا مع كل تحليل جديد. يعني الأرقام المعروضة أقرب تقدير للكفاءة، مش قياس مباشر بعداد قدرة حقيقي.
-      غيّري رقم PF فوق لو عايزة تجربي تأثير قيمة مختلفة على النتيجة. الموديل المرجعي: <b>CD 150-450 I1</b> — نقطة التصميم 450 م³/س @ 70م @ كفاءة 77.7% @ 111.9 ك.و عند 50 هرتز. منحنى الأداء المرسوم هو المنحنى الأصلي من الشركة المصنعة (Renetra) — نقطة التصميم مؤكدة بالظبط من الداتا شيت، وباقي نقاط المنحنى مقروءة تقريبيًا من الرسم البياني الرسمي.
+      ⚠️ القدرة الكهربية والكفاءة هنا <b>تقديرية</b>. القيمة الافتراضية لمعامل القدرة (<span id="pfDefaultLabel2">0.95</span>) محفوظة فى إعدادات السكريبت —
+      غيّري الرقم فوق واضغطي "💾 حفظ كافتراضي جديد" عشان يتحدّث لكل التحليلات الجاية تلقائيًا (من غير ما تفتحي كود الـ.gs خالص). أو سيبيه بيتغيّر مؤقتًا بس لحد ما تحدّثي الصفحة لو عايزة تجربي رقم مختلف من غير ما تحفظيه.
+      الموديل المرجعي: <b>CD 150-450 I1</b> — نقطة التصميم 450 م³/س @ 70م @ كفاءة 77.7% @ 111.9 ك.و عند 50 هرتز. منحنى الأداء المرسوم هو المنحنى الأصلي من الشركة المصنعة (Renetra) — نقطة التصميم مؤكدة بالظبط من الداتا شيت، وباقي نقاط المنحنى مقروءة تقريبيًا من الرسم البياني الرسمي.
     </div>
   </div>
 
@@ -298,6 +302,31 @@ const DESIGN_CURVE_50HZ = [
   { flow: 740, head: 53.0 }
 ];
 
+// منحنى الكفاءة الهيدروليكية الأصلي من الشركة المصنعة (Renetra، CD 150-450 I1) عند 50 هرتز — من نفس الداتا شيت.
+// نقطة التصميم (450, 77.7%) مؤكدة بالظبط من الجدول المطبوع؛ باقي النقاط مستخرجة رقميًا من منحنى "Hydraulic efficiency" في الرسم البياني الرسمي.
+const EFFICIENCY_CURVE_50HZ = [
+  { flow: 0,   efficiency: 0 },
+  { flow: 40,  efficiency: 13.5 },
+  { flow: 80,  efficiency: 26.0 },
+  { flow: 120, efficiency: 36.5 },
+  { flow: 160, efficiency: 46.0 },
+  { flow: 200, efficiency: 54.0 },
+  { flow: 240, efficiency: 60.0 },
+  { flow: 280, efficiency: 66.0 },
+  { flow: 320, efficiency: 70.0 },
+  { flow: 360, efficiency: 73.0 },
+  { flow: 400, efficiency: 75.5 },
+  { flow: 450, efficiency: 77.7 }, // نقطة التصميم — مؤكدة بالظبط
+  { flow: 480, efficiency: 78.2 }, // قمة المنحنى تقريبًا
+  { flow: 520, efficiency: 77.9 },
+  { flow: 560, efficiency: 77.3 },
+  { flow: 600, efficiency: 76.5 },
+  { flow: 640, efficiency: 75.5 },
+  { flow: 680, efficiency: 74.0 },
+  { flow: 720, efficiency: 72.3 },
+  { flow: 745, efficiency: 71.1 }
+];
+
 // استيفاء خطي للرفع عند تصرف معين على منحنى الـ50 هرتز الأصلي
 function interpHead50(flow50) {
   const c = DESIGN_CURVE_50HZ;
@@ -318,6 +347,20 @@ function scaledDesignCurve(freq) {
   return DESIGN_CURVE_50HZ.map(p => ({ x: Math.round(p.flow * ratio * 10) / 10, y: Math.round(p.head * ratio * ratio * 100) / 100 }));
 }
 
+// استيفاء خطي للكفاءة عند تصرف معين على منحنى الـ50 هرتز الأصلي (كفاءة القانون التناسبي لا تتغير مع التردد عمليًا — نفس منحنى Q/Qrated)
+function interpEfficiency50(flow50) {
+  const c = EFFICIENCY_CURVE_50HZ;
+  if (flow50 <= c[0].flow) return c[0].efficiency;
+  if (flow50 >= c[c.length-1].flow) return c[c.length-1].efficiency;
+  for (let i = 0; i < c.length - 1; i++) {
+    if (flow50 >= c[i].flow && flow50 <= c[i+1].flow) {
+      const r = (flow50 - c[i].flow) / (c[i+1].flow - c[i].flow);
+      return c[i].efficiency + r * (c[i+1].efficiency - c[i].efficiency);
+    }
+  }
+  return null;
+}
+
 // الرفع المتوقع من المنحنى الأصلي عند تردد وتصرف معينين (لمعرفة هل نقطة التشغيل الفعلية على المنحنى ولا لأ)
 function designCurveHeadAt(freq, flow) {
   const ratio = freq / RATED.freq;
@@ -325,6 +368,14 @@ function designCurveHeadAt(freq, flow) {
   const flow50 = flow / ratio;
   const head50 = interpHead50(flow50);
   return head50 != null ? head50 * ratio * ratio : null;
+}
+
+// الكفاءة المتوقعة من منحنى الشركة المصنعة عند تردد وتصرف معينين (بافتراض تشابه المنحنى النسبي عبر الترددات — Affinity Laws)
+function designCurveEfficiencyAt(freq, flow) {
+  const ratio = freq / RATED.freq;
+  if (!ratio) return null;
+  const flow50 = flow / ratio;
+  return interpEfficiency50(flow50);
 }
 
 function vfdExpectedAt(freq) {
@@ -379,6 +430,36 @@ function onPFChange() {
   runCalc();
   const active = document.querySelector('.pump-list-item.active');
   if (active) renderPumpDetail(active.dataset.pump);
+}
+
+// بتحفظ رقم PF الحالي فى حقل الحاسبة كافتراضي دائم فى السكريبت (PropertiesService)،
+// عشان يتطبق تلقائيًا على كل تحليل جاي من غير ما تفتحي كود الـ.gs.
+async function saveDefaultPF() {
+  const statusEl = document.getElementById('pfSaveStatus');
+  if (!scriptUrl) { showToast('⚠ محتاجة تحطي رابط السكريبت الأول'); return; }
+  const v = parseFloat(document.getElementById('calcPF').value);
+  if (isNaN(v) || v <= 0 || v > 1) { showToast('⚠ رقم PF لازم يكون بين 0 و1'); return; }
+
+  statusEl.textContent = '⏳ جاري الحفظ...';
+  try {
+    const res = await fetch(`${scriptUrl}?action=setPowerFactor&value=${v}&t=${Date.now()}`);
+    const result = await res.json();
+    if (result && result.success) {
+      defaultPF = result.powerFactor;
+      pfManuallyEdited = false; // بقى هو نفسه الافتراضي دلوقتي، مفيش تعديل يدوي معلّق
+      const lbl1 = document.getElementById('pfDefaultLabel');
+      const lbl2 = document.getElementById('pfDefaultLabel2');
+      if (lbl1) lbl1.textContent = defaultPF;
+      if (lbl2) lbl2.textContent = defaultPF;
+      statusEl.textContent = `✅ اتحفظ كافتراضي جديد (${defaultPF}) — هيتطبق تلقائيًا من دلوقتي`;
+      showToast('✅ اتحفظ معامل القدرة كافتراضي جديد');
+    } else {
+      statusEl.textContent = `⚠ ${result && result.error ? result.error : 'تعذر الحفظ'}`;
+    }
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = '⚠ تعذر الاتصال بالسكريبت — تأكدي إن الـdoGet فيه حالة setPowerFactor';
+  }
 }
 
 function runCalc() {
@@ -541,6 +622,7 @@ async function loadPerformance() {
 }
 
 let detailChart = null;
+let effChart = null;
 let trendChart = null;
 let lastScatter = [];
 let lastPumps = {};
@@ -628,6 +710,12 @@ function renderPerformance(d) {
       </div>
       <div id="detailSummary" style="margin-top:1.2rem;"></div>
       <div id="detailTableWrap" style="margin-top:.8rem; max-height:420px; overflow:auto;"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⚙️ منحنى الكفاءة الأصلي (Renetra) مقابل الكفاءة التقديرية الفعلية</div>
+      <div class="chart-wrap lg"><canvas id="effCurveChart"></canvas></div>
+      <div class="ref-note">المنحنى الأزرق هو منحنى الكفاءة الهيدروليكية الرسمي من داتا شيت الشركة المصنعة عند 50 هرتز (مستخرج رقميًا من الرسم البياني الأصلي). النقاط الملونة هي الكفاءة التقديرية المحسوبة من قراءات الطلمبة الفعلية (هيدروليك ÷ كهربي)، بعد تحويلها لنقطة مكافئة عند 50 هرتز بقانون التناسب (Affinity Laws) عشان تتقارن بنفس المنحنى بغض النظر عن التردد الفعلي وقت القراءة.</div>
     </div>
 
     <div class="section">
@@ -776,6 +864,8 @@ function renderPumpDetail(name) {
   const effVals = rows.map(r => r.efficiencyPct).filter(v => v != null);
   const avgEff = effVals.length ? Math.round(effVals.reduce((a,b)=>a+b,0) / effVals.length * 10) / 10 : null;
 
+  drawEfficiencyChart(name, rows);
+
   document.getElementById('detailSummary').innerHTML = `
     <div class="ref-note">
       عدد القراءات المستخدمة فى حساب هذه الطلمبة خلال الفترة: <b>${rows.length}</b> —
@@ -831,6 +921,63 @@ function renderPumpDetail(name) {
 
   renderTrend(name, rows);
   buildAnalysisText(name, rows);
+}
+
+// رسم منحنى الكفاءة الأصلي (Q-η عند 50 هرتز) مقابل نقاط الكفاءة التقديرية الفعلية،
+// بعد تحويل كل نقطة فعلية لتصرف مكافئ عند 50 هرتز بقانون التناسب (الكفاءة نفسها ثابتة نظريًا عبر الترددات عند نفس نقطة التشغيل النسبية)
+function drawEfficiencyChart(name, rows) {
+  const ctx = document.getElementById('effCurveChart');
+  if (!ctx) return;
+
+  const baseCurve = EFFICIENCY_CURVE_50HZ.map(p => ({ x: p.flow, y: p.efficiency }));
+
+  const effRows = rows.filter(r => r.efficiencyPct != null && r.freq != null && !isNaN(r.freq) && r.flow != null);
+  const actualPoints = effRows.map(r => ({ x: Math.round(r.flow / (r.freq / RATED.freq) * 10) / 10, y: r.efficiencyPct }));
+  const pointColors = effRows.map(r => {
+    const expected = designCurveEfficiencyAt(r.freq, r.flow);
+    if (expected == null) return '#9bbcd4';
+    const gap = r.efficiencyPct - expected; // سالب = أقل من المنحنى الأصلي
+    if (gap >= -5) return '#00e676';
+    if (gap >= -15) return '#ffb300';
+    return '#ff3b5c';
+  });
+
+  if (effChart) effChart.destroy();
+  effChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'منحنى الكفاءة الأصلي — 50 هرتز (الشركة المصنعة)', data: baseCurve, showLine: true, borderColor: '#00b4ff', borderWidth: 4, tension: .25, pointRadius: 0 },
+        { label: `الكفاءة الفعلية (مكافئة عند 50 هرتز) — ${name}`, data: actualPoints, showLine: false, pointRadius: 7, pointHoverRadius: 9, pointBackgroundColor: pointColors, pointBorderColor: '#fff', pointBorderWidth: 1.5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { title: { display:true, text:'التصرف المكافئ عند 50 هرتز (م³/س)', color:'#9bbcd4' }, ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'} },
+        y: { title: { display:true, text:'الكفاءة (%)', color:'#9bbcd4' }, ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'} }
+      },
+      plugins: {
+        legend:{ labels:{ color:'#e8f4ff' } },
+        tooltip: {
+          callbacks: {
+            afterLabel: (item) => {
+              if (!item.dataset.label || !item.dataset.label.startsWith('الكفاءة الفعلية')) return '';
+              const r = effRows[item.dataIndex];
+              const expected = designCurveEfficiencyAt(r.freq, r.flow);
+              return [
+                `التاريخ: ${r.date}`,
+                `التردد الفعلي: ${r.freq} هرتز`,
+                `التصرف الفعلي: ${r.flow} م³/س`,
+                expected != null ? `الكفاءة المتوقعة من منحنى الشركة المصنعة: ${Math.round(expected*10)/10}%` : '',
+                `الكفاءة التقديرية الفعلية: ${r.efficiencyPct}%`
+              ].filter(Boolean);
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 // تجميع القراءات على أقرب نقطة تردد فى جدول الـVFD، لمقارنة نفس نقطة التشغيل عبر الزمن
