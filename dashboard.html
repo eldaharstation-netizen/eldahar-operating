@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة التحكم — محطة الدهار</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1/dist/chartjs-plugin-zoom.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
@@ -359,6 +361,102 @@
       position: relative;
       height: 300px;
       margin-bottom: 1.5rem;
+    }
+
+    /* ── CHART HEADER (title + expand/zoom controls) ── */
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .chart-header .section-title {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .chart-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .chart-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: rgba(0, 180, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--primary-light);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .chart-icon-btn:hover {
+      background: rgba(0, 180, 255, 0.18);
+      border-color: rgba(0, 180, 255, 0.4);
+      transform: translateY(-1px);
+    }
+    .chart-hint {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      margin-top: -1rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ── FULLSCREEN CHART MODAL ── */
+    .chart-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 20, 0.88);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .chart-modal-overlay.open {
+      display: flex;
+    }
+    .chart-modal-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 1400px;
+      height: 85vh;
+      padding: 1.5rem 2rem 2rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .chart-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .chart-modal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .chart-modal-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .chart-modal-body {
+      position: relative;
+      flex: 1;
+      min-height: 0;
     }
 
     /* ── BUTTON ── */
@@ -775,7 +873,14 @@
 
       <!-- ── FLOW CHART ── -->
       <div class="card">
-        <div class="section-title">📈 تصرف الخطوط الساعي</div>
+        <div class="chart-header">
+          <div class="section-title">📈 تصرف الخطوط الساعي</div>
+          <div class="chart-header-actions">
+            <button class="chart-icon-btn" onclick="resetChartZoom('flowChart')" title="إعادة ضبط التكبير">↺</button>
+            <button class="chart-icon-btn" onclick="openChartModal()" title="تكبير المنحنى لملء الشاشة">⛶</button>
+          </div>
+        </div>
+        <div class="chart-hint">💡 استخدمي عجلة الفأرة أو حركة القرص (pinch) للتكبير، واسحبي للتنقل، أو دوسي ⛶ للعرض بملء الشاشة</div>
         <div class="chart-container">
           <canvas id="flowChart"></canvas>
         </div>
@@ -876,11 +981,29 @@
   <!-- منطقة مخفية تُستخدم فقط عند الطباعة/تصدير PDF -->
   <div id="printArea"></div>
 
+  <!-- ── FULLSCREEN CHART MODAL ── -->
+  <div class="chart-modal-overlay" id="chartModalOverlay" onclick="if(event.target===this) closeChartModal()">
+    <div class="chart-modal-box">
+      <div class="chart-modal-header">
+        <div class="chart-modal-title">📈 تصرف الخطوط الساعي</div>
+        <div class="chart-modal-actions">
+          <button class="chart-icon-btn" onclick="resetChartZoom('flowChartModal')" title="إعادة ضبط التكبير">↺</button>
+          <button class="chart-icon-btn" onclick="closeChartModal()" title="إغلاق">✕</button>
+        </div>
+      </div>
+      <div class="chart-hint">💡 عجلة الفأرة أو pinch للتكبير، اسحبي للتنقل، Esc أو ✕ للإغلاق</div>
+      <div class="chart-modal-body">
+        <canvas id="flowChartModal"></canvas>
+      </div>
+    </div>
+  </div>
 
   <script>
     let scriptUrl = '';
     let autoRefreshInterval = null;
     let flowChart = null;
+    let flowChartModal = null;
+    let lastFlowChartData = null;
 
     // تحميل الرابط المحفوظ
     window.addEventListener('load', () => {
@@ -1648,6 +1771,104 @@
       window.print();
     }
 
+    // يبني إعدادات المنحنى (تُستخدم للنسخة العادية ونسخة ملء الشاشة معًا)
+    function buildFlowChartConfig(times, flows1, flows2, flows3, { big = false } = {}) {
+      const fontSize = big ? 14 : 11;
+      const titleFontSize = big ? 16 : 12;
+      const pointRadius = big ? 3 : 2;
+      const pointHoverRadius = big ? 7 : 5;
+
+      return {
+        type: 'line',
+        data: {
+          labels: times,
+          datasets: [
+            {
+              label: 'خط 1',
+              data: flows1,
+              borderColor: '#00b4ff',
+              backgroundColor: 'rgba(0, 180, 255, 0.1)',
+              tension: 0.4,
+              fill: true,
+              pointRadius,
+              pointHoverRadius,
+              borderWidth: big ? 3 : 2
+            },
+            {
+              label: 'خط 2',
+              data: flows2,
+              borderColor: '#00e676',
+              backgroundColor: 'rgba(0, 230, 118, 0.1)',
+              tension: 0.4,
+              fill: true,
+              pointRadius,
+              pointHoverRadius,
+              borderWidth: big ? 3 : 2
+            },
+            {
+              label: 'خط 3',
+              data: flows3,
+              borderColor: '#ff7043',
+              backgroundColor: 'rgba(255, 112, 67, 0.1)',
+              tension: 0.4,
+              fill: true,
+              pointRadius,
+              pointHoverRadius,
+              borderWidth: big ? 3 : 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#e8f4ff', font: { size: titleFontSize } }
+            },
+            tooltip: {
+              enabled: true,
+              titleFont: { size: titleFontSize },
+              bodyFont: { size: titleFontSize },
+              padding: big ? 12 : 8,
+              callbacks: {
+                label: (item) => `${item.dataset.label}: ${item.formattedValue} م³/س`
+              }
+            },
+            zoom: {
+              pan: {
+                enabled: true,
+                mode: 'x',
+                modifierKey: null
+              },
+              zoom: {
+                wheel: { enabled: true, speed: 0.08 },
+                pinch: { enabled: true },
+                mode: 'x'
+              },
+              limits: {
+                x: { minRange: 5 }
+              }
+            }
+          },
+          scales: {
+            y: {
+              ticks: { color: '#9bbcd4', font: { size: fontSize } },
+              grid: { color: 'rgba(0, 180, 255, 0.1)' },
+              title: { display: big, text: 'التصرف (م³/س)', color: '#9bbcd4', font: { size: titleFontSize } }
+            },
+            x: {
+              ticks: { color: '#9bbcd4', font: { size: fontSize }, maxRotation: big ? 0 : 45, autoSkip: true },
+              grid: { color: 'rgba(0, 180, 255, 0.1)' }
+            }
+          }
+        }
+      };
+    }
+
     function updateFlowChart(rows) {
       const times = [];
       const flows1 = [];
@@ -1663,61 +1884,50 @@
         }
       });
 
+      // نحتفظ بآخر بيانات عشان نستخدمها فى نافذة ملء الشاشة كمان
+      lastFlowChartData = { times, flows1, flows2, flows3 };
+
       const ctx = document.getElementById('flowChart').getContext('2d');
-      
       if (flowChart) flowChart.destroy();
-      
-      flowChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: times,
-          datasets: [
-            {
-              label: 'خط 1',
-              data: flows1,
-              borderColor: '#00b4ff',
-              backgroundColor: 'rgba(0, 180, 255, 0.1)',
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: 'خط 2',
-              data: flows2,
-              borderColor: '#00e676',
-              backgroundColor: 'rgba(0, 230, 118, 0.1)',
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: 'خط 3',
-              data: flows3,
-              borderColor: '#ff7043',
-              backgroundColor: 'rgba(255, 112, 67, 0.1)',
-              tension: 0.4,
-              fill: true
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: { color: '#e8f4ff' }
-            }
-          },
-          scales: {
-            y: {
-              ticks: { color: '#9bbcd4' },
-              grid: { color: 'rgba(0, 180, 255, 0.1)' }
-            },
-            x: {
-              ticks: { color: '#9bbcd4' },
-              grid: { color: 'rgba(0, 180, 255, 0.1)' }
-            }
-          }
-        }
-      });
+      flowChart = new Chart(ctx, buildFlowChartConfig(times, flows1, flows2, flows3, { big: false }));
+
+      // لو نافذة ملء الشاشة مفتوحة، حدّثيها كمان بنفس البيانات الجديدة
+      if (flowChartModal) {
+        renderFlowChartModal();
+      }
+    }
+
+    function renderFlowChartModal() {
+      if (!lastFlowChartData) return;
+      const { times, flows1, flows2, flows3 } = lastFlowChartData;
+      const ctx = document.getElementById('flowChartModal').getContext('2d');
+      if (flowChartModal) flowChartModal.destroy();
+      flowChartModal = new Chart(ctx, buildFlowChartConfig(times, flows1, flows2, flows3, { big: true }));
+    }
+
+    function openChartModal() {
+      if (!lastFlowChartData || lastFlowChartData.times.length === 0) {
+        alert('⚠️ لا توجد بيانات كافية لعرض المنحنى — حمّلي البيانات أولاً');
+        return;
+      }
+      document.getElementById('chartModalOverlay').classList.add('open');
+      renderFlowChartModal();
+      document.addEventListener('keydown', handleChartModalEsc);
+    }
+
+    function closeChartModal() {
+      document.getElementById('chartModalOverlay').classList.remove('open');
+      if (flowChartModal) { flowChartModal.destroy(); flowChartModal = null; }
+      document.removeEventListener('keydown', handleChartModalEsc);
+    }
+
+    function handleChartModalEsc(e) {
+      if (e.key === 'Escape') closeChartModal();
+    }
+
+    function resetChartZoom(chartCanvasId) {
+      const chart = chartCanvasId === 'flowChartModal' ? flowChartModal : flowChart;
+      if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
     }
 
     function updateAlerts(data) {
