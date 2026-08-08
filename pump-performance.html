@@ -176,7 +176,7 @@
           <input type="number" id="calcPressure" value="7" step="0.05" oninput="runCalc()">
         </div>
         <div class="calc-field" style="grid-column:1/-1;">
-          <label>معامل القدرة PF (الجهاز راكب على كل طلمبة — القيمة الافتراضية 0.95 هي الحد الأدنى المضمون)</label>
+          <label>معامل القدرة PF (الجهاز راكب على كل طلمبة — القيمة الافتراضية <span id="pfDefaultLabel">0.95</span> جايه من إعدادات السكريبت، وتقدري تغيّريها هنا للتجربة)</label>
           <input type="number" id="calcPF" value="0.95" step="0.01" min="0.5" max="1" oninput="onPFChange()">
         </div>
       </div>
@@ -184,8 +184,8 @@
       <div class="calc-outputs" id="calcOutputs"></div>
     </div>
     <div class="ref-note">
-      ⚠️ القدرة الكهربية والكفاءة هنا <b>تقديرية</b>. بما إن جهاز رفع معامل القدرة راكب على كل طلمبة على حدة بأمر من شركة الكهرباء،
-      فمعامل القدرة الفعلي دايمًا <b>0.95 أو أعلى</b> — يعني الأرقام المعروضة هنا هي أقرب حد أعلى تقريبي للكفاءة، مش قياس مباشر بعداد قدرة حقيقي.
+      ⚠️ القدرة الكهربية والكفاءة هنا <b>تقديرية</b>. القيمة الافتراضية لمعامل القدرة (<span id="pfDefaultLabel2">0.95</span>) بتيجي مباشرة من ملف الـ.gs (PUMP_REF.POWER_FACTOR) —
+      لو غيّرتِيها هناك، هتتحدّث هنا تلقائيًا مع كل تحليل جديد. يعني الأرقام المعروضة أقرب تقدير للكفاءة، مش قياس مباشر بعداد قدرة حقيقي.
       غيّري رقم PF فوق لو عايزة تجربي تأثير قيمة مختلفة على النتيجة. الموديل المرجعي: <b>CD 150-450 I1</b> — نقطة التصميم 450 م³/س @ 70م @ كفاءة 77.7% @ 111.9 ك.و عند 50 هرتز. منحنى الأداء المرسوم هو المنحنى الأصلي من الشركة المصنعة (Renetra) — نقطة التصميم مؤكدة بالظبط من الداتا شيت، وباقي نقاط المنحنى مقروءة تقريبيًا من الرسم البياني الرسمي.
     </div>
   </div>
@@ -252,8 +252,8 @@
 
     </div>
     <div class="ref-note">
-      PF = معامل القدرة (Power Factor) — قيمته الافتراضية هنا 0.95 لأن جهاز رفع معامل القدرة راكب على كل طلمبة على حدة بأمر من شركة الكهرباء،
-      فمعامل القدرة الفعلي دايمًا ≥ 0.95. تقدري تغيّري القيمة من حقل PF فى الحاسبة فوق لمشاهدة تأثيرها، والقيمة دي بتتطبق كمان على تفاصيل أي طلمبة تختاريها تحت.
+      PF = معامل القدرة (Power Factor) — قيمته الافتراضية بتيجي من ملف الـ.gs (PUMP_REF.POWER_FACTOR) لأن جهاز رفع معامل القدرة راكب على كل طلمبة على حدة بأمر من شركة الكهرباء.
+      تقدري تغيّري القيمة من حقل PF فى الحاسبة فوق لمشاهدة تأثيرها لحظيًا، والقيمة دي بتتطبق كمان على تفاصيل أي طلمبة تختاريها تحت.
     </div>
   </div>
 
@@ -262,7 +262,9 @@
 <script>
 let scriptUrl = '';
 let designChart = null;
-let customPF = 0.95;
+let customPF = 0.95; // قيمة احتياطية بس لحد ما يوصل رد من السيرفر فيه القيمة الفعلية
+let defaultPF = 0.95; // آخر قيمة افتراضية جاية من الـ.gs (لعرضها كمرجع في الملاحظات)
+let pfManuallyEdited = false; // true لو المستخدم غيّر PF يدويًا فى الحاسبة خلال الجلسة دي
 
 const VFD_TABLE = [
   { freq: 30,   pressureBar: 2.45,  flow: 270 },
@@ -277,7 +279,7 @@ const VFD_TABLE = [
 ];
 const RATED = { flow: 450, head: 70, efficiency: 77.7, shaftPower: 111.9, freq: 50 };
 const BAR_TO_M = 10.197;
-const POWER_FACTOR = 0.95;
+
 
 // منحنى الأداء الأصلي من الشركة المصنعة (Renetra، CD 150-450 I1) عند 50 هرتز — من الداتا شيت الرسمية.
 // نقطة التصميم (450, 70) مؤكدة بالظبط من الجدول المطبوع؛ باقي النقاط مقروءة تقريبيًا من الرسم البياني.
@@ -372,7 +374,8 @@ function diagnoseRow(effPct, flowDevPct, pressDevPct) {
 
 function onPFChange() {
   const v = parseFloat(document.getElementById('calcPF').value);
-  customPF = (!isNaN(v) && v > 0) ? v : 0.95;
+  customPF = (!isNaN(v) && v > 0) ? v : defaultPF;
+  pfManuallyEdited = true;
   runCalc();
   const active = document.querySelector('.pump-list-item.active');
   if (active) renderPumpDetail(active.dataset.pump);
@@ -514,6 +517,22 @@ async function loadPerformance() {
   try {
     const res = await fetch(`${scriptUrl}?action=getPumpPerformance&from=${from}&to=${to}&t=${Date.now()}`);
     const data = await res.json();
+
+    // معامل القدرة الافتراضي بييجي من الـ.gs (مصدر واحد للحقيقة).
+    // لو المستخدم مش عدّله يدويًا فى الحاسبة خلال الجلسة دي، يتحدّث تلقائيًا مع كل تحليل.
+    if (data && data.ref && data.ref.powerFactor != null && !isNaN(data.ref.powerFactor)) {
+      defaultPF = data.ref.powerFactor;
+      if (!pfManuallyEdited) {
+        customPF = defaultPF;
+        const pfInput = document.getElementById('calcPF');
+        if (pfInput) pfInput.value = defaultPF;
+      }
+      const lbl1 = document.getElementById('pfDefaultLabel');
+      const lbl2 = document.getElementById('pfDefaultLabel2');
+      if (lbl1) lbl1.textContent = defaultPF;
+      if (lbl2) lbl2.textContent = defaultPF;
+    }
+
     renderPerformance(data);
   } catch (err) {
     console.error(err);
