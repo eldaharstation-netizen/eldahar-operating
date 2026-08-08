@@ -93,9 +93,39 @@
   .filter-field label { font-size:.75rem; color:var(--text-secondary); }
 
   .chart-wrap { position:relative; height:340px; }
+  .chart-wrap.lg { height:440px; }
   .empty-state { text-align:center; padding:2.5rem 1rem; color:var(--text-tertiary); }
   .url-bar { display:flex; gap:.5rem; align-items:center; }
   .url-bar input { width:280px; }
+
+  .detail-layout { display:flex; gap:1.5rem; align-items:flex-start; flex-wrap:wrap; }
+  .pump-list { flex:0 0 250px; display:flex; flex-direction:column; gap:.5rem; }
+  .pump-list-item {
+    display:flex; flex-direction:column; gap:.4rem; text-align:right; cursor:pointer;
+    background:rgba(0,180,255,.04); border:1.5px solid var(--border); border-radius:10px;
+    padding:.7rem .9rem; transition:.15s;
+  }
+  .pump-list-item:hover { border-color:var(--primary-light); background:rgba(0,180,255,.08); }
+  .pump-list-item.active { border-color:var(--primary-light); background:rgba(0,180,255,.16); box-shadow:0 0 0 3px rgba(0,180,255,.1); }
+  .pump-list-item .plname { font-weight:700; font-size:.95rem; }
+  .pump-list-item .plmeta { display:flex; gap:.4rem; flex-wrap:wrap; }
+  .detail-main { flex:1 1 440px; min-width:0; }
+  .chart-legend-row { display:flex; gap:1.2rem; flex-wrap:wrap; margin-top:.7rem; font-size:.78rem; color:var(--text-secondary); }
+
+  .analysis-box {
+    background:linear-gradient(135deg, rgba(0,119,182,.1), rgba(0,180,255,.04));
+    border:1px solid var(--border); border-right:4px solid var(--primary-light);
+    border-radius:10px; padding:1rem 1.2rem; margin-top:1.1rem; font-size:.9rem; line-height:1.85;
+  }
+  .analysis-box h4 { color:var(--primary-light); font-size:.95rem; margin-bottom:.6rem; }
+  .analysis-box p { margin-bottom:.5rem; }
+  .analysis-box p:last-child { margin-bottom:0; }
+
+  @media (max-width:900px){
+    .detail-layout { flex-direction:column; }
+    .pump-list { flex-direction:row; overflow-x:auto; width:100%; padding-bottom:.3rem; }
+    .pump-list-item { flex:0 0 210px; }
+  }
 
   @media (max-width:700px){
     main{padding:1rem;} .calc-inputs{grid-template-columns:1fr;} .url-bar input{width:170px;}
@@ -145,13 +175,18 @@
           <label>الضغط الفعلي (بار)</label>
           <input type="number" id="calcPressure" value="7" step="0.05" oninput="runCalc()">
         </div>
+        <div class="calc-field" style="grid-column:1/-1;">
+          <label>معامل القدرة PF (الجهاز راكب على كل طلمبة — القيمة الافتراضية 0.95 هي الحد الأدنى المضمون)</label>
+          <input type="number" id="calcPF" value="0.95" step="0.01" min="0.5" max="1" oninput="onPFChange()">
+        </div>
       </div>
 
       <div class="calc-outputs" id="calcOutputs"></div>
     </div>
     <div class="ref-note">
-      ⚠️ القدرة الكهربية والكفاءة هنا <b>تقديرية</b>، محسوبة من معامل قدرة مفترض (0.95) بناءً على تأكيد مهندس الكهرباء —
-      مش قياس مباشر بعداد قدرة حقيقي. الموديل المرجعي: <b>CD 150-450 I1</b> — نقطة التصميم 450 م³/س @ 70م @ كفاءة 77.7% @ 111.9 ك.و عند 50 هرتز.
+      ⚠️ القدرة الكهربية والكفاءة هنا <b>تقديرية</b>. بما إن جهاز رفع معامل القدرة راكب على كل طلمبة على حدة بأمر من شركة الكهرباء،
+      فمعامل القدرة الفعلي دايمًا <b>0.95 أو أعلى</b> — يعني الأرقام المعروضة هنا هي أقرب حد أعلى تقريبي للكفاءة، مش قياس مباشر بعداد قدرة حقيقي.
+      غيّري رقم PF فوق لو عايزة تجربي تأثير قيمة مختلفة على النتيجة. الموديل المرجعي: <b>CD 150-450 I1</b> — نقطة التصميم 450 م³/س @ 70م @ كفاءة 77.7% @ 111.9 ك.و عند 50 هرتز. منحنى الأداء المرسوم هو المنحنى الأصلي من الشركة المصنعة (Renetra) — نقطة التصميم مؤكدة بالظبط من الداتا شيت، وباقي نقاط المنحنى مقروءة تقريبيًا من الرسم البياني الرسمي.
     </div>
   </div>
 
@@ -180,11 +215,54 @@
     <div class="empty-state">حددي الفترة واضغطي "حمّلي الأداء"</div>
   </div>
 
+  <!-- ── المعادلات المستخدمة ── -->
+  <div class="section">
+    <div class="section-title">📐 المعادلات المستخدمة فى حساب الكفاءة</div>
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+
+      <div class="out-row" style="flex-direction:column; align-items:flex-start; gap:.4rem;">
+        <span class="lbl" style="font-weight:700; color:var(--primary-light);">1) الرفع من الضغط</span>
+        <span class="val" style="font-size:.95rem;">الرفع (م) = الضغط الفعلي (بار) × 10.197</span>
+      </div>
+
+      <div class="out-row" style="flex-direction:column; align-items:flex-start; gap:.4rem;">
+        <span class="lbl" style="font-weight:700; color:var(--primary-light);">2) القدرة الهيدروليكية (الفعلية اللى المياه اخدتها)</span>
+        <span class="val" style="font-size:.95rem;">القدرة الهيدروليكية (ك.و) = 9.81 × (التصرف م³/س ÷ 3600) × الرفع (م)</span>
+      </div>
+
+      <div class="out-row" style="flex-direction:column; align-items:flex-start; gap:.4rem;">
+        <span class="lbl" style="font-weight:700; color:var(--primary-light);">3) القدرة الكهربية (المسحوبة من الشبكة)</span>
+        <span class="val" style="font-size:.95rem;">القدرة الكهربية (ك.و) = √3 × الجهد (فولت) × الأمبير × PF ÷ 1000</span>
+      </div>
+
+      <div class="out-row highlight" style="flex-direction:column; align-items:flex-start; gap:.4rem;">
+        <span class="lbl" style="font-weight:700;">⭐ 4) الكفاءة الفعلية التقديرية</span>
+        <span class="val" style="font-size:.95rem;">الكفاءة% = (القدرة الهيدروليكية ÷ القدرة الكهربية) × 100</span>
+      </div>
+
+      <div class="out-row" style="flex-direction:column; align-items:flex-start; gap:.4rem;">
+        <span class="lbl" style="font-weight:700; color:var(--primary-light);">5) القدرة المتوقعة من الكتالوج (قانون التناسب التكعيبي)</span>
+        <span class="val" style="font-size:.95rem;">القدرة المتوقعة (ك.و) = 111.9 × (التردد ÷ 50)³</span>
+      </div>
+
+      <div class="out-row" style="flex-direction:column; align-items:flex-start; gap:.4rem;">
+        <span class="lbl" style="font-weight:700; color:var(--primary-light);">6) الاستهلاك النوعي للطاقة</span>
+        <span class="val" style="font-size:.95rem;">الاستهلاك النوعي (ك.و.س/م³) = القدرة الكهربية ÷ التصرف الفعلي</span>
+      </div>
+
+    </div>
+    <div class="ref-note">
+      PF = معامل القدرة (Power Factor) — قيمته الافتراضية هنا 0.95 لأن جهاز رفع معامل القدرة راكب على كل طلمبة على حدة بأمر من شركة الكهرباء،
+      فمعامل القدرة الفعلي دايمًا ≥ 0.95. تقدري تغيّري القيمة من حقل PF فى الحاسبة فوق لمشاهدة تأثيرها، والقيمة دي بتتطبق كمان على تفاصيل أي طلمبة تختاريها تحت.
+    </div>
+  </div>
+
 </main>
 
 <script>
 let scriptUrl = '';
 let designChart = null;
+let customPF = 0.95;
 
 const VFD_TABLE = [
   { freq: 30,   pressureBar: 2.45,  flow: 270 },
@@ -200,6 +278,52 @@ const VFD_TABLE = [
 const RATED = { flow: 450, head: 70, efficiency: 77.7, shaftPower: 111.9, freq: 50 };
 const BAR_TO_M = 10.197;
 const POWER_FACTOR = 0.95;
+
+// منحنى الأداء الأصلي من الشركة المصنعة (Renetra، CD 150-450 I1) عند 50 هرتز — من الداتا شيت الرسمية.
+// نقطة التصميم (450, 70) مؤكدة بالظبط من الجدول المطبوع؛ باقي النقاط مقروءة تقريبيًا من الرسم البياني.
+const DESIGN_CURVE_50HZ = [
+  { flow: 0,   head: 78.0 },
+  { flow: 80,  head: 77.5 },
+  { flow: 160, head: 76.5 },
+  { flow: 240, head: 75.0 },
+  { flow: 320, head: 73.0 },
+  { flow: 400, head: 71.0 },
+  { flow: 450, head: 70.0 },
+  { flow: 480, head: 69.0 },
+  { flow: 560, head: 65.0 },
+  { flow: 640, head: 60.0 },
+  { flow: 720, head: 54.0 },
+  { flow: 740, head: 53.0 }
+];
+
+// استيفاء خطي للرفع عند تصرف معين على منحنى الـ50 هرتز الأصلي
+function interpHead50(flow50) {
+  const c = DESIGN_CURVE_50HZ;
+  if (flow50 <= c[0].flow) return c[0].head;
+  if (flow50 >= c[c.length-1].flow) return c[c.length-1].head;
+  for (let i = 0; i < c.length - 1; i++) {
+    if (flow50 >= c[i].flow && flow50 <= c[i+1].flow) {
+      const r = (flow50 - c[i].flow) / (c[i+1].flow - c[i].flow);
+      return c[i].head + r * (c[i+1].head - c[i].head);
+    }
+  }
+  return null;
+}
+
+// توليد منحنى الأداء عند أي تردد بقانون التناسب الهندسي: Q تتناسب مع f، H تتناسب مع f²
+function scaledDesignCurve(freq) {
+  const ratio = freq / RATED.freq;
+  return DESIGN_CURVE_50HZ.map(p => ({ x: Math.round(p.flow * ratio * 10) / 10, y: Math.round(p.head * ratio * ratio * 100) / 100 }));
+}
+
+// الرفع المتوقع من المنحنى الأصلي عند تردد وتصرف معينين (لمعرفة هل نقطة التشغيل الفعلية على المنحنى ولا لأ)
+function designCurveHeadAt(freq, flow) {
+  const ratio = freq / RATED.freq;
+  if (!ratio) return null;
+  const flow50 = flow / ratio;
+  const head50 = interpHead50(flow50);
+  return head50 != null ? head50 * ratio * ratio : null;
+}
 
 function vfdExpectedAt(freq) {
   if (freq <= VFD_TABLE[0].freq) return { flow: VFD_TABLE[0].flow, pressureBar: VFD_TABLE[0].pressureBar };
@@ -223,6 +347,37 @@ function devBadge(pct) {
   return `<span class="badge-dev ${cls}">${pct>=0?'+':''}${pct.toFixed(1)}%</span>`;
 }
 
+// مؤشر ثقة فى رقم الكفاءة حسب بعد التردد عن نقطة التصميم (50 هرتز)
+function confidenceForFreq(freq) {
+  if (freq == null || isNaN(freq)) return null;
+  const dist = Math.abs(freq - RATED.freq);
+  if (dist <= 5) return { cls:'badge-good', icon:'●', label:'ثقة عالية', note:'' };
+  if (dist <= 15) return { cls:'badge-mid', icon:'◐', label:'ثقة متوسطة',
+    note:'الكفاءة عند الترددات البعيدة عن 50 هرتز أقل دقة، لأن معامل القدرة الحقيقي بيختلف شوية عند الحمل الجزئي.' };
+  return { cls:'badge-bad', icon:'○', label:'ثقة منخفضة',
+    note:'الكفاءة عند الترددات المنخفضة أقل دقة بشكل واضح — الرقم ده تقريبي أكتر منه قياس دقيق.' };
+}
+
+// تشخيص مبدئي: بيربط انخفاض الكفاءة بانحراف التصرف/الضغط عشان يميّز مشكلة ميكانيكية حقيقية عن خطأ فى قياس القدرة
+function diagnoseRow(effPct, flowDevPct, pressDevPct) {
+  if (effPct == null) return null;
+  const deficit = RATED.efficiency - effPct;
+  if (deficit < 15) return { cls:'badge-good', label:'✅ طبيعي' };
+  const flowAbs = flowDevPct != null ? Math.abs(flowDevPct) : null;
+  const pressAbs = pressDevPct != null ? Math.abs(pressDevPct) : null;
+  const devHigh = (flowAbs != null && flowAbs >= 15) || (pressAbs != null && pressAbs >= 15);
+  if (devHigh) return { cls:'badge-bad', label:'⚠️ مشكلة ميكانيكية محتملة (تآكل / انسداد / تسريب)' };
+  return { cls:'badge-mid', label:'🔌 راجعي قياس القدرة الكهربية (عداد / توصيلات)' };
+}
+
+function onPFChange() {
+  const v = parseFloat(document.getElementById('calcPF').value);
+  customPF = (!isNaN(v) && v > 0) ? v : 0.95;
+  runCalc();
+  const active = document.querySelector('.pump-list-item.active');
+  if (active) renderPumpDetail(active.dataset.pump);
+}
+
 function runCalc() {
   const freq = parseFloat(document.getElementById('calcFreq').value);
   const voltage = parseFloat(document.getElementById('calcVoltage').value);
@@ -236,13 +391,16 @@ function runCalc() {
 
   const headM = !isNaN(pressureBar) ? pressureBar * BAR_TO_M : null;
   const hydraulicKW = (!isNaN(flow) && headM != null) ? 9.81 * (flow / 3600) * headM : null;
-  const electricalKW = (!isNaN(voltage) && !isNaN(amp)) ? Math.sqrt(3) * voltage * amp * POWER_FACTOR / 1000 : null;
+  const electricalKW = (!isNaN(voltage) && !isNaN(amp)) ? Math.sqrt(3) * voltage * amp * customPF / 1000 : null;
   const efficiencyPct = (hydraulicKW != null && electricalKW) ? (hydraulicKW / electricalKW * 100) : null;
   const expectedShaftKW = !isNaN(freq) ? RATED.shaftPower * Math.pow(freq / RATED.freq, 3) : null;
   const specificEnergy = (electricalKW != null && flow) ? electricalKW / flow : null;
 
   const effBadgeClass = efficiencyPct == null ? '' :
     efficiencyPct >= RATED.efficiency - 5 ? 'highlight' : efficiencyPct >= RATED.efficiency - 15 ? '' : 'warn-row';
+
+  const conf = confidenceForFreq(!isNaN(freq) ? freq : null);
+  const diag = diagnoseRow(efficiencyPct, flowDevPct, pressDevPct);
 
   document.getElementById('calcOutputs').innerHTML = `
     <div class="out-row">
@@ -267,8 +425,10 @@ function runCalc() {
     </div>
     <div class="out-row ${effBadgeClass}">
       <span class="lbl">⭐ الكفاءة الفعلية التقديرية</span>
-      <span class="val">${efficiencyPct!=null?efficiencyPct.toFixed(1)+'%':'--'} <span style="font-size:.7rem;color:var(--text-tertiary);">(تصميمية: ${RATED.efficiency}%)</span></span>
+      <span class="val">${efficiencyPct!=null?efficiencyPct.toFixed(1)+'%':'--'} <span style="font-size:.7rem;color:var(--text-tertiary);">(تصميمية: ${RATED.efficiency}%)</span> ${conf?`<span class="badge-dev ${conf.cls}" title="${conf.label}">${conf.icon} ${conf.label}</span>`:''}</span>
     </div>
+    ${conf && conf.note ? `<div class="ref-note">⚠️ ${conf.note}</div>` : ''}
+    ${diag ? `<div class="out-row"><span class="lbl">🧭 التشخيص المبدئي</span><span class="val" style="font-size:.85rem;"><span class="badge-dev ${diag.cls}">${diag.label}</span></span></div>` : ''}
     <div class="out-row">
       <span class="lbl">الاستهلاك النوعي للطاقة</span>
       <span class="val">${specificEnergy!=null?specificEnergy.toFixed(3):'--'} ك.و.س/م³</span>
@@ -280,16 +440,18 @@ function runCalc() {
 
 function drawDesignCurve(currentFreq, currentFlow, currentHeadM) {
   const ctx = document.getElementById('designCurveChart');
-  const curvePoints = VFD_TABLE.map(p => ({ x: p.flow, y: p.pressureBar * BAR_TO_M }));
+  const baseCurve = DESIGN_CURVE_50HZ.map(p => ({ x: p.flow, y: p.head }));
 
   const datasets = [
-    {
-      label: 'منحنى التصميم (VFD Table)',
-      data: curvePoints,
-      showLine: true, borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,.15)',
-      tension: .3, pointRadius: 4, pointBackgroundColor: '#00b4ff'
-    }
+    { label: 'المنحنى الأصلي — 50 هرتز (الشركة المصنعة)', data: baseCurve, showLine: true, borderColor: '#00b4ff', borderWidth: 4, tension: .25, pointRadius: 0 }
   ];
+  if (currentFreq != null && !isNaN(currentFreq) && currentFreq !== RATED.freq) {
+    datasets.push({
+      label: `منحنى مُعاير — ${currentFreq} هرتز`,
+      data: scaledDesignCurve(currentFreq),
+      showLine: true, borderColor: '#7f77dd', borderDash: [6,4], borderWidth: 2, tension: .25, pointRadius: 0
+    });
+  }
   if (currentFlow != null && currentHeadM != null) {
     datasets.push({
       label: 'نقطة التشغيل الحالية (الحاسبة)',
@@ -359,6 +521,12 @@ async function loadPerformance() {
   }
 }
 
+let detailChart = null;
+let trendChart = null;
+let lastScatter = [];
+let lastPumps = {};
+let lastTrendVerdict = null;
+
 function renderPerformance(d) {
   const container = document.getElementById('perfResult');
   const pumps = d.pumps || {};
@@ -371,6 +539,9 @@ function renderPerformance(d) {
 
   names.sort((a,b) => (pumps[b].avgEstimatedEfficiencyPct||0) - (pumps[a].avgEstimatedEfficiencyPct||0));
 
+  lastScatter = d.scatter || [];
+  lastPumps = pumps;
+
   container.innerHTML = `
     <div class="section">
       <div class="section-title">🏆 ترتيب الطلمبات حسب الكفاءة التقديرية</div>
@@ -380,10 +551,12 @@ function renderPerformance(d) {
             <th>الطلمبة</th>
             <th>ساعات التشغيل</th>
             <th>⭐ الكفاءة التقديرية</th>
+            <th>دقة التقدير</th>
             <th>انحراف التصرف</th>
             <th>انحراف الضغط</th>
             <th>متوسط القدرة الهيدروليكية</th>
             <th>متوسط القدرة الكهربية</th>
+            <th>التشخيص المبدئي</th>
           </tr>
         </thead>
         <tbody>
@@ -392,23 +565,386 @@ function renderPerformance(d) {
             const effClass = p.avgEstimatedEfficiencyPct == null ? '' :
               p.avgEstimatedEfficiencyPct >= RATED.efficiency - 5 ? 'badge-good' :
               p.avgEstimatedEfficiencyPct >= RATED.efficiency - 15 ? 'badge-mid' : 'badge-bad';
+            const pumpFreqs = lastScatter.filter(s => s.pump === name).map(s => s.freq);
+            const avgFreq = pumpFreqs.length ? pumpFreqs.reduce((a,b)=>a+b,0) / pumpFreqs.length : null;
+            const conf = confidenceForFreq(avgFreq);
+            const diag = diagnoseRow(p.avgEstimatedEfficiencyPct, p.avgFlowDeviationPct, p.avgPressureDeviationPct);
             return `
-            <tr>
+            <tr class="pump-row" data-pump="${name}" style="cursor:pointer;">
               <td><b>${name}</b></td>
               <td>${p.operatingHours}</td>
               <td>${p.avgEstimatedEfficiencyPct!=null ? `<span class="badge-dev ${effClass}">${p.avgEstimatedEfficiencyPct}%</span>` : '--'}</td>
+              <td>${conf ? `<span class="badge-dev ${conf.cls}" title="${conf.note||conf.label}">${conf.icon} ${conf.label}</span>` : '--'}</td>
               <td>${devBadge(p.avgFlowDeviationPct)}</td>
               <td>${devBadge(p.avgPressureDeviationPct)}</td>
               <td>${p.avgHydraulicPowerKW!=null?p.avgHydraulicPowerKW+' ك.و':'--'}</td>
               <td>${p.avgElectricalPowerKW!=null?p.avgElectricalPowerKW+' ك.و':'--'}</td>
+              <td>${diag ? `<span class="badge-dev ${diag.cls}">${diag.label}</span>` : '--'}</td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>
-      <div class="ref-note">الكفاءة التصميمية المرجعية عند نقطة التشغيل الأساسية: ${RATED.efficiency}% — أي طلمبة كفاءتها التقديرية أقل بأكتر من 15% نقطة عن الرقم ده تستحق مراجعة فنية.</div>
+      <div class="ref-note">الكفاءة التصميمية المرجعية عند نقطة التشغيل الأساسية: ${RATED.efficiency}% — أي طلمبة كفاءتها التقديرية أقل بأكتر من 15% نقطة عن الرقم ده تستحق مراجعة فنية.
+      دقة التقدير بتقل كل ما التردد ابتعد عن 50 هرتز. التشخيص المبدئي بيربط انخفاض الكفاءة بانحراف التصرف/الضغط: لو الاتنين مرتفعين مع بعض فى الغالب فيه مشكلة ميكانيكية حقيقية، ولو الكفاءة واطية بس الانحرافين طبيعيين فالمشكلة غالبًا فى قياس القدرة الكهربية. اضغطي على أي صف تحتي لعرض تفاصيله.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔍 تقييم طلمبة بعينها — منحنى التصميم مقابل نقاط التشغيل الفعلية</div>
+      <div class="detail-layout">
+        <div class="pump-list" id="pumpList"></div>
+        <div class="detail-main">
+          <div class="chart-wrap lg"><canvas id="detailChart"></canvas></div>
+          <div class="chart-legend-row">
+            <span>🟢 داخل الحدود المسموحة (أقل من 5% عن المنحنى الأصلي)</span>
+            <span>🟡 انحراف متوسط (5–15%)</span>
+            <span>🔴 خارج الحدود المسموحة (أكتر من 15%)</span>
+          </div>
+          <div class="chart-legend-row">
+            <span>● ثقة عالية (قريب من 50 هرتز)</span>
+            <span>◐ ثقة متوسطة</span>
+            <span>○ ثقة منخفضة (بعيد عن 50 هرتز)</span>
+          </div>
+          <div id="detailAnalysis"></div>
+        </div>
+      </div>
+      <div id="detailSummary" style="margin-top:1.2rem;"></div>
+      <div id="detailTableWrap" style="margin-top:.8rem; max-height:420px; overflow:auto;"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📉 اتجاه الكفاءة بمرور الوقت عند نفس نقطة التشغيل</div>
+      <div class="filter-field" style="max-width:320px; margin-bottom:1rem;">
+        <label>التردد التقريبي</label>
+        <select id="trendFreqSelect"></select>
+      </div>
+      <div class="chart-wrap" style="height:280px;"><canvas id="trendChart"></canvas></div>
+      <div id="trendSummary" style="margin-top:.8rem;"></div>
+    </div>
+  `;
+
+  const pumpListEl = document.getElementById('pumpList');
+  pumpListEl.innerHTML = names.map(name => {
+    const p = pumps[name];
+    const pumpFreqs = lastScatter.filter(s => s.pump === name).map(s => s.freq);
+    const avgFreq = pumpFreqs.length ? pumpFreqs.reduce((a,b)=>a+b,0) / pumpFreqs.length : null;
+    const conf = confidenceForFreq(avgFreq);
+    const effClass = p.avgEstimatedEfficiencyPct == null ? '' :
+      p.avgEstimatedEfficiencyPct >= RATED.efficiency - 5 ? 'badge-good' :
+      p.avgEstimatedEfficiencyPct >= RATED.efficiency - 15 ? 'badge-mid' : 'badge-bad';
+    return `
+    <div class="pump-list-item" data-pump="${name}">
+      <span class="plname">${name}</span>
+      <span class="plmeta">
+        ${p.avgEstimatedEfficiencyPct!=null ? `<span class="badge-dev ${effClass}">${p.avgEstimatedEfficiencyPct}%</span>` : ''}
+        ${conf ? `<span class="badge-dev ${conf.cls}" title="${conf.note||conf.label}">${conf.icon}</span>` : ''}
+      </span>
+    </div>`;
+  }).join('');
+  pumpListEl.querySelectorAll('.pump-list-item').forEach(item => {
+    item.addEventListener('click', () => selectPump(item.dataset.pump));
+  });
+  container.querySelectorAll('.pump-row').forEach(row => {
+    row.addEventListener('click', () => {
+      selectPump(row.dataset.pump);
+      document.getElementById('detailChart').scrollIntoView({ behavior:'smooth', block:'center' });
+    });
+  });
+
+  selectPump(names[0]);
+}
+
+function selectPump(name) {
+  document.querySelectorAll('.pump-list-item').forEach(i => i.classList.toggle('active', i.dataset.pump === name));
+  renderPumpDetail(name);
+}
+
+function colorForDev(designDevPct) {
+  if (designDevPct == null) return '#00b4ff';
+  const abs = Math.abs(designDevPct);
+  if (abs < 5) return '#00e676';
+  if (abs < 15) return '#ffb300';
+  return '#ff3b5c';
+}
+
+function computeRowsForPump(name) {
+  return lastScatter
+    .filter(s => s.pump === name)
+    .sort((a,b) => String(a.date).localeCompare(String(b.date)) || (a.freq - b.freq))
+    .map(r => {
+      const electricalPowerKW = (r.voltage != null && r.amp != null)
+        ? Math.round(Math.sqrt(3) * r.voltage * r.amp * customPF / 1000 * 10) / 10 : null;
+      const efficiencyPct = (r.hydraulicPowerKW != null && electricalPowerKW)
+        ? Math.round(r.hydraulicPowerKW / electricalPowerKW * 100 * 10) / 10 : null;
+      const designExpectedHead = (r.freq != null && r.flow != null) ? designCurveHeadAt(r.freq, r.flow) : null;
+      const designDeviationPct = (designExpectedHead != null && r.headM != null)
+        ? Math.round((r.headM - designExpectedHead) / designExpectedHead * 100 * 10) / 10 : null;
+      return Object.assign({}, r, {
+        electricalPowerKW, efficiencyPct,
+        designExpectedHead: designExpectedHead != null ? Math.round(designExpectedHead * 100) / 100 : null,
+        designDeviationPct
+      });
+    });
+}
+
+function renderPumpDetail(name) {
+  const rows = computeRowsForPump(name);
+
+  // المنحنى الأصلي الثابت من الشركة المصنعة عند 50 هرتز (زي المطبوع فى الداتا شيت بالظبط)
+  const baseCurve = DESIGN_CURVE_50HZ.map(p => ({ x: p.flow, y: p.head }));
+
+  // أكتر الترددات تكرارًا فى تشغيل الطلمبة دي (غير 50 هرتز) — نرسم منحنى الشركة المصنعة مُعاير عليها كمان بقانون التناسب
+  const freqCounts = {};
+  rows.forEach(r => {
+    if (r.freq == null || isNaN(r.freq)) return;
+    const bin = nearestVfdFreq(r.freq);
+    freqCounts[bin] = (freqCounts[bin] || 0) + 1;
+  });
+  const extraFreqs = Object.keys(freqCounts).map(Number)
+    .filter(f => f !== 50)
+    .sort((a,b) => freqCounts[b] - freqCounts[a])
+    .slice(0, 3)
+    .sort((a,b) => a - b);
+  const extraColors = ['#7f77dd', '#5dcaa5', '#f0997b'];
+  const extraDatasets = extraFreqs.map((f, i) => ({
+    label: `منحنى مُعاير — ${f} هرتز`,
+    data: scaledDesignCurve(f),
+    showLine: true, borderColor: extraColors[i % extraColors.length], borderDash: [6,4],
+    borderWidth: 2, tension: .25, pointRadius: 0
+  }));
+
+  const actualPoints = rows.map(r => ({ x: r.flow, y: r.headM }));
+  const pointColors = rows.map(r => colorForDev(r.designDeviationPct));
+
+  const ctx = document.getElementById('detailChart');
+  const datasets = [
+    { label: 'المنحنى الأصلي — 50 هرتز (الشركة المصنعة)', data: baseCurve, showLine: true, borderColor: '#00b4ff', borderWidth: 4, tension: .25, pointRadius: 0 },
+    ...extraDatasets,
+    { label: `نقاط التشغيل الفعلية — ${name}`, data: actualPoints, showLine: false, pointRadius: 7, pointHoverRadius: 9, pointBackgroundColor: pointColors, pointBorderColor: '#fff', pointBorderWidth: 1.5 }
+  ];
+
+  if (detailChart) detailChart.destroy();
+  detailChart = new Chart(ctx, {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { title: { display:true, text:'التصرف (م³/س)', color:'#9bbcd4' }, ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'} },
+        y: { title: { display:true, text:'الرفع (م)', color:'#9bbcd4' }, ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'} }
+      },
+      plugins: {
+        legend:{ labels:{ color:'#e8f4ff' } },
+        tooltip: {
+          callbacks: {
+            afterLabel: (item) => {
+              if (!item.dataset.label || !item.dataset.label.startsWith('نقاط التشغيل الفعلية')) return '';
+              const r = rows[item.dataIndex];
+              return [
+                `التاريخ: ${r.date}`,
+                `التردد: ${r.freq} هرتز`,
+                r.designDeviationPct != null ? `انحراف عن المنحنى الأصلي: ${r.designDeviationPct}%` : '',
+                r.flowDeviationPct != null ? `انحراف التصرف (منحنى النظام): ${r.flowDeviationPct}%` : '',
+                r.efficiencyPct != null ? `الكفاءة التقديرية: ${r.efficiencyPct}%` : ''
+              ].filter(Boolean);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const p = lastPumps[name] || {};
+  const effVals = rows.map(r => r.efficiencyPct).filter(v => v != null);
+  const avgEff = effVals.length ? Math.round(effVals.reduce((a,b)=>a+b,0) / effVals.length * 10) / 10 : null;
+
+  document.getElementById('detailSummary').innerHTML = `
+    <div class="ref-note">
+      عدد القراءات المستخدمة فى حساب هذه الطلمبة خلال الفترة: <b>${rows.length}</b> —
+      ساعات التشغيل: <b>${p.operatingHours ?? '--'}</b> —
+      متوسط الكفاءة التقديرية: <b>${avgEff ?? '--'}%</b> —
+      محسوبة بمعامل قدرة PF = <b>${customPF}</b>
+    </div>
+  `;
+
+  document.getElementById('detailTableWrap').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>التاريخ</th>
+          <th>التردد</th>
+          <th>دقة</th>
+          <th>التصرف الفعلي</th>
+          <th>التصرف المتوقع (منحنى النظام)</th>
+          <th>انحراف التصرف</th>
+          <th>الرفع الفعلي (م)</th>
+          <th>الرفع المتوقع (منحنى الشركة المصنعة)</th>
+          <th>انحراف عن المنحنى الأصلي</th>
+          <th>القدرة الهيدروليكية</th>
+          <th>القدرة الكهربية</th>
+          <th>الكفاءة التقديرية</th>
+          <th>التشخيص</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => {
+          const conf = confidenceForFreq(r.freq);
+          const diag = diagnoseRow(r.efficiencyPct, r.flowDeviationPct, r.pressureDeviationPct);
+          return `
+          <tr>
+            <td>${r.date}</td>
+            <td>${r.freq}</td>
+            <td>${conf ? `<span class="badge-dev ${conf.cls}" title="${conf.note||conf.label}">${conf.icon}</span>` : '--'}</td>
+            <td>${r.flow}</td>
+            <td>${r.expectedFlow ?? '--'}</td>
+            <td>${devBadge(r.flowDeviationPct)}</td>
+            <td>${r.headM}</td>
+            <td>${r.designExpectedHead ?? '--'}</td>
+            <td>${devBadge(r.designDeviationPct)}</td>
+            <td>${r.hydraulicPowerKW ?? '--'}</td>
+            <td>${r.electricalPowerKW ?? '--'}</td>
+            <td>${r.efficiencyPct != null ? r.efficiencyPct+'%' : '--'}</td>
+            <td>${diag ? `<span class="badge-dev ${diag.cls}">${diag.label}</span>` : '--'}</td>
+          </tr>
+        `;}).join('')}
+      </tbody>
+    </table>
+  `;
+
+  renderTrend(name, rows);
+  buildAnalysisText(name, rows);
+}
+
+// تجميع القراءات على أقرب نقطة تردد فى جدول الـVFD، لمقارنة نفس نقطة التشغيل عبر الزمن
+function nearestVfdFreq(freq) {
+  let best = VFD_TABLE[0].freq, bestDist = Math.abs(freq - best);
+  VFD_TABLE.forEach(pt => {
+    const dist = Math.abs(freq - pt.freq);
+    if (dist < bestDist) { bestDist = dist; best = pt.freq; }
+  });
+  return best;
+}
+
+function renderTrend(name, rows) {
+  const bins = {};
+  rows.forEach(r => {
+    if (r.freq == null || isNaN(r.freq)) return;
+    const bin = nearestVfdFreq(r.freq);
+    if (!bins[bin]) bins[bin] = [];
+    bins[bin].push(r);
+  });
+  const binFreqs = Object.keys(bins).map(Number).sort((a,b) => a - b).filter(f => bins[f].length >= 2);
+
+  const select = document.getElementById('trendFreqSelect');
+  if (!binFreqs.length) {
+    select.innerHTML = '<option value="">لا توجد بيانات كافية</option>';
+    select.onchange = null;
+    document.getElementById('trendSummary').innerHTML = '<div class="empty-state">محتاجة قراءتين على الأقل عند نفس التردد التقريبي لعمل مقارنة زمنية</div>';
+    if (trendChart) { trendChart.destroy(); trendChart = null; }
+    lastTrendVerdict = null;
+    return;
+  }
+
+  const defaultBin = binFreqs.reduce((best,f) => bins[f].length > bins[best].length ? f : best, binFreqs[0]);
+  select.innerHTML = binFreqs.map(f => `<option value="${f}">${f} هرتز (${bins[f].length} قراءة)</option>`).join('');
+  select.value = defaultBin;
+  select.onchange = () => drawTrendChart(bins[parseFloat(select.value)], parseFloat(select.value));
+
+  drawTrendChart(bins[defaultBin], defaultBin);
+}
+
+function drawTrendChart(binRows, binFreq) {
+  const sorted = binRows.slice().sort((a,b) => String(a.date).localeCompare(String(b.date)));
+  const labels = sorted.map(r => r.date);
+  const effVals = sorted.map(r => r.efficiencyPct);
+
+  const ctx = document.getElementById('trendChart');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: `الكفاءة عند ${binFreq} هرتز`,
+        data: effVals,
+        borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,.15)',
+        tension: .2, pointRadius: 4, pointBackgroundColor: '#00b4ff', spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks:{color:'#9bbcd4', maxRotation:60}, grid:{color:'rgba(255,255,255,.05)'} },
+        y: { title:{display:true, text:'الكفاءة %', color:'#9bbcd4'}, ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'} }
+      },
+      plugins: { legend:{ labels:{ color:'#e8f4ff' } } }
+    }
+  });
+
+  const valid = effVals.filter(v => v != null);
+  let summaryHtml;
+  if (valid.length >= 2) {
+    const mid = Math.max(1, Math.floor(valid.length / 2));
+    const firstHalf = valid.slice(0, mid);
+    const secondHalf = valid.slice(mid);
+    const avg = arr => arr.reduce((a,b)=>a+b,0) / arr.length;
+    const firstAvg = Math.round(avg(firstHalf) * 10) / 10;
+    const secondAvg = Math.round(avg(secondHalf) * 10) / 10;
+    const diff = Math.round((secondAvg - firstAvg) * 10) / 10;
+    lastTrendVerdict = { binFreq, diff, firstAvg, secondAvg, valid: valid.length };
+    let verdict;
+    if (diff <= -5) verdict = `<span class="badge-dev badge-bad">📉 الكفاءة فى تناقص (${diff}% نقطة) — يُنصح بمراجعة فنية للطلمبة</span>`;
+    else if (diff >= 5) verdict = `<span class="badge-dev badge-good">📈 الكفاءة بتتحسن (+${diff}% نقطة)</span>`;
+    else verdict = `<span class="badge-dev badge-good">➡️ مستقرة نسبيًا (${diff>=0?'+':''}${diff}% نقطة)</span>`;
+    summaryHtml = `<div class="ref-note">متوسط الكفاءة فى أول الفترة: <b>${firstAvg}%</b> — فى آخر الفترة: <b>${secondAvg}%</b> — ${verdict}</div>`;
+  } else {
+    lastTrendVerdict = null;
+    summaryHtml = '<div class="empty-state">محتاجة قراءتين على الأقل عند نفس التردد لتحديد الاتجاه</div>';
+  }
+  document.getElementById('trendSummary').innerHTML = summaryHtml;
+}
+
+function buildAnalysisText(name, rows) {
+  const effVals = rows.map(r => r.efficiencyPct).filter(v => v != null);
+  const avgEff = effVals.length ? Math.round(effVals.reduce((a,b)=>a+b,0) / effVals.length * 10) / 10 : null;
+  const flowDevVals = rows.map(r => r.flowDeviationPct).filter(v => v != null);
+  const pressDevVals = rows.map(r => r.pressureDeviationPct).filter(v => v != null);
+  const avgFlowDev = flowDevVals.length ? Math.round(flowDevVals.reduce((a,b)=>a+b,0) / flowDevVals.length * 10) / 10 : null;
+  const avgPressDev = pressDevVals.length ? Math.round(pressDevVals.reduce((a,b)=>a+b,0) / pressDevVals.length * 10) / 10 : null;
+  const freqVals = rows.map(r => r.freq).filter(v => v != null);
+  const avgFreq = freqVals.length ? freqVals.reduce((a,b)=>a+b,0) / freqVals.length : null;
+
+  const conf = confidenceForFreq(avgFreq);
+  const diag = diagnoseRow(avgEff, avgFlowDev, avgPressDev);
+
+  const designDevVals = rows.map(r => r.designDeviationPct).filter(v => v != null);
+  const avgDesignDev = designDevVals.length ? Math.round(designDevVals.reduce((a,b)=>a+b,0) / designDevVals.length * 10) / 10 : null;
+  const outOfBounds = rows.filter(r => r.designDeviationPct != null && Math.abs(r.designDeviationPct) >= 15).length;
+  const withDesignDev = designDevVals.length;
+  const pctOut = withDesignDev ? Math.round(outOfBounds / withDesignDev * 100) : 0;
+
+  let trendSentence = '';
+  if (lastTrendVerdict && lastTrendVerdict.valid >= 2) {
+    const dv = lastTrendVerdict.diff;
+    if (dv <= -5) trendSentence = `وبمقارنة نفس نقطة التشغيل (${lastTrendVerdict.binFreq} هرتز) عبر الفترة، الكفاءة فى تناقص واضح (${dv}% نقطة) — ده مؤشر على تدهور فعلي بمرور الوقت مش مجرد خطأ قياس لحظي.`;
+    else if (dv >= 5) trendSentence = `وبمقارنة نفس نقطة التشغيل (${lastTrendVerdict.binFreq} هرتز) عبر الفترة، الكفاءة فى تحسن (+${dv}% نقطة).`;
+    else trendSentence = `وبمقارنة نفس نقطة التشغيل (${lastTrendVerdict.binFreq} هرتز) عبر الفترة، الكفاءة مستقرة نسبيًا (${dv>=0?'+':''}${dv}% نقطة).`;
+  }
+
+  const parts = [];
+  parts.push(`متوسط الكفاءة التقديرية لطلمبة <b>${name}</b> خلال الفترة المحددة <b>${avgEff ?? '--'}%</b> (نسبة للكفاءة التصميمية ${RATED.efficiency}%)${conf ? ` — بمستوى ${conf.label}` : ''}.`);
+  parts.push(`بمقارنة نقاط التشغيل الفعلية بمنحنى الأداء الأصلي من الشركة المصنعة (Renetra)، متوسط الانحراف <b>${avgDesignDev!=null ? (avgDesignDev>=0?'+':'')+avgDesignDev+'%' : '--'}</b>، و<b>${pctOut}%</b> من القراءات (${outOfBounds} من ${withDesignDev}) خارج الحدود المسموحة (±15% عن المنحنى الأصلي).`);
+  if (diag) parts.push(`التشخيص المبدئي: <span class="badge-dev ${diag.cls}">${diag.label}</span>`);
+  if (trendSentence) parts.push(trendSentence);
+  if (conf && conf.note) parts.push(`⚠️ ${conf.note}`);
+
+  document.getElementById('detailAnalysis').innerHTML = `
+    <div class="analysis-box">
+      <h4>📋 التحليل والمراجعة الفنية</h4>
+      ${parts.map(p => `<p>${p}</p>`).join('')}
     </div>
   `;
 }
+
 </script>
 </body>
 </html>
