@@ -698,10 +698,10 @@ tr.current-hour-row.row-complete td {
     <div class="sec-title">🔢 عدادات خطوط الطرد</div>
     <div class="meters-grid">
 
-      <!-- LINE 1 -->
+      <!-- خط 1 -->
       <div class="meter-card line1">
         <div class="meter-header">
-          <div class="meter-title">🔵 LINE 1 (خط الشمال)</div>
+          <div class="meter-title">🔵 خط الطرد 1 (خط الشمال)</div>
           <div class="meter-flow" id="flow1">-- م³</div>
         </div>
         <div class="meter-fields">
@@ -728,10 +728,10 @@ tr.current-hour-row.row-complete td {
         </div>
       </div>
 
-      <!-- LINE 2 -->
+      <!-- خط 2 -->
       <div class="meter-card line2">
         <div class="meter-header">
-          <div class="meter-title">🟢  LINE 2 (شبكات الدهار)</div>
+          <div class="meter-title">🟢 خط الطرد 2 (شبكات الدهار)</div>
           <div class="meter-flow" id="flow2">-- م³</div>
         </div>
         <div class="meter-fields">
@@ -757,10 +757,10 @@ tr.current-hour-row.row-complete td {
         </div>
       </div>
 
-      <!-- LINE 3 -->
+      <!-- خط 3 -->
       <div class="meter-card line3">
         <div class="meter-header">
-          <div class="meter-title">🟠 LINE 3 (جبل العفش)</div>
+          <div class="meter-title">🟠 خط الطرد 3 (جبل العفش)</div>
           <div class="meter-flow" id="flow3">-- م³</div>
         </div>
         <div class="meter-fields">
@@ -824,15 +824,15 @@ tr.current-hour-row.row-complete td {
     <div class="sec-title">📡 الحالة اللحظية للخطوط</div>
     <div class="meters-grid">
       <div class="meter-card line1" id="liveStatus1">
-        <div class="meter-title" style="color:var(--line1);margin-bottom:0.5rem;">🔵 LINE 1 (خط الشمال) — الحالة الحالية</div>
+        <div class="meter-title" style="color:var(--line1);margin-bottom:0.5rem;">🔵 خط 1 (خط الشمال) — الحالة الحالية</div>
         <div id="liveContent1" style="font-size:0.82rem;color:var(--txt3);">لم يبدأ التسجيل بعد</div>
       </div>
       <div class="meter-card line2" id="liveStatus2">
-        <div class="meter-title" style="color:var(--line2);margin-bottom:0.5rem;">🟢 LINE 2 (شبكات الدهار) — الحالة الحالية</div>
+        <div class="meter-title" style="color:var(--line2);margin-bottom:0.5rem;">🟢 خط 2 (شبكات الدهار) — الحالة الحالية</div>
         <div id="liveContent2" style="font-size:0.82rem;color:var(--txt3);">لم يبدأ التسجيل بعد</div>
       </div>
       <div class="meter-card line3" id="liveStatus3">
-        <div class="meter-title" style="color:var(--line3);margin-bottom:0.5rem;">🟠 LINE 3 (جبل العفش) — الحالة الحالية</div>
+        <div class="meter-title" style="color:var(--line3);margin-bottom:0.5rem;">🟠 خط 3 (جبل العفش) — الحالة الحالية</div>
         <div id="liveContent3" style="font-size:0.82rem;color:var(--txt3);">لم يبدأ التسجيل بعد</div>
       </div>
     </div>
@@ -845,9 +845,9 @@ tr.current-hour-row.row-complete td {
     <!-- 🆕 تبويبات لعرض خط واحد بس وقت التسجيل، تقليل الزحمة على الموبايل -->
     <div class="line-view-tabs" role="tablist">
       <button type="button" class="line-tab active" data-view="all" onclick="setLineView('all', this)">📊 عرض الكل</button>
-      <button type="button" class="line-tab" data-view="line1" onclick="setLineView('line1', this)">🔵LINE 1 خط الشمال</button>
-      <button type="button" class="line-tab" data-view="line2" onclick="setLineView('line2', this)">🟢LINE 2 شبكات الدهار</button>
-      <button type="button" class="line-tab" data-view="line3" onclick="setLineView('line3', this)">🟠LINE 3 جبل العفش</button>
+      <button type="button" class="line-tab" data-view="line1" onclick="setLineView('line1', this)">🔵 خط الشمال</button>
+      <button type="button" class="line-tab" data-view="line2" onclick="setLineView('line2', this)">🟢 شبكات الدهار</button>
+      <button type="button" class="line-tab" data-view="line3" onclick="setLineView('line3', this)">🟠 جبل العفش</button>
     </div>
 
     <table class="shift-table" id="shiftTable">
@@ -860,11 +860,11 @@ tr.current-hour-row.row-complete td {
           <th class="th-tank" rowspan="2">الجهد V</th>
           <th class="th-tank" rowspan="2">الوارد م³</th>
           <!-- خط 1 -->
-          <th class="th-line1" colspan="7" title=" LINE 1 خط الشمال  ">🔵 خط الطرد 1  (خط الشمال) LINE 1 </th>
+          <th class="th-line1" colspan="7" title="خط الشمال">🔵 خط الطرد 1 (خط الشمال)</th>
           <!-- خط 2 -->
-          <th class="th-line2" colspan="7" title=" LINE 2 شبكات الدهار">🟢 خط الطرد 2 (شبكات الدهار) LINE 2 </th>
+          <th class="th-line2" colspan="7" title="شبكات الدهار">🟢 خط الطرد 2 (شبكات الدهار)</th>
           <!-- خط 3 -->
-          <th class="th-line3" colspan="7" title=" LINE 3 جبل العفش">🟠 خط الطرد 3 (جبل العفش) LINE 3 </th>
+          <th class="th-line3" colspan="7" title="جبل العفش">🟠 خط الطرد 3 (جبل العفش)</th>
           <!-- خزانات -->
           <th class="th-tank" colspan="2">🏗 الخزانات</th>
           <!-- ملاحظات -->
@@ -972,7 +972,7 @@ tr.current-hour-row.row-complete td {
 
 <script>
 const AREAS = [
-  'شبكات الدهار كامله - تشغيل مستمر','السلام-الحجاز','الكنيسه','ابو جميعه','الشيخ محمود','مجاهد','السلام فلفل',حجاز','السلام-سلخانه,'الموظفين','الزراعه','النجدة و الشيخ شحات',
+  'شبكات الدهار كامله - تشغيل مستمر','السلام-فلفل','السلام-الحجاز','السلام-سلخانه','ابو جميعه','الكنيسه','الشيخ محمود','مجاهد','الموظفين','الزراعه','النجدة و الشيخ شحات',
   'حفر الباطن و التقوى','الهلال','فيلات مبارك 7',
   'اللؤلؤة و الفيروز','مبارك 11 و 12 و 13',
   'بلوكات الاحياء','رافع الجيش','الأمير طلال','خط جبل العفش'
