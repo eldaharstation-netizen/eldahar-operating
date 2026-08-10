@@ -152,7 +152,7 @@
 
   <!-- ── الحاسبة التفاعلية ── -->
   <div class="section">
-    <div class="section-title">🧮 حساب الأداء </div>
+    <div class="section-title">🧮 حاسبة الأداء الحية — غيّري أي رقم وشوفي التأثير فورًا</div>
     <div class="calc-grid">
       <div class="calc-inputs">
         <div class="calc-field">
@@ -210,7 +210,7 @@
       <label>إلى تاريخ</label>
       <input type="date" id="toDate">
     </div>
-    <button class="btn" onclick="loadPerformance()" style="padding:.6rem 1.6rem;">📊 تحميل الأداء</button>
+    <button class="btn" onclick="loadPerformance()" style="padding:.6rem 1.6rem;">📊 حمّلي الأداء</button>
     <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(7)">آخر 7 أيام</button>
     <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(30)">آخر 30 يوم</button>
   </div>
@@ -690,7 +690,7 @@ function renderPerformance(d) {
     </div>
 
     <div class="section">
-      <div class="section-title">🔍 تقييم طلمبة محدده — منحنى التصميم مقابل نقاط التشغيل الفعلية</div>
+      <div class="section-title">🔍 تقييم طلمبة بعينها — منحنى التصميم مقابل نقاط التشغيل الفعلية</div>
       <div class="detail-layout">
         <div class="pump-list" id="pumpList"></div>
         <div class="detail-main">
@@ -822,26 +822,42 @@ function renderPumpDetail(name) {
   const actualPoints = rows.map(r => ({ x: r.flow, y: r.headM }));
   const pointColors = rows.map(r => colorForDev(r.designDeviationPct));
 
-  // 🆕 النقطة المتوقعة على المنحنى الأصلي عند نفس التصرف الفعلي (نفس نقطة التشغيل، على المنحنى بدل الفعلي)
+  // النقطة المتوقعة على المنحنى الأصلي عند نفس التصرف الفعلي (لتوضيح انحراف الرفع/الضغط بس — نفس X عمدًا)
   const expectedRows = rows.filter(r => r.designExpectedHead != null);
   const expectedPoints = expectedRows.map(r => ({ x: r.flow, y: r.designExpectedHead }));
 
-  // 🆕 خط توصيل رفيع بين كل نقطة فعلية والنقطة المتوقعة المقابلة لها على المنحنى (نفس التصرف)، عشان الفجوة/الانحراف يبان بصريًا
+  // خط توصيل رأسي بين كل نقطة فعلية ونظيرتها على المنحنى (انحراف الرفع)
   const gapLinePoints = [];
   rows.forEach(r => {
     if (r.designExpectedHead == null || r.headM == null) return;
     gapLinePoints.push({ x: r.flow, y: r.headM });
     gapLinePoints.push({ x: r.flow, y: r.designExpectedHead });
-    gapLinePoints.push({ x: null, y: null }); // فاصل يمنع اتصال الخط بين كل زوج نقاط ومجموعة تانية
+    gapLinePoints.push({ x: null, y: null });
+  });
+
+  // 🆕 نقطة التشغيل المتوقعة بالكامل من جدول الـVFD (تصرف + رفع متوقعين عند نفس التردد الفعلي) — دي بتتحرك أفقيًا كمان،
+  // وبتوضح انحراف التصرف نفسه (زي حالة طلمبة 8 بانحراف 55%)، لأنها مش مربوطة بنفس X زي النقطة الفعلية
+  const vfdRows = rows.filter(r => r.expectedFlow != null && r.expectedHeadM != null);
+  const vfdExpectedPoints = vfdRows.map(r => ({ x: r.expectedFlow, y: r.expectedHeadM }));
+
+  // خط توصيل مائل بين النقطة الفعلية ونقطة توقع الـVFD (بيوضح انحراف التصرف والرفع مع بعض)
+  const vfdGapLinePoints = [];
+  rows.forEach(r => {
+    if (r.expectedFlow == null || r.expectedHeadM == null || r.headM == null) return;
+    vfdGapLinePoints.push({ x: r.flow, y: r.headM });
+    vfdGapLinePoints.push({ x: r.expectedFlow, y: r.expectedHeadM });
+    vfdGapLinePoints.push({ x: null, y: null });
   });
 
   const ctx = document.getElementById('detailChart');
   const datasets = [
     { label: 'المنحنى الأصلي — 50 هرتز (الشركة المصنعة)', data: baseCurve, showLine: true, borderColor: '#00b4ff', borderWidth: 4, tension: .25, pointRadius: 0 },
     ...extraDatasets,
-    { label: 'فجوة الانحراف (فعلي ↔ متوقع)', data: gapLinePoints, showLine: true, borderColor: 'rgba(255,255,255,.35)', borderWidth: 1.5, borderDash: [3,3], pointRadius: 0, spanGaps: false },
+    { label: 'فجوة انحراف الرفع (فعلي ↔ منحنى الشركة عند نفس التصرف)', data: gapLinePoints, showLine: true, borderColor: 'rgba(255,255,255,.35)', borderWidth: 1.5, borderDash: [3,3], pointRadius: 0, spanGaps: false },
+    { label: 'فجوة انحراف التصرف (فعلي ↔ توقع VFD)', data: vfdGapLinePoints, showLine: true, borderColor: 'rgba(255,179,0,.5)', borderWidth: 1.5, borderDash: [2,4], pointRadius: 0, spanGaps: false },
     { label: `نقاط التشغيل الفعلية — ${name}`, data: actualPoints, showLine: false, pointRadius: 7, pointHoverRadius: 9, pointBackgroundColor: pointColors, pointBorderColor: '#fff', pointBorderWidth: 1.5 },
-    { label: 'النقطة المتوقعة على المنحنى (نفس التصرف الفعلي)', data: expectedPoints, showLine: false, pointStyle: 'circle', pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: 'rgba(0,180,255,.15)', pointBorderColor: '#00b4ff', pointBorderWidth: 2 }
+    { label: 'النقطة المتوقعة على المنحنى (نفس التصرف الفعلي)', data: expectedPoints, showLine: false, pointStyle: 'circle', pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: 'rgba(0,180,255,.15)', pointBorderColor: '#00b4ff', pointBorderWidth: 2 },
+    { label: 'النقطة المتوقعة من جدول VFD (تصرف + رفع متوقعين عند نفس التردد)', data: vfdExpectedPoints, showLine: false, pointStyle: 'triangle', pointRadius: 7, pointHoverRadius: 9, pointBackgroundColor: 'rgba(255,179,0,.2)', pointBorderColor: '#ffb300', pointBorderWidth: 2 }
   ];
 
   if (detailChart) detailChart.destroy();
@@ -869,12 +885,20 @@ function renderPumpDetail(name) {
                   r.efficiencyPct != null ? `الكفاءة التقديرية: ${r.efficiencyPct}%` : ''
                 ].filter(Boolean);
               }
-              if (item.dataset.label && item.dataset.label.startsWith('النقطة المتوقعة')) {
+              if (item.dataset.label && item.dataset.label.startsWith('النقطة المتوقعة على المنحنى')) {
                 const r = expectedRows[item.dataIndex];
                 return [
                   `نفس التصرف الفعلي (${r.flow} م³/س) — لكن على المنحنى الأصلي`,
                   `الرفع الفعلي كان: ${r.headM} م`,
-                  r.designDeviationPct != null ? `الفجوة: ${r.designDeviationPct}%` : ''
+                  r.designDeviationPct != null ? `فجوة الرفع: ${r.designDeviationPct}%` : ''
+                ].filter(Boolean);
+              }
+              if (item.dataset.label && item.dataset.label.startsWith('النقطة المتوقعة من جدول VFD')) {
+                const r = vfdRows[item.dataIndex];
+                return [
+                  `التصرف المتوقع عند ${r.freq} هرتز: ${r.expectedFlow} م³/س`,
+                  `التصرف الفعلي كان: ${r.flow} م³/س`,
+                  r.flowDeviationPct != null ? `فجوة التصرف: ${r.flowDeviationPct}%` : ''
                 ].filter(Boolean);
               }
               return '';
