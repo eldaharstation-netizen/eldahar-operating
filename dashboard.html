@@ -402,6 +402,12 @@
       border-color: rgba(0, 180, 255, 0.4);
       transform: translateY(-1px);
     }
+    .chart-icon-btn.active {
+      background: rgba(0, 180, 255, 0.35);
+      border-color: var(--primary-light);
+      color: var(--text);
+      box-shadow: 0 0 0 1px rgba(0, 180, 255, 0.3) inset;
+    }
     .chart-hint {
       font-size: 0.75rem;
       color: var(--text-tertiary);
@@ -876,6 +882,8 @@
         <div class="chart-header">
           <div class="section-title">📈 تصرف الخطوط الساعي</div>
           <div class="chart-header-actions">
+            <button class="chart-icon-btn trend-toggle-btn" onclick="toggleTrend()" title="إظهار/إخفاء خط الاتجاه العام">📉</button>
+            <button class="chart-icon-btn" onclick="shareOrDownloadChart('flowChart')" title="حفظ أو مشاركة كصورة">📤</button>
             <button class="chart-icon-btn" onclick="resetChartZoom('flowChart')" title="إعادة ضبط التكبير">↺</button>
             <button class="chart-icon-btn" onclick="openChartModal()" title="تكبير المنحنى لملء الشاشة">⛶</button>
           </div>
@@ -987,6 +995,8 @@
       <div class="chart-modal-header">
         <div class="chart-modal-title">📈 تصرف الخطوط الساعي</div>
         <div class="chart-modal-actions">
+          <button class="chart-icon-btn trend-toggle-btn" onclick="toggleTrend()" title="إظهار/إخفاء خط الاتجاه العام">📉</button>
+          <button class="chart-icon-btn" onclick="shareOrDownloadChart('flowChartModal')" title="حفظ أو مشاركة كصورة">📤</button>
           <button class="chart-icon-btn" onclick="resetChartZoom('flowChartModal')" title="إعادة ضبط التكبير">↺</button>
           <button class="chart-icon-btn" onclick="closeChartModal()" title="إغلاق">✕</button>
         </div>
@@ -1004,6 +1014,7 @@
     let flowChart = null;
     let flowChartModal = null;
     let lastFlowChartData = null;
+    let trendEnabled = false;
 
     // تحميل الرابط المحفوظ
     window.addEventListener('load', () => {
@@ -1771,53 +1782,92 @@
       window.print();
     }
 
+    // انحدار خطي بسيط (Least Squares) لحساب خط الاتجاه العام لأي متسلسلة بيانات
+    function linearTrendArray(values) {
+      const n = values.length;
+      if (n < 2) return values.slice();
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      for (let i = 0; i < n; i++) {
+        sumX += i; sumY += values[i];
+        sumXY += i * values[i]; sumXX += i * i;
+      }
+      const denom = (n * sumXX - sumX * sumX);
+      const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
+      const intercept = (sumY - slope * sumX) / n;
+      return values.map((_, i) => +(slope * i + intercept).toFixed(2));
+    }
+
     // يبني إعدادات المنحنى (تُستخدم للنسخة العادية ونسخة ملء الشاشة معًا)
-    function buildFlowChartConfig(times, flows1, flows2, flows3, { big = false } = {}) {
+    function buildFlowChartConfig(times, flows1, flows2, flows3, { big = false, trend = false } = {}) {
       const fontSize = big ? 14 : 11;
       const titleFontSize = big ? 16 : 12;
       const pointRadius = big ? 3 : 2;
       const pointHoverRadius = big ? 7 : 5;
 
+      const datasets = [
+        {
+          label: 'خط 1',
+          data: flows1,
+          borderColor: '#00b4ff',
+          backgroundColor: 'rgba(0, 180, 255, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointRadius,
+          pointHoverRadius,
+          borderWidth: big ? 3 : 2
+        },
+        {
+          label: 'خط 2',
+          data: flows2,
+          borderColor: '#00e676',
+          backgroundColor: 'rgba(0, 230, 118, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointRadius,
+          pointHoverRadius,
+          borderWidth: big ? 3 : 2
+        },
+        {
+          label: 'خط 3',
+          data: flows3,
+          borderColor: '#ff7043',
+          backgroundColor: 'rgba(255, 112, 67, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointRadius,
+          pointHoverRadius,
+          borderWidth: big ? 3 : 2
+        }
+      ];
+
+      // إضافة خطوط الاتجاه (Trend Lines) — متقطّعة وبدون تعبئة، تعتمد على انحدار خطي لكل خط
+      if (trend) {
+        const trendDefs = [
+          { data: flows1, color: '#00b4ff', label: 'اتجاه خط 1' },
+          { data: flows2, color: '#00e676', label: 'اتجاه خط 2' },
+          { data: flows3, color: '#ff7043', label: 'اتجاه خط 3' }
+        ];
+        trendDefs.forEach(t => {
+          if (t.data.some(v => v > 0)) {
+            datasets.push({
+              label: t.label,
+              data: linearTrendArray(t.data),
+              borderColor: t.color,
+              backgroundColor: 'transparent',
+              borderDash: [8, 5],
+              borderWidth: big ? 2.5 : 1.5,
+              pointRadius: 0,
+              pointHoverRadius: 0,
+              fill: false,
+              tension: 0
+            });
+          }
+        });
+      }
+
       return {
         type: 'line',
-        data: {
-          labels: times,
-          datasets: [
-            {
-              label: 'خط 1',
-              data: flows1,
-              borderColor: '#00b4ff',
-              backgroundColor: 'rgba(0, 180, 255, 0.1)',
-              tension: 0.4,
-              fill: true,
-              pointRadius,
-              pointHoverRadius,
-              borderWidth: big ? 3 : 2
-            },
-            {
-              label: 'خط 2',
-              data: flows2,
-              borderColor: '#00e676',
-              backgroundColor: 'rgba(0, 230, 118, 0.1)',
-              tension: 0.4,
-              fill: true,
-              pointRadius,
-              pointHoverRadius,
-              borderWidth: big ? 3 : 2
-            },
-            {
-              label: 'خط 3',
-              data: flows3,
-              borderColor: '#ff7043',
-              backgroundColor: 'rgba(255, 112, 67, 0.1)',
-              tension: 0.4,
-              fill: true,
-              pointRadius,
-              pointHoverRadius,
-              borderWidth: big ? 3 : 2
-            }
-          ]
-        },
+        data: { labels: times, datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -1884,12 +1934,10 @@
         }
       });
 
-      // نحتفظ بآخر بيانات عشان نستخدمها فى نافذة ملء الشاشة كمان
+      // نحتفظ بآخر بيانات عشان نستخدمها فى نافذة ملء الشاشة وخط الاتجاه كمان
       lastFlowChartData = { times, flows1, flows2, flows3 };
 
-      const ctx = document.getElementById('flowChart').getContext('2d');
-      if (flowChart) flowChart.destroy();
-      flowChart = new Chart(ctx, buildFlowChartConfig(times, flows1, flows2, flows3, { big: false }));
+      renderFlowChart();
 
       // لو نافذة ملء الشاشة مفتوحة، حدّثيها كمان بنفس البيانات الجديدة
       if (flowChartModal) {
@@ -1897,12 +1945,28 @@
       }
     }
 
+    function renderFlowChart() {
+      if (!lastFlowChartData) return;
+      const { times, flows1, flows2, flows3 } = lastFlowChartData;
+      const ctx = document.getElementById('flowChart').getContext('2d');
+      if (flowChart) flowChart.destroy();
+      flowChart = new Chart(ctx, buildFlowChartConfig(times, flows1, flows2, flows3, { big: false, trend: trendEnabled }));
+    }
+
     function renderFlowChartModal() {
       if (!lastFlowChartData) return;
       const { times, flows1, flows2, flows3 } = lastFlowChartData;
       const ctx = document.getElementById('flowChartModal').getContext('2d');
       if (flowChartModal) flowChartModal.destroy();
-      flowChartModal = new Chart(ctx, buildFlowChartConfig(times, flows1, flows2, flows3, { big: true }));
+      flowChartModal = new Chart(ctx, buildFlowChartConfig(times, flows1, flows2, flows3, { big: true, trend: trendEnabled }));
+    }
+
+    // تبديل إظهار/إخفاء خط الاتجاه العام على كل الخطوط، فى النسخة العادية ونسخة ملء الشاشة معًا
+    function toggleTrend() {
+      trendEnabled = !trendEnabled;
+      document.querySelectorAll('.trend-toggle-btn').forEach(btn => btn.classList.toggle('active', trendEnabled));
+      renderFlowChart();
+      if (flowChartModal) renderFlowChartModal();
     }
 
     function openChartModal() {
@@ -1928,6 +1992,37 @@
     function resetChartZoom(chartCanvasId) {
       const chart = chartCanvasId === 'flowChartModal' ? flowChartModal : flowChart;
       if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
+    }
+
+    // حفظ المنحنى كصورة PNG، أو مشاركته مباشرة (واتساب/تليجرام/إلخ) لو المتصفح بيدعم Web Share API بملفات
+    async function shareOrDownloadChart(chartCanvasId) {
+      const chart = chartCanvasId === 'flowChartModal' ? flowChartModal : flowChart;
+      if (!chart) { alert('⚠️ لا توجد بيانات كافية لعرض المنحنى — حمّلي البيانات أولاً'); return; }
+
+      const dataUrl = chart.toBase64Image('image/png', 1);
+      const filename = `تصرف_الخطوط_${new Date().toISOString().slice(0, 10)}.png`;
+
+      try {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], filename, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'تصرف الخطوط الساعي',
+            text: 'منحنى تصرف الخطوط — محطة الدهار'
+          });
+          return;
+        }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return; // المستخدمة لغت المشاركة
+        console.warn('تعذّرت المشاركة المباشرة، سيتم تحميل الصورة بدلاً من ذلك', err);
+      }
+
+      // خيار احتياطي: تحميل الصورة مباشرة للجهاز
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename;
+      a.click();
     }
 
     function updateAlerts(data) {
