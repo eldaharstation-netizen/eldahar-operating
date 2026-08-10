@@ -415,6 +415,36 @@
       margin-bottom: 1rem;
     }
 
+    /* ── TIME RANGE CHIPS ── */
+    .chart-timerange-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .chip-btn {
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: rgba(0, 180, 255, 0.06);
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .chip-btn:hover {
+      background: rgba(0, 180, 255, 0.15);
+      border-color: rgba(0, 180, 255, 0.4);
+    }
+    .chip-btn.active {
+      background: linear-gradient(135deg, #00b4ff, #0088cc);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 2px 8px rgba(0, 180, 255, 0.35);
+    }
+
     /* ── FULLSCREEN CHART MODAL ── */
     .chart-modal-overlay {
       display: none;
@@ -889,6 +919,12 @@
           </div>
         </div>
         <div class="chart-hint">💡 استخدمي عجلة الفأرة أو حركة القرص (pinch) للتكبير، واسحبي للتنقل، أو دوسي ⛶ للعرض بملء الشاشة</div>
+        <div class="chart-timerange-chips" data-chip-group="main">
+          <button class="chip-btn" data-range="1h" onclick="setTimeRange('1h')">آخر ساعة</button>
+          <button class="chip-btn" data-range="6h" onclick="setTimeRange('6h')">آخر 6 ساعات</button>
+          <button class="chip-btn" data-range="12h" onclick="setTimeRange('12h')">آخر 12 ساعة</button>
+          <button class="chip-btn active" data-range="all" onclick="setTimeRange('all')">اليوم كله</button>
+        </div>
         <div class="chart-container">
           <canvas id="flowChart"></canvas>
         </div>
@@ -1002,6 +1038,12 @@
         </div>
       </div>
       <div class="chart-hint">💡 عجلة الفأرة أو pinch للتكبير، اسحبي للتنقل، Esc أو ✕ للإغلاق</div>
+      <div class="chart-timerange-chips" data-chip-group="modal">
+        <button class="chip-btn" data-range="1h" onclick="setTimeRange('1h')">آخر ساعة</button>
+        <button class="chip-btn" data-range="6h" onclick="setTimeRange('6h')">آخر 6 ساعات</button>
+        <button class="chip-btn" data-range="12h" onclick="setTimeRange('12h')">آخر 12 ساعة</button>
+        <button class="chip-btn active" data-range="all" onclick="setTimeRange('all')">اليوم كله</button>
+      </div>
       <div class="chart-modal-body">
         <canvas id="flowChartModal"></canvas>
       </div>
@@ -1015,6 +1057,7 @@
     let flowChartModal = null;
     let lastFlowChartData = null;
     let trendEnabled = false;
+    let activeTimeRange = 'all'; // 'all' | '1h' | '6h' | '12h'
 
     // تحميل الرابط المحفوظ
     window.addEventListener('load', () => {
@@ -1937,6 +1980,12 @@
       // نحتفظ بآخر بيانات عشان نستخدمها فى نافذة ملء الشاشة وخط الاتجاه كمان
       lastFlowChartData = { times, flows1, flows2, flows3 };
 
+      // كل تحميل جديد للبيانات (يوم جديد مثلاً) يرجّع فلتر الوقت لـ"اليوم كله" افتراضيًا
+      activeTimeRange = 'all';
+      document.querySelectorAll('.chip-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.range === 'all');
+      });
+
       renderFlowChart();
 
       // لو نافذة ملء الشاشة مفتوحة، حدّثيها كمان بنفس البيانات الجديدة
@@ -1947,7 +1996,7 @@
 
     function renderFlowChart() {
       if (!lastFlowChartData) return;
-      const { times, flows1, flows2, flows3 } = lastFlowChartData;
+      const { times, flows1, flows2, flows3 } = filterDataByTimeRange(lastFlowChartData, activeTimeRange);
       const ctx = document.getElementById('flowChart').getContext('2d');
       if (flowChart) flowChart.destroy();
       flowChart = new Chart(ctx, buildFlowChartConfig(times, flows1, flows2, flows3, { big: false, trend: trendEnabled }));
@@ -1955,10 +2004,62 @@
 
     function renderFlowChartModal() {
       if (!lastFlowChartData) return;
-      const { times, flows1, flows2, flows3 } = lastFlowChartData;
+      const { times, flows1, flows2, flows3 } = filterDataByTimeRange(lastFlowChartData, activeTimeRange);
       const ctx = document.getElementById('flowChartModal').getContext('2d');
       if (flowChartModal) flowChartModal.destroy();
       flowChartModal = new Chart(ctx, buildFlowChartConfig(times, flows1, flows2, flows3, { big: true, trend: trendEnabled }));
+    }
+
+    // بيتأكد إن التاريخ المعروض فى فلتر التاريخ هو نفسه تاريخ النهاردة الفعلي
+    function isTodaySelected() {
+      const dateInput = document.getElementById('filterDate');
+      if (!dateInput || !dateInput.value) return true;
+      const todayStr = new Date().toISOString().split('T')[0];
+      return dateInput.value === todayStr;
+    }
+
+    // فلترة بيانات المنحنى حسب "آخر N ساعة من الوقت الحالي الفعلي"
+    // بتشتغل بس لما اليوم المعروض هو نفسه النهاردة، لأن الفلتر مربوط بالوقت الحقيقي مش بحدود اليوم المعروض
+    function filterDataByTimeRange(data, range) {
+      if (range === 'all' || !isTodaySelected()) return data;
+
+      const hoursMap = { '1h': 1, '6h': 6, '12h': 12 };
+      const hoursBack = hoursMap[range];
+      if (!hoursBack) return data;
+
+      const now = new Date();
+      const cutoff = new Date(now.getTime() - hoursBack * 60 * 60 * 1000);
+
+      const filteredTimes = [], filteredFlows1 = [], filteredFlows2 = [], filteredFlows3 = [];
+      data.times.forEach((t, i) => {
+        const match = /^(\d{1,2}):(\d{2})/.exec(String(t).trim());
+        if (!match) return; // تعذّر تفسير الوقت، نتجاهل هذا الصف من الفلتر فقط
+        const rowDate = new Date(now);
+        rowDate.setHours(parseInt(match[1], 10), parseInt(match[2], 10), 0, 0);
+        if (rowDate >= cutoff && rowDate <= now) {
+          filteredTimes.push(t);
+          filteredFlows1.push(data.flows1[i]);
+          filteredFlows2.push(data.flows2[i]);
+          filteredFlows3.push(data.flows3[i]);
+        }
+      });
+
+      // لو الفلترة رجّعت مصفوفة فاضية (لا توجد قراءات فى النطاق ده)، نعرض كل البيانات بدل منحنى فاضي
+      if (filteredTimes.length === 0) return data;
+      return { times: filteredTimes, flows1: filteredFlows1, flows2: filteredFlows2, flows3: filteredFlows3 };
+    }
+
+    // تبديل نطاق الوقت المعروض (آخر ساعة / 6 ساعات / 12 ساعة / اليوم كله) — يشتغل على النسختين العادية وملء الشاشة معًا
+    function setTimeRange(range) {
+      if (range !== 'all' && !isTodaySelected()) {
+        alert('⚠️ فلترة "آخر N ساعة" بتشتغل بس لما يكون التاريخ المعروض هو تاريخ النهاردة، لأنها مربوطة بالوقت الحالي الفعلي. هيتم عرض بيانات اليوم كله بدلاً من ذلك.');
+      }
+      activeTimeRange = range;
+      document.querySelectorAll('.chip-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.range === range);
+      });
+      renderFlowChart();
+      if (flowChartModal) renderFlowChartModal();
     }
 
     // تبديل إظهار/إخفاء خط الاتجاه العام على كل الخطوط، فى النسخة العادية ونسخة ملء الشاشة معًا
