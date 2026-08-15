@@ -377,7 +377,7 @@ function renderAllAreasResult(date, d) {
     </div>
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">🗺️ عدد المناطق الشغالة</div>
+        <div class="kpi-label">🗺️ عدد مناطق الضخ</div>
         <div class="kpi-value">${d.areas.length}</div>
         <div class="kpi-detail">من أصل ${AREAS.length} منطقة</div>
       </div>
@@ -645,7 +645,7 @@ function buildNormalReportHTML(ctx) {
   // mode === 'all'
   const title = `تقرير ماطق الضخ — يوم ${from}`;
   const totalConsumption = data.areas.reduce((s, a) => s + (pickConsumption(a, source) || 0), 0);
-  const sub = `عدد المناطق الشغالة: ${data.areas.length} من أصل ${AREAS.length} — المصدر: ${srcLabel} · إجمالي الاستهلاك ${fmt(totalConsumption)} م³`;
+  const sub = `عدد مناطق الضخ: ${data.areas.length} من أصل ${AREAS.length} — المصدر: ${srcLabel} · إجمالي الاستهلاك ${fmt(totalConsumption)} م³`;
   const rows = data.areas.map(a => `
     <tr>
       <td>${a.area}</td>
@@ -694,7 +694,7 @@ function buildInfographicHTML(ctx) {
       <div class="badge">💧</div>
       <div class="company">${COMPANY_NAME}</div>
       <div class="dept">${DEPT_NAME}</div>
-      <div class="report-title">${mode === 'area' ? `تقرير استهلاك منطقة: ${area}` : `المناطق الشغالة — يوم ${from}`}</div>
+      <div class="report-title">${mode === 'area' ? `تقرير استهلاك منطقة: ${area}` : `مناطق الضخ — يوم ${from}`}</div>
       <div class="report-sub">${mode === 'area' ? `الفترة من ${from} إلى ${to} — المصدر: ${srcLabel}` : `تم الإنشاء بتاريخ ${generatedAt} — المصدر: ${srcLabel}`}</div>
     </div>
   `;
