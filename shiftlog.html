@@ -845,9 +845,9 @@ tr.current-hour-row.row-complete td {
     <!-- 🆕 تبويبات لعرض خط واحد بس وقت التسجيل، تقليل الزحمة على الموبايل -->
     <div class="line-view-tabs" role="tablist">
       <button type="button" class="line-tab active" data-view="all" onclick="setLineView('all', this)">📊 عرض الكل</button>
-      <button type="button" class="line-tab" data-view="line1" onclick="setLineView('line1', this)">🔵LINE 1 خط الشمال</button>
-      <button type="button" class="line-tab" data-view="line2" onclick="setLineView('line2', this)">🟢LINE 2 شبكات الدهار</button>
-      <button type="button" class="line-tab" data-view="line3" onclick="setLineView('line3', this)">🟠LINE 3 جبل العفش</button>
+      <button type="button" class="line-tab" data-view="line1" onclick="setLineView('line1', this)">🔵 خط الشمال</button>
+      <button type="button" class="line-tab" data-view="line2" onclick="setLineView('line2', this)">🟢 شبكات الدهار</button>
+      <button type="button" class="line-tab" data-view="line3" onclick="setLineView('line3', this)">🟠 جبل العفش</button>
     </div>
 
     <table class="shift-table" id="shiftTable">
@@ -860,11 +860,11 @@ tr.current-hour-row.row-complete td {
           <th class="th-tank" rowspan="2">الجهد V</th>
           <th class="th-tank" rowspan="2">الوارد م³</th>
           <!-- خط 1 -->
-          <th class="th-line1" colspan="7" title="LINE 1خط الشمال">🔵 خط الطرد 1 (خط الشمال)</th>
+          <th class="th-line1" colspan="7" title="خط الشمال">🔵 خط الطرد 1 (خط الشمال)</th>
           <!-- خط 2 -->
-          <th class="th-line2" colspan="7" title="LINE 2شبكات الدهار">🟢 خط الطرد 2 (شبكات الدهار)</th>
+          <th class="th-line2" colspan="7" title="شبكات الدهار">🟢 خط الطرد 2 (شبكات الدهار)</th>
           <!-- خط 3 -->
-          <th class="th-line3" colspan="7" title="LINE 3جبل العفش">🟠 خط الطرد 3 (جبل العفش)</th>
+          <th class="th-line3" colspan="7" title="جبل العفش">🟠 خط الطرد 3 (جبل العفش)</th>
           <!-- خزانات -->
           <th class="th-tank" colspan="2">🏗 الخزانات</th>
           <!-- ملاحظات -->
@@ -972,7 +972,7 @@ tr.current-hour-row.row-complete td {
 
 <script>
 const AREAS = [
-  'شبكات الدهار كامله - تشغيل مستمر','السلام-فلفل','السلام-الحجاز','السلام-سلخانه','ابو جميعه','الكنيسه','الشيخ محمود','مجاهد','الموظفين','الزراعه','النجدة و الشيخ شحات',
+  'شبكات الدهار كامله - تشغيل مستمر','السلام','الكنيسه','الشيخ محمود','مجاهد','الموظفين و باتا','الزراعه','النجدة و الشيخ شحات',
   'حفر الباطن و التقوى','الهلال','فيلات مبارك 7',
   'اللؤلؤة و الفيروز','مبارك 11 و 12 و 13',
   'بلوكات الاحياء','رافع الجيش','الأمير طلال','خط جبل العفش'
@@ -1402,12 +1402,13 @@ function collectAreaMeters(line) {
   const result = [];
   if (!container) return result;
   container.querySelectorAll('[id^="areaMeter_"]').forEach(div => {
-    const nameSel = div.querySelector('select');
+    const checked = [...div.querySelectorAll('.am-area-checkbox:checked')].map(c => c.value);
+    const name = checked.join('+'); // نفس تنسيق '+' المستخدم فى خطوط الطرد لدعم المناطق المتعددة
     const before = div.querySelector('.am-before')?.value || '';
     const after  = div.querySelector('.am-after')?.value  || '';
     const diff   = div.querySelector('.am-diff')?.value   || '';
-    if (nameSel?.value || before || after) {
-      result.push({ name: nameSel?.value || '', before, after, diff });
+    if (name || before || after) {
+      result.push({ name, before, after, diff });
     }
   });
   return result;
@@ -1510,8 +1511,12 @@ function restoreShift(data) {
         const idx = areaMeterCounts[l];
         const div = document.getElementById(`areaMeter_${l}_${idx}`);
         if (div) {
-          const sel = div.querySelector('select');
-          if (sel) sel.value = am.name || '';
+          // بيدعم السجلات القديمة (منطقة واحدة) والجديدة (أكتر من منطقة مفصولة بـ '+')
+          const namesToCheck = String(am.name || '').split('+').map(s => s.trim()).filter(Boolean);
+          div.querySelectorAll('.am-area-checkbox').forEach(cb => {
+            cb.checked = namesToCheck.includes(cb.value);
+          });
+          updateAreaMeterSelection(l, idx);
           const beforeInp = div.querySelector('.am-before');
           const afterInp  = div.querySelector('.am-after');
           const diffInp   = div.querySelector('.am-diff');
@@ -1729,12 +1734,23 @@ function addAreaMeter(line) {
   div.id = `areaMeter_${line}_${idx}`;
   div.style = `background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:0.6rem;margin-bottom:0.4rem;`;
   div.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
-      <select style="font-size:0.78rem;color:${color};background:var(--bg3);border:1px solid var(--brd);border-radius:6px;padding:0.2rem 0.4rem;font-family:Cairo,sans-serif;flex:1;margin-left:0.4rem;">
-        <option value="">-- اختر المنطقة --</option>
-        ${AREAS.map(a=>`<option value="${a}">${a}</option>`).join('')}
-      </select>
-      <button onclick="removeAreaMeter(${line},${idx})" style="background:rgba(255,59,92,0.15);border:1px solid rgba(255,59,92,0.4);border-radius:4px;color:var(--red);padding:0.15rem 0.4rem;font-size:0.7rem;cursor:pointer;">✕</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;gap:0.4rem;">
+      <div class="am-multiselect" style="position:relative;flex:1;">
+        <button type="button" class="am-multiselect-btn" onclick="toggleAreaMeterDropdown(${line},${idx})"
+          style="width:100%;text-align:right;font-size:0.78rem;color:${color};background:var(--bg3);border:1px solid var(--brd);border-radius:6px;padding:0.35rem 0.5rem;font-family:Cairo,sans-serif;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          -- اختاري منطقة أو أكتر --
+        </button>
+        <div class="am-multiselect-panel" id="areaMeterPanel_${line}_${idx}"
+          style="display:none;position:absolute;top:105%;right:0;left:0;z-index:20;background:var(--bg3);border:1px solid var(--brd);border-radius:8px;max-height:220px;overflow-y:auto;padding:0.4rem;box-shadow:0 8px 20px rgba(0,0,0,0.4);">
+          ${AREAS.map(a => `
+            <label style="display:flex;align-items:center;gap:0.4rem;padding:0.32rem 0.2rem;font-size:0.78rem;color:var(--txt);cursor:pointer;">
+              <input type="checkbox" class="am-area-checkbox" value="${a}" onchange="updateAreaMeterSelection(${line},${idx})">
+              <span>${a}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+      <button onclick="removeAreaMeter(${line},${idx})" style="background:rgba(255,59,92,0.15);border:1px solid rgba(255,59,92,0.4);border-radius:4px;color:var(--red);padding:0.15rem 0.4rem;font-size:0.7rem;cursor:pointer;flex-shrink:0;">✕</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;">
       <div>
@@ -1755,6 +1771,32 @@ function addAreaMeter(line) {
     </div>`;
   container.appendChild(div);
 }
+
+// بتفتح/تقفل قائمة اختيار المناطق (متعددة) لعداد فرعي معين، وتقفل أي قائمة تانية مفتوحة
+function toggleAreaMeterDropdown(line, idx) {
+  const targetId = `areaMeterPanel_${line}_${idx}`;
+  document.querySelectorAll('.am-multiselect-panel').forEach(p => {
+    if (p.id !== targetId) p.style.display = 'none';
+  });
+  const panel = document.getElementById(targetId);
+  if (panel) panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+}
+
+// بتحدّث نص الزرار ليعرض المناطق المختارة (ممكن تكون أكتر من منطقة لنفس العداد الفرعي)
+function updateAreaMeterSelection(line, idx) {
+  const div = document.getElementById(`areaMeter_${line}_${idx}`);
+  if (!div) return;
+  const checked = [...div.querySelectorAll('.am-area-checkbox:checked')].map(c => c.value);
+  const btn = div.querySelector('.am-multiselect-btn');
+  if (btn) btn.textContent = checked.length ? checked.join(' + ') : '-- اختاري منطقة أو أكتر --';
+}
+
+// قفل أي قائمة اختيار مناطق مفتوحة لو المستخدم دوس بره القايمة
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.am-multiselect')) {
+    document.querySelectorAll('.am-multiselect-panel').forEach(p => { p.style.display = 'none'; });
+  }
+});
 
 function removeAreaMeter(line, idx) {
   const el = document.getElementById(`areaMeter_${line}_${idx}`);
@@ -2421,7 +2463,7 @@ function confirmSaveDespiteIssues() {
 }
 
 // ── INIT ──
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   document.getElementById('shiftDate').value = new Date().toLocaleDateString('en-CA');
   updateDayName();
   buildTable();
@@ -2447,12 +2489,58 @@ window.addEventListener('load', () => {
   document.getElementById('shiftDate').value = today;
   updateDayName();
 
+  // 🆕 لو النهاردة يوم جديد، نعرض "نهاية العداد" المحفوظة من أمس كمرجع بصري
+  // (placeholder) جوه خانة "بداية العداد" النهاردة — من غير ما يتملى تلقائيًا
+  await carryForwardMeterStarts(today);
+
   // 🆕 مزامنة تلقائية من شيت جوجل لنفس تاريخ اليوم (المصدر الأدق لو موجود)
-  syncFromSheet(true);
+  await syncFromSheet(true);
 
   // تحديث الحالة اللحظية
   updateLiveStatus();
 });
+
+// 🆕 يجيب تاريخ اليوم اللي قبل تاريخ معين (بصيغة YYYY-MM-DD)
+function getPreviousDateStr(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('en-CA');
+}
+
+// 🆕 بيعرض "نهاية العداد" المحفوظة من آخر سجل (أمس) كمرجع بصري بس فى خانة
+// "بداية العداد" النهاردة (placeholder رمادي) — من غير ما يملأها تلقائيًا،
+// عشان الإدخال يفضل كله يدوي بإيد الفني ويقلل احتمال الخطأ فى نفس الوقت.
+async function carryForwardMeterStarts(currentDate) {
+  const yesterday = getPreviousDateStr(currentDate);
+  let yesterdayMeters = null;
+
+  if (scriptUrl) {
+    try {
+      const res = await fetch(scriptUrl + '?action=getShiftByDate&date=' + yesterday + '&t=' + Date.now());
+      const result = await res.json();
+      if (result && result.found && result.data) {
+        yesterdayMeters = result.data.meters;
+      }
+    } catch (err) {
+      console.warn('carryForwardMeterStarts: تعذر الاتصال بالشيت، هنجرب النسخة المحلية', err);
+    }
+  }
+
+  if (!yesterdayMeters) {
+    const local = JSON.parse(localStorage.getItem('dahar_shift_' + yesterday) || 'null');
+    if (local) yesterdayMeters = local.meters;
+  }
+
+  if (!yesterdayMeters) return; // مفيش سجل أمس أصلاً — نسيبها فاضية زي ما هي
+
+  [1,2,3].forEach(l => {
+    const startInput = document.getElementById('meter'+l+'Start');
+    const endVal = yesterdayMeters['line'+l]?.end;
+    if (startInput && endVal) {
+      startInput.placeholder = endVal; // مرجع بصري بس (رمادي)، الفني هو اللي بيكتبها بنفسه
+    }
+  });
+}
 
 // 🆕 تحميل بيانات اليوم المختار من شيت جوجل تلقائياً (يستبدل المحلي لو موجود بالشيت)
 async function syncFromSheet(silent) {
@@ -2469,12 +2557,15 @@ async function syncFromSheet(silent) {
       // عشان متفضلش قراءة اليوم اللي فات ظاهرة وكإنها خاصة باليوم الجديد
       document.getElementById('tank1Close').value = '';
       document.getElementById('tank2Close').value = '';
-      
-      // 🆕 مسح النهاية للعدادات في يوم جديد (البداية تبقى من اليوم السابق)
+
+      // 🆕 مسح النهاية للعدادات فى يوم جديد
       [1,2,3].forEach(l => {
         document.getElementById('meter'+l+'End').value = '';
       });
-      
+
+      // 🆕 وبعدين نعرض "بداية العداد" كمرجع بصري (placeholder) من نهاية اليوم اللي قبله
+      await carryForwardMeterStarts(date);
+
       if (!silent) showToast('⚠ لا يوجد سجل محفوظ في الشيت لهذا التاريخ', 'warn');
     }
   } catch (err) {
