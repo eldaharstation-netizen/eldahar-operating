@@ -151,7 +151,7 @@
   .info-letterhead { text-align:center; margin-bottom:1.6rem; }
   .info-letterhead .badge {
     display:inline-flex; align-items:center; justify-content:center;
-    width:56px; height:56px; border-radius:16px; font-size:3.8rem; margin-bottom:.6rem;
+    width:56px; height:56px; border-radius:16px; font-size:5.8rem; margin-bottom:.6rem;
     background:linear-gradient(135deg,#0077b6,#00b4ff); box-shadow:0 6px 20px rgba(0,180,255,.35);
   }
   .info-letterhead .company { font-size:1.2rem; font-weight:800; color:#fff; }
@@ -694,7 +694,7 @@ function buildInfographicHTML(ctx) {
       <div class="badge">💧</div>
       <div class="company">${COMPANY_NAME}</div>
       <div class="dept">${DEPT_NAME}</div>
-      <div class="report-title">${mode === 'area' ? `تقرير استهلاك منطقة: ${area}` : `المناطق الشغالة — يوم ${from}`}</div>
+      <div class="report-title">${mode === 'area' ? `تقرير استهلاك منطقة: ${area}` : `مناطق الضخ — يوم ${from}`}</div>
       <div class="report-sub">${mode === 'area' ? `الفترة من ${from} إلى ${to} — المصدر: ${srcLabel}` : `تم الإنشاء بتاريخ ${generatedAt} — المصدر: ${srcLabel}`}</div>
     </div>
   `;
@@ -724,7 +724,7 @@ function buildInfographicHTML(ctx) {
   const totalConsumption = data.areas.reduce((s, a) => s + (pickConsumption(a, source) || 0), 0);
   const kpis = `
     <div class="info-kpi-grid">
-      <div class="info-kpi-card"><div class="icon">🗺️</div><div class="val">${data.areas.length}</div><div class="label">منطقة شغالة من ${AREAS.length}</div></div>
+      <div class="info-kpi-card"><div class="icon">🗺️</div><div class="val">${data.areas.length}</div><div class="label">منطقة ضخ من ${AREAS.length}</div></div>
       <div class="info-kpi-card"><div class="icon">💧</div><div class="val">${fmt(totalConsumption)}</div><div class="label">م³ إجمالي الاستهلاك</div></div>
     </div>
   `;
