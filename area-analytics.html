@@ -418,6 +418,13 @@ function renderAllAreasResult(date, d) {
     </div>
 
     <div class="report-actions">
+      <div class="filter-field" style="min-width:170px;">
+        <label>مصدر البيانات في التقرير</label>
+        <select id="reportSourceSelect">
+          <option value="flows">تصرف الخطوط (الساعي)</option>
+          <option value="meters">قراءة العدادات</option>
+        </select>
+      </div>
       <button class="btn btn-report-normal" onclick="printNormalReport()">🖨️ تقرير عادي (طباعة/PDF)</button>
       <button class="btn btn-report-infographic" onclick="openInfographic()">🎨 إنفوجراف</button>
     </div>
@@ -524,6 +531,13 @@ function renderResult(area, from, to, d) {
     </div>
 
     <div class="report-actions">
+      <div class="filter-field" style="min-width:170px;">
+        <label>مصدر البيانات في التقرير</label>
+        <select id="reportSourceSelect">
+          <option value="flows">تصرف الخطوط (الساعي)</option>
+          <option value="meters">قراءة العدادات</option>
+        </select>
+      </div>
       <button class="btn btn-report-normal" onclick="printNormalReport()">🖨️ تقرير عادي (طباعة/PDF)</button>
       <button class="btn btn-report-infographic" onclick="openInfographic()">🎨 إنفوجراف</button>
     </div>
@@ -587,22 +601,33 @@ function buildLetterheadHTML(reportTitle, reportSub) {
 
 function printNormalReport() {
   if (!lastLoadedData) { showToast('⚠ حمّلي تحليل الأول'); return; }
-  document.getElementById('printArea').innerHTML = buildNormalReportHTML(lastLoadedData);
+  const source = document.getElementById('reportSourceSelect')?.value || 'flows';
+  document.getElementById('printArea').innerHTML = buildNormalReportHTML({ ...lastLoadedData, source });
   window.print();
 }
 
+function sourceLabel(source) {
+  return source === 'meters' ? 'قراءة العدادات' : 'تصرف الخطوط (الساعي)';
+}
+
+// بياخد قيمة الاستهلاك المناسبة (تصرفات أو عدادات) لصف/منطقة واحدة حسب المصدر المختار
+function pickConsumption(row, source) {
+  return source === 'meters' ? row.metersConsumption : row.consumption;
+}
+
 function buildNormalReportHTML(ctx) {
-  const { mode, area, from, to, data } = ctx;
+  const { mode, area, from, to, data, source = 'flows' } = ctx;
   const generatedAt = new Date().toLocaleString('ar-EG');
+  const srcLabel = sourceLabel(source);
 
   if (mode === 'area') {
+    const total = source === 'meters' ? data.metersTotalConsumption : data.totalConsumption;
     const title = `تقرير استهلاك منطقة: ${area}`;
-    const sub = `الفترة من ${from} إلى ${to} — من التصرفات ${fmt(data.totalConsumption)} م³ · من العدادات ${data.metersTotalConsumption!=null?fmt(data.metersTotalConsumption):'--'} م³ · إجمالي ساعات التشغيل ${data.totalOperatingHours} ساعة`;
+    const sub = `الفترة من ${from} إلى ${to} — المصدر: ${srcLabel} — إجمالي الاستهلاك ${total!=null?fmt(total):'--'} م³ · إجمالي ساعات التشغيل ${data.totalOperatingHours} ساعة`;
     const rows = data.daily.map(r => `
       <tr>
         <td>${r.date}</td>
-        <td>${fmt(r.consumption)}</td>
-        <td>${r.metersConsumption!=null ? fmt(r.metersConsumption) : '--'}</td>
+        <td>${fmt(pickConsumption(r, source))}</td>
         <td>${r.operatingHours}</td>
         <td>${r.avgFlowM3PerHour != null ? fmt(r.avgFlowM3PerHour) : '--'}</td>
       </tr>
@@ -610,7 +635,7 @@ function buildNormalReportHTML(ctx) {
     return `
       ${buildLetterheadHTML(title, sub)}
       <table>
-        <thead><tr><th>التاريخ</th><th>الاستهلاك من التصرفات (م³)</th><th>الاستهلاك من العدادات (م³)</th><th>ساعات التشغيل</th><th>معدل م³/ساعة</th></tr></thead>
+        <thead><tr><th>التاريخ</th><th>الاستهلاك (م³) — ${srcLabel}</th><th>ساعات التشغيل</th><th>معدل م³/ساعة</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="report-footer">تم إنشاء هذا التقرير آليًا بتاريخ ${generatedAt}</div>
@@ -619,13 +644,12 @@ function buildNormalReportHTML(ctx) {
 
   // mode === 'all'
   const title = `تقرير المناطق الشغالة — يوم ${from}`;
-  const totalConsumption = data.areas.reduce((s, a) => s + a.consumption, 0);
-  const sub = `عدد المناطق الشغالة: ${data.areas.length} من أصل ${AREAS.length} · إجمالي الاستهلاك من التصرفات ${fmt(totalConsumption)} م³`;
+  const totalConsumption = data.areas.reduce((s, a) => s + (pickConsumption(a, source) || 0), 0);
+  const sub = `عدد المناطق الشغالة: ${data.areas.length} من أصل ${AREAS.length} — المصدر: ${srcLabel} · إجمالي الاستهلاك ${fmt(totalConsumption)} م³`;
   const rows = data.areas.map(a => `
     <tr>
       <td>${a.area}</td>
-      <td>${fmt(a.consumption)}</td>
-      <td>${a.metersConsumption!=null ? fmt(a.metersConsumption) : '--'}</td>
+      <td>${fmt(pickConsumption(a, source))}</td>
       <td>${a.operatingHours}</td>
       <td>${a.avgFlowM3PerHour != null ? fmt(a.avgFlowM3PerHour) : '--'}</td>
     </tr>
@@ -633,7 +657,7 @@ function buildNormalReportHTML(ctx) {
   return `
     ${buildLetterheadHTML(title, sub)}
     <table>
-      <thead><tr><th>المنطقة</th><th>الاستهلاك من التصرفات (م³)</th><th>الاستهلاك من العدادات (م³)</th><th>ساعات التشغيل</th><th>معدل م³/ساعة</th></tr></thead>
+      <thead><tr><th>المنطقة</th><th>الاستهلاك (م³) — ${srcLabel}</th><th>ساعات التشغيل</th><th>معدل م³/ساعة</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="report-footer">تم إنشاء هذا التقرير آليًا بتاريخ ${generatedAt}</div>
@@ -645,7 +669,8 @@ function buildNormalReportHTML(ctx) {
 // ============================================================
 function openInfographic() {
   if (!lastLoadedData) { showToast('⚠ حمّلي تحليل الأول'); return; }
-  document.getElementById('infographicContent').innerHTML = buildInfographicHTML(lastLoadedData);
+  const source = document.getElementById('reportSourceSelect')?.value || 'flows';
+  document.getElementById('infographicContent').innerHTML = buildInfographicHTML({ ...lastLoadedData, source });
   document.getElementById('infographicOverlay').classList.add('open');
   document.addEventListener('keydown', handleInfographicEsc);
 }
@@ -660,8 +685,9 @@ function handleInfographicEsc(e) {
 }
 
 function buildInfographicHTML(ctx) {
-  const { mode, area, from, to, data } = ctx;
+  const { mode, area, from, to, data, source = 'flows' } = ctx;
   const generatedAt = new Date().toLocaleDateString('ar-EG');
+  const srcLabel = sourceLabel(source);
 
   const letterhead = `
     <div class="info-letterhead">
@@ -669,32 +695,33 @@ function buildInfographicHTML(ctx) {
       <div class="company">${COMPANY_NAME}</div>
       <div class="dept">${DEPT_NAME}</div>
       <div class="report-title">${mode === 'area' ? `تقرير استهلاك منطقة: ${area}` : `المناطق الشغالة — يوم ${from}`}</div>
-      <div class="report-sub">${mode === 'area' ? `الفترة من ${from} إلى ${to}` : `تم الإنشاء بتاريخ ${generatedAt}`}</div>
+      <div class="report-sub">${mode === 'area' ? `الفترة من ${from} إلى ${to} — المصدر: ${srcLabel}` : `تم الإنشاء بتاريخ ${generatedAt} — المصدر: ${srcLabel}`}</div>
     </div>
   `;
 
   if (mode === 'area') {
+    const total = source === 'meters' ? data.metersTotalConsumption : data.totalConsumption;
+    const avgDaily = source === 'meters' ? data.metersAvgDailyConsumption : data.avgDailyConsumption;
     const kpis = `
       <div class="info-kpi-grid">
-        <div class="info-kpi-card"><div class="icon">💧</div><div class="val">${fmt(data.totalConsumption)}</div><div class="label">م³ من التصرفات</div></div>
-        <div class="info-kpi-card"><div class="icon">🧮</div><div class="val">${data.metersTotalConsumption!=null?fmt(data.metersTotalConsumption):'--'}</div><div class="label">م³ من العدادات</div></div>
+        <div class="info-kpi-card"><div class="icon">💧</div><div class="val">${total!=null?fmt(total):'--'}</div><div class="label">م³ إجمالي الاستهلاك</div></div>
+        <div class="info-kpi-card"><div class="icon">📅</div><div class="val">${avgDaily!=null?fmt(avgDaily):'--'}</div><div class="label">م³ / يوم (متوسط)</div></div>
         <div class="info-kpi-card"><div class="icon">⏱️</div><div class="val">${data.totalOperatingHours}</div><div class="label">إجمالي ساعات التشغيل</div></div>
         <div class="info-kpi-card"><div class="icon">⚡</div><div class="val">${data.avgFlowM3PerHour ?? '--'}</div><div class="label">م³/ساعة (معدل التصرف)</div></div>
       </div>
     `;
-    const maxDaily = Math.max(...data.daily.map(r => r.consumption), 1);
     const rows = data.daily.map((r, i) => `
       <div class="info-area-row">
         <div class="info-area-rank">${i + 1}</div>
         <div class="info-area-name">${r.date}</div>
-        <div class="info-area-stats">تصرفات ${fmt(r.consumption)} م³ · عدادات ${r.metersConsumption!=null?fmt(r.metersConsumption):'--'} م³ · ${r.operatingHours} ساعة</div>
+        <div class="info-area-stats">${fmt(pickConsumption(r, source))} م³ · ${r.operatingHours} ساعة</div>
       </div>
     `).join('');
     return `${letterhead}${kpis}<div>${rows}</div><div class="info-footer">تقرير مُنشأ آليًا من نظام مراقبة الطلمبات — محطة الدهار</div>`;
   }
 
   // mode === 'all'
-  const totalConsumption = data.areas.reduce((s, a) => s + a.consumption, 0);
+  const totalConsumption = data.areas.reduce((s, a) => s + (pickConsumption(a, source) || 0), 0);
   const kpis = `
     <div class="info-kpi-grid">
       <div class="info-kpi-card"><div class="icon">🗺️</div><div class="val">${data.areas.length}</div><div class="label">منطقة شغالة من ${AREAS.length}</div></div>
@@ -705,7 +732,7 @@ function buildInfographicHTML(ctx) {
     <div class="info-area-row">
       <div class="info-area-rank">${i + 1}</div>
       <div class="info-area-name">${a.area}</div>
-      <div class="info-area-stats">تصرفات ${fmt(a.consumption)} م³ · عدادات ${a.metersConsumption!=null?fmt(a.metersConsumption):'--'} م³ · ${a.operatingHours} ساعة</div>
+      <div class="info-area-stats">${fmt(pickConsumption(a, source))} م³ · ${a.operatingHours} ساعة</div>
     </div>
   `).join('');
   return `${letterhead}${kpis}<div>${rows}</div><div class="info-footer">تقرير مُنشأ آليًا من نظام مراقبة الطلمبات — محطة الدهار</div>`;
