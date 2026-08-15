@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تحليل استهلاك المناطق - مصادر منفصلة</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #1a6b3c;
+      --primary-light: #2a9b5e;
+      --primary-dark: #0f3d23;
+      --accent: #ff6b35;
+      --accent-light: #ff8855;
+      --success: #4caf50;
+      --warning: #ffb74d;
+      --danger: #f44336;
+      --info: #2196f3;
+      --bg-light: #f5f7fa;
+      --bg-white: #ffffff;
+      --text-dark: #1a1a1a;
+      --text-gray: #666666;
+      --border-color: #ddd;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8f1f8 100%);
+      color: var(--text-dark);
+      line-height: 1.6;
+      padding: 1rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      border: 2px solid var(--border-color);
+      background: white;
+      color: var(--text-gray);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-section {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 107, 60, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(26, 107, 60, 0.3);
+    }
+
+    .btn-secondary {
+      background: #e0e0e0;
+      color: var(--text-dark);
+    }
+
+    .btn-secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .results {
+        grid-template-columns: 1fr;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      border-right: 4px solid var(--primary);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-icon {
+      font-size: 1.5rem;
+    }
+
+    .stat {
+      margin-bottom: 1rem;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-gray);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-unit {
+      font-size: 0.9rem;
+      color: var(--text-gray);
+      margin-right: 0.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    thead {
+      background: var(--bg-light);
+      border-bottom: 2px solid var(--primary);
+    }
+
+    th {
+      padding: 0.75rem;
+      text-align: right;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    tbody tr:hover {
+      background: var(--bg-light);
+    }
+
+    .comparison-card {
+      border-right-color: var(--accent);
+    }
+
+    .comparison-card .card-title {
+      color: var(--accent);
+    }
+
+    .comparison-table td:last-child {
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .diff-positive {
+      color: var(--success);
+    }
+
+    .diff-negative {
+      color: var(--danger);
+    }
+
+    .diff-neutral {
+      color: var(--text-gray);
+    }
+
+    .alert {
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .alert-info {
+      background: #e3f2fd;
+      color: #0d47a1;
+      border-right: 4px solid #2196f3;
+    }
+
+    .alert-warning {
+      background: #fff3e0;
+      color: #e65100;
+      border-right: 4px solid #ff9800;
+    }
+
+    .alert-success {
+      background: #e8f5e9;
+      color: #1b5e20;
+      border-right: 4px solid #4caf50;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      border: 4px solid var(--bg-light);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .export-btn {
+      background: var(--info);
+      color: white;
+    }
+
+    .export-btn:hover {
+      background: #1976d2;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 1rem;
+      border-radius: 6px;
+      border-right: 4px solid #f44336;
+      margin-bottom: 1rem;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      padding: 1rem;
+      text-align: center;
+      color: var(--text-gray);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏭 تحليل استهلاك المناطق</h1>
+      <p>تحديد الاستهلاك من مصادر منفصلة: العدادات والتصرفات</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('meters')">
+        📊 من العدادات
+      </button>
+      <button class="tab-btn" onclick="switchTab('flows')">
+        💧 من التصرفات
+      </button>
+      <button class="tab-btn" onclick="switchTab('comparison')">
+        ⚖️ مقارنة المصادر
+      </button>
+      <button class="tab-btn" onclick="switchTab('report')">
+        📄 التقارير
+      </button>
+    </div>
+
+    <!-- Tab 1: From Meters -->
+    <div id="meters" class="tab-content active">
+      <div class="form-section">
+        <h2>📋 تحديد الاستهلاك من قراءات العدادات</h2>
+        
+        <div class="alert alert-info">
+          ℹ️ هذا الخيار يحسب الاستهلاك من قراءة العدادات (البداية والنهاية) الموجودة في شيت "عدادات_المناطق" فقط
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="metersArea">اختر المنطقة (أو اترك فارغ للكل):</label>
+            <input type="text" id="metersArea" placeholder="مثال: المنطقة الأولى">
+          </div>
+          <div class="form-group">
+            <label for="metersFromDate">من تاريخ:</label>
+            <input type="date" id="metersFromDate">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="metersToDate">إلى تاريخ:</label>
+            <input type="date" id="metersToDate">
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="analyzeFromMeters()">
+            🔍 تحليل من العدادات
+          </button>
+          <button class="btn btn-secondary" onclick="exportMetersReport()">
+            📥 تحميل التقرير
+          </button>
+        </div>
+      </div>
+
+      <div id="metersResults"></div>
+    </div>
+
+    <!-- Tab 2: From Flows -->
+    <div id="flows" class="tab-content">
+      <div class="form-section">
+        <h2>💧 تحديد الاستهلاك من بيانات التصرفات</h2>
+        
+        <div class="alert alert-info">
+          ℹ️ هذا الخيار يحسب الاستهلاك من بيانات التصرفات الساعية في شيت "البيانات_الساعية" فقط
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="flowsArea">اختر المنطقة (أو اترك فارغ للكل):</label>
+            <input type="text" id="flowsArea" placeholder="مثال: المنطقة الأولى">
+          </div>
+          <div class="form-group">
+            <label for="flowsFromDate">من تاريخ:</label>
+            <input type="date" id="flowsFromDate">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="flowsToDate">إلى تاريخ:</label>
+            <input type="date" id="flowsToDate">
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="analyzeFromFlows()">
+            🔍 تحليل من التصرفات
+          </button>
+          <button class="btn btn-secondary" onclick="exportFlowsReport()">
+            📥 تحميل التقرير
+          </button>
+        </div>
+      </div>
+
+      <div id="flowsResults"></div>
+    </div>
+
+    <!-- Tab 3: Comparison -->
+    <div id="comparison" class="tab-content">
+      <div class="form-section">
+        <h2>⚖️ مقارنة الاستهلاك بين المصادر</h2>
+        
+        <div class="alert alert-warning">
+          ⚠️ هذا الخيار يقارن بيانات العدادات مع التصرفات لاكتشاف الفروقات والأخطاء
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="compArea">اختر المنطقة:</label>
+            <input type="text" id="compArea" placeholder="مثال: المنطقة الأولى">
+          </div>
+          <div class="form-group">
+            <label for="compFromDate">من تاريخ:</label>
+            <input type="date" id="compFromDate">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="compToDate">إلى تاريخ:</label>
+            <input type="date" id="compToDate">
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="compareAnalytics()">
+            📊 قارن المصادر
+          </button>
+          <button class="btn btn-secondary" onclick="createComparisonReport()">
+            📄 أنشئ تقرير مقارن
+          </button>
+        </div>
+      </div>
+
+      <div id="comparisonResults"></div>
+    </div>
+
+    <!-- Tab 4: Reports -->
+    <div id="report" class="tab-content">
+      <div class="form-section">
+        <h2>📄 التقارير والتحليلات</h2>
+
+        <div class="alert alert-info">
+          ℹ️ أنشئ تقارير شاملة للمناطق مع مقارنة المصادر
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reportFromDate">من تاريخ:</label>
+            <input type="date" id="reportFromDate">
+          </div>
+          <div class="form-group">
+            <label for="reportToDate">إلى تاريخ:</label>
+            <input type="date" id="reportToDate">
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="generateDualReport()">
+            📊 إنشاء تقرير ثنائي المصدر
+          </button>
+          <button class="btn btn-secondary" onclick="exportAllReports()">
+            📥 تصدير جميع التقارير
+          </button>
+        </div>
+      </div>
+
+      <div id="reportResults"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>🔐 جميع البيانات محمية وآمنة | آخر تحديث: <span id="lastUpdate"></span></p>
+  </div>
+
+  <script>
+    let scriptUrl = '';
+
+    // Initialize script URL
+    google.script.run.withSuccessHandler(function(url) {
+      scriptUrl = url;
+    }).getScriptUrl();
+
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Remove active class from all buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabName).classList.add('active');
+
+      // Add active class to clicked button
+      event.target.classList.add('active');
+    }
+
+    function setTodayDate() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('metersFromDate').value = today;
+      document.getElementById('metersToDate').value = today;
+      document.getElementById('flowsFromDate').value = today;
+      document.getElementById('flowsToDate').value = today;
+      document.getElementById('compFromDate').value = today;
+      document.getElementById('compToDate').value = today;
+      document.getElementById('reportFromDate').value = today;
+      document.getElementById('reportToDate').value = today;
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ar-EG');
+    }
+
+    function analyzeFromMeters() {
+      const area = document.getElementById('metersArea').value || 'الكل';
+      const from = document.getElementById('metersFromDate').value;
+      const to = document.getElementById('metersToDate').value;
+
+      if (!from || !to) {
+        alert('❌ الرجاء اختيار التاريخ من والى');
+        return;
+      }
+
+      const resultsDiv = document.getElementById('metersResults');
+      resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div>جاري التحليل...</div>';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          displayMetersResults(result, resultsDiv);
+        })
+        .withFailureHandler(function(error) {
+          resultsDiv.innerHTML = '<div class="error">❌ خطأ: ' + error + '</div>';
+        })
+        .getAreaAnalyticsFromMeters(area, from, to);
+    }
+
+    function analyzeFromFlows() {
+      const area = document.getElementById('flowsArea').value || 'الكل';
+      const from = document.getElementById('flowsFromDate').value;
+      const to = document.getElementById('flowsToDate').value;
+
+      if (!from || !to) {
+        alert('❌ الرجاء اختيار التاريخ من والى');
+        return;
+      }
+
+      const resultsDiv = document.getElementById('flowsResults');
+      resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div>جاري التحليل...</div>';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          displayFlowsResults(result, resultsDiv);
+        })
+        .withFailureHandler(function(error) {
+          resultsDiv.innerHTML = '<div class="error">❌ خطأ: ' + error + '</div>';
+        })
+        .getAreaAnalyticsFromFlows(area, from, to);
+    }
+
+    function compareAnalytics() {
+      const area = document.getElementById('compArea').value;
+      const from = document.getElementById('compFromDate').value;
+      const to = document.getElementById('compToDate').value;
+
+      if (!area || !from || !to) {
+        alert('❌ الرجاء ملء جميع الحقول');
+        return;
+      }
+
+      const resultsDiv = document.getElementById('comparisonResults');
+      resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div>جاري المقارنة...</div>';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          displayComparisonResults(result, resultsDiv);
+        })
+        .withFailureHandler(function(error) {
+          resultsDiv.innerHTML = '<div class="error">❌ خطأ: ' + error + '</div>';
+        })
+        .compareAreaAnalytics(area, from, to);
+    }
+
+    function generateDualReport() {
+      const from = document.getElementById('reportFromDate').value;
+      const to = document.getElementById('reportToDate').value;
+
+      if (!from || !to) {
+        alert('❌ الرجاء اختيار التاريخ');
+        return;
+      }
+
+      const resultsDiv = document.getElementById('reportResults');
+      resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div>جاري إنشاء التقرير...</div>';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          resultsDiv.innerHTML = `
+            <div class="alert alert-success">
+              ✅ ${result} تم إنشاء التقرير بنجاح
+            </div>
+          `;
+        })
+        .withFailureHandler(function(error) {
+          resultsDiv.innerHTML = '<div class="error">❌ خطأ: ' + error + '</div>';
+        })
+        .populateDualAnalytics(from, to);
+    }
+
+    function displayMetersResults(result, container) {
+      if (result.errorMsg) {
+        container.innerHTML = '<div class="error">' + result.errorMsg + '</div>';
+        return;
+      }
+
+      let html = `
+        <div class="results">
+          <div class="card">
+            <div class="card-title">📊 ملخص الاستهلاك من العدادات</div>
+            <div class="stat">
+              <div class="stat-label">المنطقة</div>
+              <div class="stat-value">${result.area}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">إجمالي الاستهلاك</div>
+              <div class="stat-value"><span class="stat-unit">م³</span>${result.totalConsumption}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">متوسط الاستهلاك اليومي</div>
+              <div class="stat-value"><span class="stat-unit">م³</span>${result.avgDailyConsumption || 0}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">عدد أيام التسجيل</div>
+              <div class="stat-value">${result.daysCount}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (result.daily && result.daily.length > 0) {
+        html += `
+          <div class="form-section">
+            <h3>📅 البيانات اليومية</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>التاريخ</th>
+                  <th>الاستهلاك (م³)</th>
+                  <th>عدد التسجيلات</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        result.daily.forEach(day => {
+          html += `
+                <tr>
+                  <td>${day.date}</td>
+                  <td>${day.consumption}</td>
+                  <td>${day.records}</td>
+                </tr>
+          `;
+        });
+
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function displayFlowsResults(result, container) {
+      if (result.errorMsg) {
+        container.innerHTML = '<div class="error">' + result.errorMsg + '</div>';
+        return;
+      }
+
+      let html = `
+        <div class="results">
+          <div class="card">
+            <div class="card-title">💧 ملخص الاستهلاك من التصرفات</div>
+            <div class="stat">
+              <div class="stat-label">المنطقة</div>
+              <div class="stat-value">${result.area}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">إجمالي الاستهلاك</div>
+              <div class="stat-value"><span class="stat-unit">م³</span>${result.totalConsumption}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">ساعات التشغيل</div>
+              <div class="stat-value">${result.totalOperatingHours}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">متوسط التصرف</div>
+              <div class="stat-value"><span class="stat-unit">م³/س</span>${result.avgFlowM3PerHour || 0}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (result.daily && result.daily.length > 0) {
+        html += `
+          <div class="form-section">
+            <h3>📅 البيانات اليومية</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>التاريخ</th>
+                  <th>الاستهلاك (م³)</th>
+                  <th>ساعات التشغيل</th>
+                  <th>متوسط التصرف (م³/س)</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        result.daily.forEach(day => {
+          html += `
+                <tr>
+                  <td>${day.date}</td>
+                  <td>${day.consumption}</td>
+                  <td>${day.operatingHours}</td>
+                  <td>${day.avgFlowM3PerHour || '-'}</td>
+                </tr>
+          `;
+        });
+
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function displayComparisonResults(result, container) {
+      const diff = result.difference;
+      const diffClass = diff > 0 ? 'diff-positive' : diff < 0 ? 'diff-negative' : 'diff-neutral';
+
+      let html = `
+        <div class="results">
+          <div class="card comparison-card">
+            <div class="card-title">⚖️ نتائج المقارنة</div>
+            <div class="stat">
+              <div class="stat-label">المنطقة</div>
+              <div class="stat-value">${result.area}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">الاستهلاك من العدادات</div>
+              <div class="stat-value"><span class="stat-unit">م³</span>${result.metersTotal}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">الاستهلاك من التصرفات</div>
+              <div class="stat-value"><span class="stat-unit">م³</span>${result.flowsTotal}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">الفرق</div>
+              <div class="stat-value ${diffClass}"><span class="stat-unit">م³</span>${diff}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">نسبة الفرق</div>
+              <div class="stat-value ${diffClass}">${result.percentDiff}%</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (Math.abs(diff) > 100) {
+        html += `
+          <div class="alert alert-warning">
+            ⚠️ هناك فرق كبير بين المصادر. الرجاء مراجعة البيانات والتحقق من القراءات
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function exportMetersReport() {
+      alert('📥 ستتم إضافة هذه الميزة قريباً');
+    }
+
+    function exportFlowsReport() {
+      alert('📥 ستتم إضافة هذه الميزة قريباً');
+    }
+
+    function createComparisonReport() {
+      alert('📄 ستتم إضافة هذه الميزة قريباً');
+    }
+
+    function exportAllReports() {
+      alert('📥 ستتم إضافة هذه الميزة قريباً');
+    }
+
+    // Initialize on load
+    window.addEventListener('load', function() {
+      setTodayDate();
+    });
+  </script>
+
+  <!-- Google Apps Script library -->
+  <script src="https://script.google.com/macros/d/YOUR_SCRIPT_ID/usercallback"></script>
+</body>
+</html>
