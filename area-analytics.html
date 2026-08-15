@@ -643,7 +643,7 @@ function buildNormalReportHTML(ctx) {
   }
 
   // mode === 'all'
-  const title = `تقرير المناطق الشغالة — يوم ${from}`;
+  const title = `تقرير ماطق الضخ — يوم ${from}`;
   const totalConsumption = data.areas.reduce((s, a) => s + (pickConsumption(a, source) || 0), 0);
   const sub = `عدد المناطق الشغالة: ${data.areas.length} من أصل ${AREAS.length} — المصدر: ${srcLabel} · إجمالي الاستهلاك ${fmt(totalConsumption)} م³`;
   const rows = data.areas.map(a => `
