@@ -151,7 +151,7 @@
   .info-letterhead { text-align:center; margin-bottom:1.6rem; }
   .info-letterhead .badge {
     display:inline-flex; align-items:center; justify-content:center;
-    width:56px; height:56px; border-radius:16px; font-size:1.8rem; margin-bottom:.6rem;
+    width:56px; height:56px; border-radius:16px; font-size:3.8rem; margin-bottom:.6rem;
     background:linear-gradient(135deg,#0077b6,#00b4ff); box-shadow:0 6px 20px rgba(0,180,255,.35);
   }
   .info-letterhead .company { font-size:1.2rem; font-weight:800; color:#fff; }
@@ -377,7 +377,7 @@ function renderAllAreasResult(date, d) {
     </div>
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">🗺️ عدد المناطق الشغالة</div>
+        <div class="kpi-label">🗺️ عدد مناطق الضخ</div>
         <div class="kpi-value">${d.areas.length}</div>
         <div class="kpi-detail">من أصل ${AREAS.length} منطقة</div>
       </div>
@@ -389,7 +389,7 @@ function renderAllAreasResult(date, d) {
     </div>
 
     <div class="section">
-      <div class="section-title">🗺️ المناطق اللي اشتغلت فى ${date}</div>
+      <div class="section-title">🗺️ مناطق الضخ فى ${date}</div>
       ${d.areas.map(a => `
         <div class="bar-row">
           <div class="bar-name" style="width:180px;">${a.area}</div>
