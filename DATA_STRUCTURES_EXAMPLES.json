@@ -1,0 +1,438 @@
+{
+  "_comment": "أمثلة على بنية البيانات المتوقعة من كل دالة",
+  "_version": "2.0",
+  "_updated": "2026-08-15",
+
+  "getAreaAnalyticsFromMeters": {
+    "_description": "تحليل استهلاك المنطقة من قراءات العدادات فقط",
+    "_example": {
+      "area": "المنطقة الأولى",
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "source": "meters",
+      "totalConsumption": 250.5,
+      "daysCount": 10,
+      "avgDailyConsumption": 25.05,
+      "daily": [
+        {
+          "date": "2026-08-01",
+          "consumption": 25,
+          "records": 1,
+          "details": [
+            {
+              "line": "خط 1",
+              "area": "المنطقة الأولى",
+              "before": 100,
+              "after": 125,
+              "diff": 25,
+              "engineer": "أحمد"
+            }
+          ]
+        },
+        {
+          "date": "2026-08-02",
+          "consumption": 26.5,
+          "records": 1,
+          "details": [
+            {
+              "line": "خط 1",
+              "area": "المنطقة الأولى",
+              "before": 125,
+              "after": 151.5,
+              "diff": 26.5,
+              "engineer": "محمد"
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "getAreaAnalyticsFromFlows": {
+    "_description": "تحليل استهلاك المنطقة من بيانات التصرفات الساعية فقط",
+    "_example": {
+      "area": "المنطقة الأولى",
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "source": "flows",
+      "totalConsumption": 248,
+      "totalOperatingHours": 96,
+      "daysCount": 10,
+      "avgDailyConsumption": 24.8,
+      "avgDailyOperatingHours": 9.6,
+      "avgFlowM3PerHour": 2.58,
+      "pumpHours": {
+        "الطلمبة 1": 48,
+        "الطلمبة 2": 48,
+        "غير محدد": 0
+      },
+      "lineHours": {
+        "خط 1": 96,
+        "خط 2": 0,
+        "خط 3": 0
+      },
+      "daily": [
+        {
+          "date": "2026-08-01",
+          "consumption": 24.5,
+          "operatingHours": 9,
+          "avgFlowM3PerHour": 2.72
+        },
+        {
+          "date": "2026-08-02",
+          "consumption": 25.3,
+          "operatingHours": 10,
+          "avgFlowM3PerHour": 2.53
+        }
+      ]
+    }
+  },
+
+  "compareAreaAnalytics": {
+    "_description": "مقارنة استهلاك المنطقة بين مصدري العدادات والتصرفات",
+    "_example": {
+      "area": "المنطقة الأولى",
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "metersTotal": 250.5,
+      "flowsTotal": 248,
+      "difference": 2.5,
+      "percentDiff": 1,
+      "metersData": {
+        "_comment": "نفس بنية getAreaAnalyticsFromMeters",
+        "area": "المنطقة الأولى",
+        "totalConsumption": 250.5,
+        "daysCount": 10,
+        "avgDailyConsumption": 25.05
+      },
+      "flowsData": {
+        "_comment": "نفس بنية getAreaAnalyticsFromFlows",
+        "area": "المنطقة الأولى",
+        "totalConsumption": 248,
+        "totalOperatingHours": 96,
+        "avgFlowM3PerHour": 2.58
+      }
+    },
+    "_interpretation": {
+      "percentDiff_0_5": "✅ فرق ممتاز — تطابق تام",
+      "percentDiff_5_10": "✅ فرق جيد — منطقي",
+      "percentDiff_10_20": "⚡ فرق متوسط — يحتاج مراجعة",
+      "percentDiff_20_plus": "⚠️ فرق كبير — مشكلة محتملة"
+    }
+  },
+
+  "getAllAreasAnalyticsFromMeters": {
+    "_description": "استهلاك جميع المناطق من العدادات مرتبة تنازلياً",
+    "_example": {
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "source": "meters",
+      "areas": [
+        {
+          "area": "المنطقة الأولى",
+          "consumption": 250.5,
+          "recordsCount": 10,
+          "avgPerRecord": 25.05
+        },
+        {
+          "area": "المنطقة الثانية",
+          "consumption": 180.3,
+          "recordsCount": 8,
+          "avgPerRecord": 22.54
+        },
+        {
+          "area": "المنطقة الثالثة",
+          "consumption": 150,
+          "recordsCount": 6,
+          "avgPerRecord": 25
+        }
+      ]
+    }
+  },
+
+  "getAllAreasAnalyticsFromFlows": {
+    "_description": "استهلاك جميع المناطق من التصرفات مرتبة تنازلياً",
+    "_example": {
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "source": "flows",
+      "areas": [
+        {
+          "area": "المنطقة الأولى",
+          "consumption": 248,
+          "operatingHours": 96,
+          "avgFlowM3PerHour": 2.58
+        },
+        {
+          "area": "المنطقة الثانية",
+          "consumption": 175,
+          "operatingHours": 70,
+          "avgFlowM3PerHour": 2.5
+        },
+        {
+          "area": "المنطقة الثالثة",
+          "consumption": 145,
+          "operatingHours": 55,
+          "avgFlowM3PerHour": 2.64
+        }
+      ]
+    }
+  },
+
+  "saveMetersWithBackup": {
+    "_description": "نتيجة حفظ البيانات بشكل آمن مع نسخة احتياطية",
+    "_example_successful": {
+      "status": "ok",
+      "msg": "تم حفظ البيانات بنجاح",
+      "backedUpRows": 0,
+      "addedRows": 2,
+      "hasBackup": false
+    },
+    "_example_with_backup": {
+      "status": "ok",
+      "msg": "تم حفظ البيانات بنجاح",
+      "backedUpRows": 2,
+      "addedRows": 3,
+      "hasBackup": true
+    },
+    "_example_error": {
+      "status": "error",
+      "msg": "الشيت غير موجود"
+    }
+  },
+
+  "getMeterBackup": {
+    "_description": "معلومات النسخة الاحتياطية للعدادات",
+    "_example_found": {
+      "status": "ok",
+      "date": "2026-08-15",
+      "createdAt": "2026-08-15 14:30:25",
+      "rowsCount": 2,
+      "reason": "حفظ تلقائي قبل استبدال البيانات",
+      "data": [
+        {
+          "rowIndex": 5,
+          "data": ["2026-08-15", "الأحد", "أحمد", "خط 1", "المنطقة الأولى", "100", "125", "25", "2026-08-15 14:25:00"]
+        },
+        {
+          "rowIndex": 6,
+          "data": ["2026-08-15", "الأحد", "أحمد", "خط 2", "المنطقة الثانية", "200", "225", "25", "2026-08-15 14:25:00"]
+        }
+      ]
+    },
+    "_example_not_found": {
+      "status": "error",
+      "msg": "لا توجد نسخة احتياطية لهذا التاريخ"
+    }
+  },
+
+  "restoreMeterBackup": {
+    "_description": "نتيجة استرجاع البيانات من النسخة الاحتياطية",
+    "_example_successful": {
+      "status": "ok",
+      "msg": "تم استرجاع البيانات بنجاح",
+      "restoredRows": 2,
+      "originalBackupDate": "2026-08-15 14:30:25"
+    },
+    "_example_error": {
+      "status": "error",
+      "msg": "لا توجد نسخة احتياطية لهذا التاريخ"
+    }
+  },
+
+  "viewMeterHistory": {
+    "_description": "سجل كامل لجميع البيانات والتعديلات",
+    "_example": {
+      "date": "2026-08-15",
+      "currentData": [
+        ["2026-08-15", "الأحد", "أحمد", "خط 1", "المنطقة الأولى", "125", "151.5", "26.5", "2026-08-15 14:45:00"],
+        ["2026-08-15", "الأحد", "محمد", "خط 2", "المنطقة الثانية", "225", "250.5", "25.5", "2026-08-15 14:45:00"]
+      ],
+      "backupHistory": [
+        {
+          "createdAt": "2026-08-15 14:30:25",
+          "rowsCount": 2,
+          "reason": "حفظ تلقائي قبل استبدال البيانات"
+        },
+        {
+          "createdAt": "2026-08-15 14:40:15",
+          "rowsCount": 2,
+          "reason": "حفظ تلقائي قبل استبدال البيانات"
+        }
+      ]
+    }
+  },
+
+  "cleanupOldBackups": {
+    "_description": "نتيجة تنظيف النسخ الاحتياطية القديمة",
+    "_example": {
+      "status": "ok",
+      "msg": "تم تنظيف النسخ الاحتياطية القديمة",
+      "deletedBackups": 5
+    }
+  },
+
+  "createDualAnalyticsSheet": {
+    "_description": "إنشاء شيت التقرير المقارن",
+    "_example": {
+      "status": "sheet_created",
+      "sheetName": "تحليل_المناطق_مقارن",
+      "headers": [
+        "المنطقة",
+        "الاستهلاك من العدادات (م³)",
+        "الاستهلاك من التصرفات (م³)",
+        "الفرق (م³)",
+        "نسبة الفرق (%)",
+        "ملاحظات"
+      ]
+    }
+  },
+
+  "populateDualAnalytics": {
+    "_description": "ملء التقرير المقارن ببيانات فعلية",
+    "_example_data": {
+      "sheetName": "تحليل_المناطق_مقارن",
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "rows": [
+        {
+          "area": "المنطقة الأولى",
+          "metersConsumption": 250.5,
+          "flowsConsumption": 248,
+          "difference": 2.5,
+          "percentDiff": "1%",
+          "notes": ""
+        },
+        {
+          "area": "المنطقة الثانية",
+          "metersConsumption": 180.3,
+          "flowsConsumption": 175,
+          "difference": 5.3,
+          "percentDiff": "3%",
+          "notes": ""
+        },
+        {
+          "area": "المنطقة الثالثة",
+          "metersConsumption": 150,
+          "flowsConsumption": 145,
+          "difference": 5,
+          "percentDiff": "3%",
+          "notes": ""
+        },
+        {
+          "area": "المنطقة الرابعة",
+          "metersConsumption": 200,
+          "flowsConsumption": 150,
+          "difference": 50,
+          "percentDiff": "25%",
+          "notes": "⚠ فرق كبير — راجع البيانات"
+        }
+      ]
+    }
+  },
+
+  "meterSheet": {
+    "_description": "بنية شيت عدادات_المناطق",
+    "_columns": [
+      "التاريخ",
+      "اليوم",
+      "المهندس",
+      "الخط",
+      "المنطقة",
+      "قراءة قبل م³",
+      "قراءة بعد م³",
+      "المنصرف م³",
+      "وقت الحفظ"
+    ],
+    "_example_rows": [
+      ["2026-08-15", "الأحد", "أحمد", "خط 1", "المنطقة الأولى", "100", "125", "25", "2026-08-15 14:25:00"],
+      ["2026-08-15", "الأحد", "أحمد", "خط 2", "المنطقة الثانية", "200", "225", "25", "2026-08-15 14:25:00"],
+      ["2026-08-16", "الاثنين", "محمد", "خط 1", "المنطقة الأولى", "125", "151.5", "26.5", "2026-08-16 14:25:00"]
+    ]
+  },
+
+  "backupSheet": {
+    "_description": "بنية شيت عدادات_نسخ_احتياطية (جديد تلقائياً)",
+    "_columns": [
+      "التاريخ الأصلي",
+      "تاريخ النسخ",
+      "عدد الصفوف",
+      "البيانات (JSON)",
+      "السبب"
+    ],
+    "_example_rows": [
+      [
+        "2026-08-15",
+        "2026-08-15 14:30:25",
+        "2",
+        "[{rowIndex:5,data:[...]},{rowIndex:6,data:[...]}]",
+        "حفظ تلقائي قبل استبدال البيانات"
+      ]
+    ]
+  },
+
+  "comparisonSheet": {
+    "_description": "بنية شيت تحليل_المناطق_مقارن (جديد)",
+    "_columns": [
+      "المنطقة",
+      "الاستهلاك من العدادات (م³)",
+      "الاستهلاك من التصرفات (م³)",
+      "الفرق (م³)",
+      "نسبة الفرق (%)",
+      "ملاحظات"
+    ],
+    "_example_rows": [
+      ["المنطقة الأولى", "250.5", "248", "2.5", "1%", ""],
+      ["المنطقة الثانية", "180.3", "175", "5.3", "3%", ""],
+      ["المنطقة الثالثة", "150", "145", "5", "3%", ""],
+      ["المنطقة الرابعة", "200", "150", "50", "25%", "⚠ فرق كبير — راجع البيانات"]
+    ]
+  },
+
+  "dashboardFormData": {
+    "_description": "بنية البيانات المرسلة من لوحة التحكم",
+    "_example_single_area_analysis": {
+      "area": "المنطقة الأولى",
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "source": "meters"
+    },
+    "_example_all_areas_analysis": {
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "source": "flows"
+    },
+    "_example_comparison": {
+      "area": "المنطقة الأولى",
+      "from": "2026-08-01",
+      "to": "2026-08-15",
+      "action": "compare"
+    }
+  },
+
+  "errorExamples": {
+    "_description": "أمثلة على الأخطاء المحتملة",
+    "sheetNotFound": {
+      "errorMsg": "❌ شيت العدادات غير موجود أو فارغ"
+    },
+    "noDataForPeriod": {
+      "errorMsg": "❌ لا توجد بيانات للفترة المحددة"
+    },
+    "invalidDate": {
+      "errorMsg": "❌ التاريخ غير صحيح — استخدم صيغة yyyy-MM-dd"
+    },
+    "areaNotFound": {
+      "totalConsumption": 0,
+      "daysCount": 0,
+      "errorMsg": "ℹ️ المنطقة لا توجد في البيانات"
+    }
+  },
+
+  "notes": {
+    "date_format": "استخدم دائماً yyyy-MM-dd (مثال: 2026-08-15)",
+    "area_names": "يجب أن تطابق أسماء المناطق في الشيت بالضبط",
+    "flow_calculation": "التصرفات تُقسّم بالتساوي إذا كان الخط يخدم أكثر من منطقة",
+    "backup_automatic": "النسخ الاحتياطية تُنشأ تلقائياً قبل حفظ البيانات الجديدة",
+    "timezone": "جميع الأوقات بصيغة شرق أوسط Cairo Timezone"
+  }
+}
