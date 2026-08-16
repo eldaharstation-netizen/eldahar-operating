@@ -64,7 +64,8 @@
 
   table { width:100%; border-collapse:collapse; font-size:.85rem; }
   th { text-align:right; padding:.55rem .5rem; color:var(--text-tertiary); border-bottom:1px solid var(--border); font-weight:600; }
-  td { padding:.55rem .5rem; border-bottom:1px solid rgba(255,255,255,.04); }
+  td { padding:.55rem .5rem; border-bottom:1px solid rgba(255,255,255,.04); line-height:1.6; }
+  td small { display:inline-block; margin-top:.3rem; }
   tr:hover td { background:rgba(0,180,255,.04); }
 
   .bar-row { display:flex; align-items:center; gap:.7rem; margin-bottom:.6rem; }
@@ -84,6 +85,23 @@
   .report-actions .btn { padding:.7rem 1.4rem; font-size:.85rem; }
   .btn-report-normal { background:linear-gradient(135deg,#444,#666) !important; }
   .btn-report-infographic { background:linear-gradient(135deg,#8a3ffc,#c264ff) !important; }
+
+  /* ── ADJUSTMENT PANEL STYLING ── */
+  #adjustmentFields input, #adjustmentFields select {
+    width: 100%;
+    padding: .7rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: .85rem;
+  }
+  
+  #adjustmentFields input:focus, #adjustmentFields select:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 10px rgba(0, 180, 255, .2);
+  }
 
   /* ── LETTERHEAD (شعار الشركة أعلى التقارير) ── */
   .report-letterhead {
@@ -676,12 +694,20 @@ function renderResult(area, from, to, d) {
           <option value="meters">قراءة العدادات</option>
         </select>
       </div>
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);" onclick="toggleManualAdjustment()">🔧 تعديل يدوي</button>
       <button class="btn btn-report-normal" onclick="printNormalReport()">🖨️ تقرير عادي (طباعة/PDF)</button>
       <button class="btn btn-report-infographic" onclick="openInfographic()">🎨 إنفوجراف</button>
     </div>
-  `;
 
-  renderChart(d.daily);
+    <div id="manualAdjustmentPanel" style="display:none; margin-top:1.5rem; background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:1.3rem;">
+      <div class="section-title">🔧 تعديل التصرفات عند تزامن منطقتين أو أكثر</div>
+      <div style="font-size:0.78rem; color:var(--text-tertiary); background:rgba(124,58,237,.06); border:1px solid rgba(124,58,237,.2); border-radius:10px; padding:0.7rem 1rem; margin-bottom:1rem; line-height:1.6;">
+        👉 أدخل معدل التصرف الفعلي (م³/ساعة) لمنطقة معروفة، أو النسبة بين المنطقتين، وسيتم حساب الاستهلاك الفعلي تلقائياً.
+      </div>
+      <div id="adjustmentFields"></div>
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a78bfa); margin-top:1rem;" onclick="applyManualAdjustment()">✔️ تطبيق التعديلات</button>
+    </div>
+  `;
 }
 
 function fmt(n) {
@@ -915,6 +941,199 @@ async function shareOrDownloadInfographic() {
   a.href = dataUrl;
   a.download = filename;
   a.click();
+}
+
+// ============================================================
+// 🔧 خاصية التعديل اليدوي للتصرفات المتزامنة
+// ============================================================
+function toggleManualAdjustment() {
+  const panel = document.getElementById('manualAdjustmentPanel');
+  if (!panel) return;
+  if (panel.style.display === 'none') {
+    buildAdjustmentFields();
+    panel.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function buildAdjustmentFields() {
+  if (!lastLoadedData || lastLoadedData.mode !== 'area') return;
+  const fieldsDiv = document.getElementById('adjustmentFields');
+  const data = lastLoadedData.data;
+  
+  if (!data.daily || !data.daily.length) return;
+
+  // تجميع التواريخ التي فيها ساعات تشغيل لتسهيل الاختيار
+  const daysWithOps = data.daily.filter(d => d.operatingHours > 0);
+  
+  fieldsDiv.innerHTML = `
+    <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));">
+      <div class="filter-field">
+        <label>اختار التاريخ (اختياري - للتطبيق على يوم واحد فقط)</label>
+        <select id="adjustmentDate">
+          <option value="">تطبيق على كل الفترة</option>
+          ${daysWithOps.map(d => `<option value="${d.date}">${d.date}</option>`).join('')}
+        </select>
+      </div>
+      
+      <div class="filter-field">
+        <label>معدل التصرف المعروف - تصرف الخطوط (م³/ساعة)</label>
+        <input type="number" id="knownFlowRate" placeholder="مثال: 15.5" step="0.1" min="0">
+      </div>
+
+      <div class="filter-field">
+        <label>معدل التصرف المعروف - من العدادات (م³/ساعة)</label>
+        <input type="number" id="knownMeterRate" placeholder="مثال: 14.8" step="0.1" min="0">
+      </div>
+      
+      <div class="filter-field">
+        <label>النسبة بين منطقتين (مثال: 2:1)</label>
+        <input type="text" id="ratioInput" placeholder="مثال: 2:1 أو 60:40">
+      </div>
+      
+      <div class="filter-field">
+        <label>ملاحظات إضافية</label>
+        <input type="text" id="adjustmentNotes" placeholder="مثال: منطقة الحجاز من الساعة 6 صباحاً">
+      </div>
+    </div>
+    
+    <div style="margin-top:1rem; padding:1rem; background:rgba(0,180,255,.06); border:1px solid rgba(0,180,255,.15); border-radius:10px; font-size:0.8rem; color:var(--text-secondary);">
+      <strong>💡 الطرق المتاحة:</strong><br>
+      1️⃣ <strong>معدل التصرف:</strong> لو تعرف معدل تصرف من تصرف الخطوط أو العدادات = (الاستهلاك الفعلي ÷ ساعات التشغيل)<br>
+      2️⃣ <strong>النسبة:</strong> لو تعرف أن منطقة A بتصرف 2 ضعف منطقة B (اكتب 2:1)<br>
+      3️⃣ <strong>نسب مئوية:</strong> لو تعرف التوزيع (60:40 تعني 60% و 40%)
+    </div>
+  `;
+}
+
+function applyManualAdjustment() {
+  if (!lastLoadedData || lastLoadedData.mode !== 'area') { showToast('⚠ محتاجة تحميل تحليل منطقة الأول'); return; }
+  
+  const selectedDate = document.getElementById('adjustmentDate')?.value;
+  const knownFlowRate = parseFloat(document.getElementById('knownFlowRate')?.value || 0);
+  const knownMeterRate = parseFloat(document.getElementById('knownMeterRate')?.value || 0);
+  const ratioStr = document.getElementById('ratioInput')?.value.trim() || '';
+  const notes = document.getElementById('adjustmentNotes')?.value.trim() || '';
+  
+  if (!knownFlowRate && !knownMeterRate && !ratioStr) {
+    showToast('⚠ أدخل معدل التصرف أو النسبة على الأقل');
+    return;
+  }
+
+  // تطبيق التعديلات على البيانات
+  const adjustedData = JSON.parse(JSON.stringify(lastLoadedData.data)); // نسخ عميقة
+  
+  if (knownFlowRate > 0) {
+    applyFlowRateAdjustment(adjustedData, knownFlowRate, selectedDate, 'flows');
+  }
+
+  if (knownMeterRate > 0) {
+    applyFlowRateAdjustment(adjustedData, knownMeterRate, selectedDate, 'meters');
+  }
+  
+  if (ratioStr) {
+    applyRatioAdjustment(adjustedData, ratioStr, selectedDate);
+  }
+
+  // تحديث البيانات وإعادة رسم الجداول
+  lastLoadedData.data = adjustedData;
+  lastLoadedData.notes = notes;
+  
+  // إعادة رسم الجدول
+  const container = document.getElementById('resultArea');
+  const daily = adjustedData.daily;
+  const table = container.querySelector('table:last-of-type');
+  if (table) {
+    const newRows = daily.map(r => `
+      <tr ${selectedDate && r.date !== selectedDate ? 'style="opacity:0.6;"' : ''}>
+        <td>
+          ${r.date}
+          ${r.adjustedNote ? `<br><small style="color:#00e6a8;">${r.adjustedNote}</small>` : ''}
+          ${r.meterAdjustedNote ? `<br><small style="color:#00b4ff;">${r.meterAdjustedNote}</small>` : ''}
+        </td>
+        <td>${fmt(r.consumption)}</td>
+        <td>${r.metersConsumption!=null ? fmt(r.metersConsumption) : '--'}</td>
+        <td>${r.operatingHours}</td>
+        <td>${r.avgFlowM3PerHour!=null ? fmt(r.avgFlowM3PerHour) : '--'}</td>
+      </tr>
+    `).join('');
+    table.querySelector('tbody').innerHTML = newRows;
+  }
+  
+  // تحديث KPI cards
+  const totalConsumption = adjustedData.daily.reduce((s, d) => s + d.consumption, 0);
+  const totalMeterConsumption = adjustedData.daily.reduce((s, d) => s + (d.metersConsumption || 0), 0);
+  const totalOperatingHours = adjustedData.daily.reduce((s, d) => s + d.operatingHours, 0);
+  const avgFlowRate = totalOperatingHours > 0 ? totalConsumption / totalOperatingHours : 0;
+  
+  // تحديث KPI في الصفحة
+  const kpiCards = container.querySelectorAll('.kpi-card');
+  if (kpiCards.length > 0) {
+    kpiCards[0].innerHTML = `<div class="kpi-label">💧 الاستهلاك من التصرفات</div><div class="kpi-value">${fmt(totalConsumption)}</div><div class="kpi-detail">م³ خلال الفترة (معدل)</div>`;
+  }
+  if (kpiCards.length > 1) {
+    kpiCards[1].innerHTML = `<div class="kpi-label">🧮 الاستهلاك من العدادات</div><div class="kpi-value">${totalMeterConsumption > 0 ? fmt(totalMeterConsumption) : '--'}</div><div class="kpi-detail">م³ خلال الفترة (معدل)</div>`;
+  }
+  if (kpiCards.length > 5) {
+    kpiCards[5].innerHTML = `<div class="kpi-label">⚡ معدل التصرف</div><div class="kpi-value">${fmt(avgFlowRate)}</div><div class="kpi-detail">م³ / ساعة تشغيل (معدل)</div>`;
+  }
+  
+  if (daily.length > 0) {
+    renderChart(daily);
+  }
+  
+  showToast('✔ تم تطبيق التعديلات على التصرفات والعدادات');
+  document.getElementById('manualAdjustmentPanel').style.display = 'none';
+}
+
+function applyFlowRateAdjustment(data, flowRate, selectedDate, source = 'flows') {
+  data.daily.forEach(day => {
+    if (selectedDate && day.date !== selectedDate) return;
+    
+    const newConsumption = flowRate * day.operatingHours;
+    const sourceLabel = source === 'meters' ? 'عداد' : 'تصرف';
+    
+    if (source === 'meters') {
+      day.metersConsumption = newConsumption;
+      day.meterAdjustedNote = `✔️ (عداد) معدل ${flowRate} م³/ساعة`;
+    } else {
+      day.consumption = newConsumption;
+      day.avgFlowM3PerHour = flowRate;
+      day.adjustedNote = `✔️ (تصرف) معدل ${flowRate} م³/ساعة`;
+    }
+  });
+}
+
+function applyRatioAdjustment(data, ratioStr, selectedDate) {
+  // تحليل النسبة: "2:1" أو "60:40"
+  const parts = ratioStr.split(':').map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
+  if (parts.length !== 2) { showToast('⚠ صيغة النسبة غلط (استخدم مثلاً: 2:1)'); return; }
+
+  const ratio1 = parts[0];
+  const ratio2 = parts[1];
+  const total = ratio1 + ratio2;
+  const pct1 = (ratio1 / total) * 100;
+  const pct2 = (ratio2 / total) * 100;
+
+  data.daily.forEach(day => {
+    if (selectedDate && day.date !== selectedDate) return;
+    
+    // تطبيق النسبة على الاستهلاك (التصرفات)
+    const adjusted1 = (day.consumption * ratio1) / total;
+    const adjusted2 = (day.consumption * ratio2) / total;
+    
+    day.consumption = adjusted1;
+    day.adjustedNote = `✔️ (تصرف) نسبة ${ratio1}:${ratio2} (${pct1.toFixed(0)}% و ${pct2.toFixed(0)}%)`;
+    
+    // تطبيق النسبة على العدادات أيضاً إذا كانت موجودة
+    if (day.metersConsumption != null) {
+      const adjustedMeter1 = (day.metersConsumption * ratio1) / total;
+      const adjustedMeter2 = (day.metersConsumption * ratio2) / total;
+      day.metersConsumption = adjustedMeter1;
+      day.meterAdjustedNote = `✔️ (عداد) نسبة ${ratio1}:${ratio2} (${pct1.toFixed(0)}% و ${pct2.toFixed(0)}%)`;
+    }
+  });
 }
 </script>
 </body>
