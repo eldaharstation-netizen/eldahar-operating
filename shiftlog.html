@@ -3,1137 +3,2679 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تحليل استهلاك المناطق — محطة الدهار</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<title>سجل التشغيل اليومي — محطة الدهار</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  :root {
-    --primary:#0077b6; --primary-light:#00b4ff; --success:#00e676;
-    --warning:#ffb300; --danger:#ff3b5c; --dark-bg:#0a0e27; --card-bg:#0f1a3a;
-    --border:rgba(0,180,255,0.15); --text:#e8f4ff; --text-secondary:#9bbcd4; --text-tertiary:#4a7a9b;
-  }
-  html,body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:var(--dark-bg); color:var(--text); line-height:1.6; }
-  header {
-    background: linear-gradient(135deg, rgba(0,30,70,.95), rgba(0,15,40,.98));
-    border-bottom:2px solid var(--border); padding:1.2rem 2rem;
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;
-    position:sticky; top:0; z-index:50; box-shadow:0 4px 20px rgba(0,119,182,.1);
-  }
-  .header-left { display:flex; align-items:center; gap:1.2rem; }
-  .logo-box {
-    width:50px; height:50px; background:linear-gradient(135deg,var(--primary),var(--primary-light));
-    border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.8rem;
-    box-shadow:0 4px 15px rgba(0,180,255,.3);
-  }
-  .header-title h1 { font-size:1.4rem; font-weight:700; }
-  .header-title p { font-size:.8rem; color:var(--text-tertiary); }
-  input, select, button {
-    font-family:inherit; background:var(--card-bg); color:var(--text);
-    border:1px solid var(--border); border-radius:8px; padding:.55rem .8rem; font-size:.85rem;
-  }
-  input:focus, select:focus { outline:none; border-color:var(--primary-light); }
-  button.btn {
-    background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff; border:none;
-    font-weight:700; cursor:pointer; transition:.2s;
-  }
-  button.btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
-  main { padding:1.5rem 2rem 3rem; max-width:1300px; margin:0 auto; }
+:root {
+  --bg:    #050d1a;
+  --bg2:   #081525;
+  --bg3:   #0c1e35;
+  --card:  #0f2540;
+  --brd:   rgba(0,180,255,0.12);
+  --blue:  #00b4ff;
+  --cyan:  #00e5ff;
+  --green: #00e676;
+  --amber: #ffb300;
+  --red:   #ff3b5c;
+  --purple:#b388ff;
+  --orange:#ff7043;
+  --txt:   #e8f4ff;
+  --txt2:  #9bbcd4;
+  --txt3:  #4a7a9b;
 
-  .filter-bar {
-    background:var(--card-bg); border:1px solid var(--border); border-radius:14px;
-    padding:1.2rem; display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; margin-bottom:1.5rem;
-  }
-  .filter-field { display:flex; flex-direction:column; gap:.35rem; }
-  .filter-field label { font-size:.75rem; color:var(--text-secondary); }
-  .filter-field select, .filter-field input { min-width:180px; }
+  /* خطوط */
+  --line1: #00b4ff;
+  --line1-bg: rgba(0,180,255,0.08);
+  --line1-brd: rgba(0,180,255,0.3);
+  --line2: #00e676;
+  --line2-bg: rgba(0,230,118,0.08);
+  --line2-brd: rgba(0,230,118,0.3);
+  --line3: #ff7043;
+  --line3-bg: rgba(255,112,67,0.08);
+  --line3-brd: rgba(255,112,67,0.3);
+}
 
-  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:1rem; margin-bottom:1.5rem; }
-  .kpi-card {
-    background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:1.1rem 1.3rem;
-  }
-  .kpi-label { font-size:.78rem; color:var(--text-tertiary); margin-bottom:.4rem; }
-  .kpi-value { font-size:1.7rem; font-weight:800; color:var(--primary-light); }
-  .kpi-detail { font-size:.72rem; color:var(--text-secondary); margin-top:.3rem; }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  .section {
-    background:var(--card-bg); border:1px solid var(--border); border-radius:14px;
-    padding:1.3rem; margin-bottom:1.5rem;
-  }
-  .section-title { font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--primary-light); }
+body {
+  font-family: 'Cairo', sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+}
 
-  table { width:100%; border-collapse:collapse; font-size:.85rem; }
-  th { text-align:right; padding:.55rem .5rem; color:var(--text-tertiary); border-bottom:1px solid var(--border); font-weight:600; }
-  td { padding:.55rem .5rem; border-bottom:1px solid rgba(255,255,255,.04); line-height:1.6; }
-  td small { display:inline-block; margin-top:.3rem; }
-  tr:hover td { background:rgba(0,180,255,.04); }
+/* ── HEADER ── */
+header {
+  background: linear-gradient(135deg, rgba(0,30,70,0.97), rgba(0,15,40,0.99));
+  border-bottom: 2px solid var(--brd);
+  padding: 0.8rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
 
-  .bar-row { display:flex; align-items:center; gap:.7rem; margin-bottom:.6rem; }
-  .bar-name { width:90px; font-size:.8rem; color:var(--text-secondary); flex-shrink:0; }
-  .bar-track { flex:1; height:20px; background:rgba(255,255,255,.05); border-radius:6px; overflow:hidden; }
-  .bar-fill { height:100%; background:linear-gradient(90deg,var(--primary),var(--primary-light)); border-radius:6px; }
-  .bar-val { width:70px; text-align:left; font-size:.78rem; color:var(--text); flex-shrink:0; }
+.logo { display:flex; align-items:center; gap:0.8rem; }
+.logo-icon { width:42px;height:42px;background:linear-gradient(135deg,var(--blue),var(--cyan));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem; }
+.logo-name { font-size:1rem;font-weight:900;color:var(--txt); }
+.logo-sub { font-size:0.68rem;color:var(--txt3);font-weight:600;letter-spacing:1px; }
 
-  .empty-state { text-align:center; padding:3rem 1rem; color:var(--text-tertiary); }
-  .chart-wrap { position:relative; height:280px; }
+.hdr-right { display:flex;align-items:center;gap:0.8rem; }
 
-  .url-bar { display:flex; gap:.5rem; align-items:center; }
-  .url-bar input { width:280px; }
+.btn {
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: none;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary { background:linear-gradient(135deg,var(--blue),var(--cyan));color:white; }
+.btn-green { background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:var(--green); }
+.btn-amber { background:rgba(255,179,0,0.15);border:1px solid rgba(255,179,0,0.4);color:var(--amber); }
+.btn-outline { background:transparent;border:1px solid var(--brd);color:var(--txt2); }
+.btn:hover { opacity:0.85;transform:translateY(-1px); }
 
-  /* ── REPORT ACTIONS ── */
-  .report-actions { display:flex; gap:.7rem; flex-wrap:wrap; margin-top:1.5rem; }
-  .report-actions .btn { padding:.7rem 1.4rem; font-size:.85rem; }
-  .btn-report-normal { background:linear-gradient(135deg,#444,#666) !important; }
-  .btn-report-infographic { background:linear-gradient(135deg,#8a3ffc,#c264ff) !important; }
+.clock { font-family:'Rajdhani',sans-serif;font-size:1.3rem;font-weight:700;color:var(--cyan); }
 
-  /* ── ADJUSTMENT PANEL STYLING ── */
-  #adjustmentFields input, #adjustmentFields select {
-    width: 100%;
-    padding: .7rem;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: .85rem;
-  }
-  
-  #adjustmentFields input:focus, #adjustmentFields select:focus {
-    outline: none;
-    border-color: var(--primary-light);
-    box-shadow: 0 0 10px rgba(0, 180, 255, .2);
-  }
+/* ── MAIN ── */
+.main { padding:1rem 1.5rem;max-width:1800px;margin:0 auto; }
 
-  /* ── LETTERHEAD (شعار الشركة أعلى التقارير) ── */
-  .report-letterhead {
-    text-align:center; padding-bottom:1rem; margin-bottom:1.5rem;
-    border-bottom:3px solid var(--primary-light);
-  }
-  .report-letterhead .company {
-    font-size:1.15rem; font-weight:800; color:var(--primary-light); letter-spacing:.2px;
-  }
-  .report-letterhead .dept {
-    font-size:.9rem; color:var(--text-secondary); margin-top:.35rem; font-weight:600;
-  }
-  .report-letterhead .divider-icon { font-size:1.4rem; margin:.3rem 0; }
+/* ── INFO BAR ── */
+.info-bar {
+  background: var(--card);
+  border: 1px solid var(--brd);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(4,1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
 
-  /* ── PRINT-ONLY AREA (تقرير عادي / PDF) ── */
-  #printArea { display:none; }
-  @media print {
-    body * { visibility:hidden; }
-    #printArea, #printArea * { visibility:visible; }
-    #printArea {
-      display:block; position:absolute; top:0; left:0; width:100%;
-      background:#fff; color:#000; padding:1.5rem 2rem;
-    }
-    #printArea .report-letterhead { border-bottom-color:#0077b6; }
-    #printArea .company { color:#0077b6 !important; }
-    #printArea .dept { color:#333 !important; }
-    #printArea table { width:100%; border-collapse:collapse; }
-    #printArea th, #printArea td { border:1px solid #ccc; padding:.4rem .6rem; color:#000; }
-    #printArea th { background:#f0f6fb; }
-    #printArea h2 { color:#0077b6; margin-bottom:.3rem; }
-    #printArea .report-meta { color:#555; font-size:.85rem; margin-bottom:1rem; }
-    #printArea .report-footer { margin-top:1.5rem; font-size:.75rem; color:#888; text-align:center; }
-  }
+.field { display:flex;flex-direction:column;gap:0.3rem; }
+.field label { font-size:0.72rem;color:var(--txt3);font-weight:700; }
+.field input, .field select {
+  background: var(--bg3);
+  border: 1px solid var(--brd);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  color: var(--txt);
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  outline: none;
+}
+.field input:focus, .field select:focus { border-color: var(--blue); }
 
-  /* ── INFOGRAPHIC MODAL ── */
-  .infographic-overlay {
-    display:none; position:fixed; inset:0; background:rgba(2,6,20,.88);
-    backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; padding:1.5rem;
-  }
-  .infographic-overlay.open { display:flex; }
-  .infographic-box {
-    background:var(--dark-bg); border:1px solid var(--border); border-radius:16px;
-    width:100%; max-width:900px; max-height:92vh; display:flex; flex-direction:column;
-    box-shadow:0 20px 60px rgba(0,0,0,.5);
-  }
-  .infographic-toolbar {
-    display:flex; justify-content:space-between; align-items:center;
-    padding:1rem 1.4rem; border-bottom:1px solid var(--border);
-  }
-  .infographic-toolbar .title { font-weight:700; font-size:1rem; }
-  .infographic-toolbar-actions { display:flex; gap:.5rem; }
-  .infographic-icon-btn {
-    width:38px; height:38px; display:flex; align-items:center; justify-content:center;
-    background:rgba(0,180,255,.08); border:1px solid var(--border); border-radius:9px;
-    color:var(--primary-light); font-size:1.1rem; cursor:pointer; transition:.2s;
-  }
-  .infographic-icon-btn:hover { background:rgba(0,180,255,.2); transform:translateY(-1px); }
-  .infographic-scroll { overflow-y:auto; padding:0; }
+.day-badge {
+  background: rgba(0,180,255,0.1);
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: var(--blue);
+  font-weight: 800;
+  font-size: 1rem;
+  text-align: center;
+  white-space: nowrap;
+}
 
-  /* ────────────────────────────────────────────────────────────
-     المحتوى الفعلي اللي بيتحول لصورة - خلفية داكنة وكارتات محددة مع لوجو
-     ──────────────────────────────────────────────────────────── */
-  #infographicContent {
-    background: linear-gradient(160deg, #0a1330 0%, #0a0e27 55%, #120a2e 100%);
-    padding: 2.2rem 2rem;
-    color: #e8f4ff;
-  }
-  
-  .info-letterhead {
-    text-align: center;
-    margin-bottom: 1.8rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid rgba(0, 180, 255, .3);
-  }
-  
-  .info-letterhead .logo-image {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, .05);
-    border-radius: 16px;
-    border: 2px solid rgba(0, 180, 255, .2);
-  }
-  
-  .info-letterhead .logo-image img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-  
-  .info-letterhead .company {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #00b4ff;
-    letter-spacing: .5px;
-  }
-  
-  .info-letterhead .dept {
-    font-size: 1rem;
-    color: #9bbcd4;
-    margin-top: .5rem;
-    font-weight: 600;
-  }
-  
-  .info-letterhead .report-title {
-    font-size: 1.6rem;
-    color: #00e6a8;
-    margin-top: .8rem;
-    font-weight: 700;
-  }
-  
-  .info-letterhead .report-sub {
-    font-size: .85rem;
-    color: #6a8fb0;
-    margin-top: .3rem;
-  }
+/* ── METERS SECTION ── */
+.meters-section {
+  background: var(--card);
+  border: 1px solid var(--brd);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
 
-  .info-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.8rem;
-  }
+.sec-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--txt3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sec-title::after { content:'';flex:1;height:1px;background:var(--brd); }
 
-  .info-kpi-card {
-    background: rgba(255, 255, 255, .04);
-    border: 1px solid rgba(0, 180, 255, .2);
-    border-radius: 12px;
-    padding: 1rem;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 119, 182, .1);
-  }
+.meters-grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 0.7rem;
+}
+.meters-grid > .meter-card:nth-child(3) {
+  grid-column: 1 / -1;
+  max-width: 55%;
+  margin: 0 auto;
+}
 
-  .info-kpi-card .icon {
-    font-size: 1.5rem;
-    margin-bottom: .4rem;
-  }
+.meter-card {
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  border: 2px solid;
+}
 
-  .info-kpi-card .val {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #00b4ff;
-  }
+/* ── TANK CLOSE (قفل الخزانات) ── */
+.tank-close-section {
+  border: 2px solid rgba(179,136,255,0.45);
+  background: linear-gradient(180deg, rgba(179,136,255,0.06), transparent 60%);
+}
+.tank-close-field label {
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  color: var(--purple) !important;
+}
+.tank-close-input {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem !important;
+  color: var(--purple) !important;
+  border: 2px solid rgba(179,136,255,0.5) !important;
+  background: rgba(179,136,255,0.08) !important;
+  text-align: center;
+}
+.tank-close-input:focus { border-color: var(--purple) !important; }
 
-  .info-kpi-card .label {
-    font-size: .75rem;
-    color: #9bbcd4;
-    margin-top: .3rem;
-  }
+.meter-card.line1 { background:var(--line1-bg); border-color:var(--line1); }
+.meter-card.line2 { background:var(--line2-bg); border-color:var(--line2); }
+.meter-card.line3 { background:var(--line3-bg); border-color:var(--line3); }
 
-  /* ─────────────────────────────────────────────────────────
-     كارتات المناطق - محدد وواضح مع ظل بخلفية داكنة
-     ───────────────────────────────────────────────────────── */
-  .info-areas-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.2rem;
-    margin-bottom: 1.8rem;
-  }
+.meter-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
 
-  .info-area-card {
-    background: rgba(15, 26, 58, .8);
-    border: 2px solid rgba(0, 180, 255, .3);
-    border-radius: 12px;
-    padding: 1.2rem;
-    box-shadow: 0 4px 12px rgba(0, 119, 182, .2);
-    transition: transform .2s, box-shadow .2s, border-color .2s;
-  }
+.meter-title {
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+.meter-card.line1 .meter-title { color:var(--line1); }
+.meter-card.line2 .meter-title { color:var(--line2); }
+.meter-card.line3 .meter-title { color:var(--line3); }
 
-  .info-area-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 180, 255, .3);
-    border-color: rgba(0, 180, 255, .5);
-  }
+.meter-flow {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--amber);
+}
 
-  .info-area-rank {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0077b6, #00b4ff);
-    color: #fff;
-    font-size: 1.2rem;
-    font-weight: 800;
-    margin-bottom: .6rem;
-  }
+.meter-fields { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;align-items:end; }
+.meter-fields .field label { font-size:0.68rem; }
 
-  .info-area-name {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #00b4ff;
-    margin-bottom: .8rem;
-    line-height: 1.4;
-  }
+.meter-result {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 0.4rem;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+}
+.meter-result-label { font-size:0.62rem;color:var(--txt3);text-align:center;margin-top:0.1rem; }
 
-  .info-area-stats-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: .6rem;
-    padding: .5rem 0;
-    border-bottom: 1px solid rgba(0, 180, 255, .15);
-  }
+/* ── LINE HEADER ── */
+.line-config {
+  display: flex;
+  gap: 0.6rem;
+  align-items: end;
+  margin-bottom: 0.5rem;
+}
 
-  .info-area-stats-row:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-  }
+.line-config .field { flex:1; }
 
-  .info-area-stat-icon {
-    font-size: 1.4rem;
-  }
+.multi-select-wrap {
+  position: relative;
+  flex: 2;
+}
 
-  .info-area-stat-label {
-    font-size: .8rem;
-    color: #9bbcd4;
-    flex: 1;
-  }
+.multi-select-display {
+  background: var(--bg3);
+  border: 1px solid var(--brd);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  min-height: 36px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--txt3);
+}
 
-  .info-area-stat-value {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #00b4ff;
-  }
+.tag {
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(0,180,255,0.15);
+  color: var(--blue);
+  border: 1px solid rgba(0,180,255,0.3);
+}
 
-  .info-footer {
-    text-align: center;
-    margin-top: 1.4rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(0, 180, 255, .15);
-    font-size: .8rem;
-    color: #4a7a9b;
-  }
+.multi-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  background: var(--bg2);
+  border: 1px solid var(--brd);
+  border-radius: 8px;
+  z-index: 50;
+  display: none;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 2px;
+}
 
-  @media (max-width:700px){
-    main{padding:1rem;} .filter-field select,.filter-field input{min-width:140px;}
-    .url-bar input{width:170px;}
-    .info-areas-container { grid-template-columns: 1fr; }
+.multi-dropdown label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: background 0.15s;
+}
+.multi-dropdown label:hover { background:rgba(0,180,255,0.08); }
+
+/* ── CHECKLIST داخل الجدول (منطقة/طلمبة لكل ساعة) ── */
+.cell-ms { min-width: 88px; }
+.cell-ms .multi-select-display {
+  padding: 0.25rem 0.4rem;
+  min-height: 26px;
+  font-size: 0.68rem;
+  gap: 0.15rem;
+}
+.cell-ms .multi-dropdown { min-width: 210px; max-height: 230px; }
+.cell-ms .tag { font-size: 0.6rem; padding: 0.03rem 0.32rem; }
+.multi-dropdown input[type="checkbox"] { accent-color: var(--blue); cursor:pointer; }
+
+/* ── TABLE ── */
+.table-section {
+  background: var(--card);
+  border: 1px solid var(--brd);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.shift-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  min-width: 1200px;
+}
+
+.shift-table th {
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.72rem;
+  border: 1px solid var(--brd);
+  white-space: nowrap;
+}
+
+.shift-table td {
+  padding: 0.2rem 0.3rem;
+  border: 1px solid rgba(0,180,255,0.08);
+  text-align: center;
+}
+
+.th-time { background:var(--bg3);color:var(--txt2);width:60px; }
+.th-tech { background:var(--bg3);color:var(--txt2);width:80px; }
+.th-line1 { background:var(--line1-bg);color:var(--line1); }
+.th-line2 { background:var(--line2-bg);color:var(--line2); }
+.th-line3 { background:var(--line3-bg);color:var(--line3); }
+.th-tank { background:rgba(179,136,255,0.08);color:var(--purple); }
+.th-notes { background:var(--bg3);color:var(--txt3); }
+
+.shift-table input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--txt);
+  text-align: center;
+  padding: 0.2rem;
+}
+
+.shift-table input:focus {
+  background: rgba(0,180,255,0.08);
+  border-radius: 4px;
+}
+
+.shift-table select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.72rem;
+  color: var(--txt);
+  text-align: center;
+  cursor: pointer;
+}
+
+.tr-odd { background: rgba(0,180,255,0.02); }
+.tr-even { background: transparent; }
+
+.time-cell {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--cyan);
+  background: var(--bg3);
+  white-space: nowrap;
+}
+
+.cell-line1 { background: rgba(0,180,255,0.03); }
+.cell-line2 { background: rgba(0,230,118,0.03); }
+.cell-line3 { background: rgba(255,112,67,0.03); }
+.cell-tank { background: rgba(179,136,255,0.03); }
+
+/* ── SUMMARY ── */
+.summary-section {
+  background: var(--card);
+  border: 1px solid var(--brd);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 0.7rem;
+}
+
+.summary-card {
+  border-radius: 10px;
+  padding: 0.55rem 0.6rem;
+  text-align: center;
+  border: 2px solid;
+  transition: transform 0.15s ease;
+}
+.summary-card:nth-child(3) {
+  grid-column: 1 / -1;
+  max-width: 55%;
+  margin: 0 auto;
+}
+.summary-card.line1 { background:var(--line1-bg);border-color:var(--line1); }
+.summary-card.line2 { background:var(--line2-bg);border-color:var(--line2); }
+.summary-card.line3 { background:var(--line3-bg);border-color:var(--line3); }
+
+.summary-val {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.summary-card.line1 .summary-val { color:var(--line1); }
+.summary-card.line2 .summary-val { color:var(--line2); }
+.summary-card.line3 .summary-val { color:var(--line3); }
+.summary-lbl { font-size:0.68rem;color:var(--txt3);margin-top:0.1rem; }
+.summary-area { font-size:0.72rem;font-weight:700;color:var(--txt2);margin-bottom:0.1rem; }
+
+.total-box {
+  margin-top: 1rem;
+  background: rgba(0,180,255,0.06);
+  border: 1px solid rgba(0,180,255,0.2);
+  border-radius: 10px;
+  padding: 0.8rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.total-val {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--blue);
+}
+
+/* ── ACTIONS ── */
+.actions {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+/* ── POWER BUTTON ── */
+.power-btn {
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  border: none;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+.grid-btn {
+  background: rgba(0,230,118,0.15);
+  border: 1px solid rgba(0,230,118,0.4);
+  color: var(--green);
+}
+.diesel-btn {
+  background: rgba(255,59,92,0.15);
+  border: 1px solid rgba(255,59,92,0.4);
+  color: var(--red);
+}
+
+/* 🆕 تبويبات عرض خط واحد بس */
+.line-view-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+.line-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--brd);
+  background: var(--card);
+  color: var(--txt2);
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 40px;
+}
+.line-tab.active {
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04121e;
+  border-color: transparent;
+}
+/* إخفاء أعمدة الخطوط الغير مختارة */
+.shift-table.view-line1 .th-line2, .shift-table.view-line1 .cell-line2,
+.shift-table.view-line1 .th-line3, .shift-table.view-line1 .cell-line3 { display: none; }
+.shift-table.view-line2 .th-line1, .shift-table.view-line2 .cell-line1,
+.shift-table.view-line2 .th-line3, .shift-table.view-line2 .cell-line3 { display: none; }
+.shift-table.view-line3 .th-line1, .shift-table.view-line3 .cell-line1,
+.shift-table.view-line3 .th-line2, .shift-table.view-line3 .cell-line2 { display: none; }
+
+/* 🆕 تمييز صف الساعة الحالية */
+tr.current-hour-row td {
+  background: rgba(255,179,0,0.12) !important;
+  box-shadow: inset 0 0 0 2px rgba(255,179,0,0.55);
+}
+tr.current-hour-row .time-cell {
+  color: var(--amber);
+  font-weight: 900;
+}
+
+/* 🆕 تلوين الصف اللي اكتملت بياناته الأساسية */
+tr.row-complete td {
+  background: rgba(0,230,118,0.07);
+}
+tr.row-complete .time-cell {
+  position: relative;
+}
+tr.row-complete .time-cell::before {
+  content: '✅';
+  display: block;
+  font-size: 0.7rem;
+  margin-bottom: 1px;
+}
+/* لو نفس الصف هو الساعة الحالية وكمان مكتمل، يفضل شكل الساعة الحالية غالب */
+tr.current-hour-row.row-complete td {
+  background: rgba(255,179,0,0.12) !important;
+}
+
+/* 🆕 مودال تنبيهات اكتمال/نطاق البيانات */
+.validation-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(4,10,20,0.72);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.validation-overlay.show { display: flex; }
+.validation-modal {
+  background: var(--card);
+  border: 2px solid rgba(255,179,0,0.5);
+  border-radius: 14px;
+  padding: 1.2rem;
+  max-width: 560px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.validation-modal-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--amber);
+  margin-bottom: 0.8rem;
+}
+.validation-modal-body {
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+.validation-modal-body .vgroup { margin-bottom: 0.7rem; }
+.validation-modal-body .vgroup-title {
+  font-weight: 800;
+  font-size: 0.82rem;
+  margin-bottom: 0.3rem;
+}
+.validation-modal-body .vgroup-title.missing { color: var(--red); }
+.validation-modal-body .vgroup-title.range { color: var(--amber); }
+.validation-modal-body .vitem {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+  background: rgba(255,255,255,0.03);
+}
+.validation-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* 🆕 مساحات لمس أكبر للموبايل */
+@media (max-width: 768px) {
+  .line-status-btn, .power-btn { min-height: 38px; font-size: 0.75rem !important; padding: 6px 8px !important; }
+  .multi-select-display { min-height: 38px; display:flex; align-items:center; padding: 6px 8px; }
+  .multi-dropdown label { padding: 10px 8px; min-height: 40px; display:flex; align-items:center; gap:8px; font-size: 0.85rem; }
+  .shift-table input[type="number" inputmode="decimal"], .shift-table input[type="text"], .shift-table select {
+    min-height: 38px; font-size: 0.9rem !important;
   }
+  .line-tab { flex: 1 1 40%; text-align: center; }
+}
+
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--card);
+  border: 1px solid var(--brd);
+  border-radius: 10px;
+  padding: 0.7rem 1.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  z-index: 9999;
+  transition: transform 0.3s;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 768px) {
+  .info-bar { grid-template-columns: 1fr 1fr; }
+  .meter-fields { grid-template-columns: 1fr 1fr; }
+  .meter-fields > .field:nth-child(3) { grid-column: 1 / -1; }
+  .meters-grid > .meter-card:nth-child(3) { max-width: 100%; }
+  .summary-card:nth-child(3) { max-width: 75%; }
+  .main { padding: 0.7rem; }
+}
+
+@media print {
+  header .hdr-right { display:none; }
+  .actions { display:none; }
+  body { background:white;color:black; }
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-left">
-    <div class="logo-box">🗺️</div>
-    <div class="header-title">
-      <h1>تحليل استهلاك المناطق</h1>
-      <p>محطة الدهار — الاستهلاك، ساعات التشغيل، والطلمبات المستخدمة</p>
+  <div class="logo">
+    <div class="logo-icon">🏭</div>
+    <div>
+      <div class="logo-name">محطة الدهار الجديدة</div>
+      <div class="logo-sub">سجل التشغيل اليومي</div>
     </div>
   </div>
-  <div class="url-bar">
-    <input type="text" id="scriptUrlInput" placeholder="رابط Google Apps Script...">
-    <button class="btn" onclick="saveScriptUrl()">حفظ</button>
+  <div class="hdr-right">
+    <div class="clock" id="clockEl">--:--:--</div>
+    <button class="btn btn-green" onclick="saveShift()">💾 حفظ السجل</button>
+    <button class="btn btn-amber" onclick="generateWhatsAppReport()">📲 تقرير واتساب</button>
+    <button class="btn btn-outline" onclick="generateLiveFlowReport()">📡 تقرير لحظي (تصرف الطلمبات)</button>
+    <button class="btn btn-outline" onclick="window.print()">🖨 طباعة</button>
   </div>
 </header>
 
-<main>
+<div class="main">
 
-  <div class="filter-bar">
-    <div class="filter-field">
-      <label>المنطقة</label>
-      <select id="areaSelect" onchange="onAreaSelectChange()"></select>
+  <!-- INFO BAR -->
+  <div class="info-bar">
+    <div class="field">
+      <label>📅 تاريخ بداية الوردية (7ص)</label>
+      <input type="date" id="shiftDate" oninput="updateDayName(); syncFromSheet();">
     </div>
-    <div class="filter-field">
-      <label>من تاريخ</label>
-      <input type="date" id="fromDate" onchange="onFromDateChange()">
+    <div id="dayBadge" class="day-badge">--</div>
+    <div class="field">
+      <label>👷 المهندس المسؤول</label>
+      <select id="engineer">
+        <option value="">-- اختر --</option>
+        <option>م/ آيات محمود البنداري</option>
+        <option>م/ عصام الضوى</option>
+        <option>م/ غريب حسين</option>
+      </select>
     </div>
-    <div class="filter-field">
-      <label>إلى تاريخ</label>
-      <input type="date" id="toDate">
+    <div class="field">
+      <label>📝 ملاحظات عامة</label>
+      <input type="text" id="generalNotes" placeholder="ملاحظات...">
     </div>
-    <button class="btn" onclick="loadAnalytics()" style="padding:.6rem 1.6rem;">📊 تحليل</button>
-    <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(1)">اليوم</button>
-    <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(7)">آخر 7 أيام</button>
-    <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(30)">آخر 30 يوم</button>
+    <button class="btn btn-primary" onclick="initShift()">✅ فتح اليوم التشغيلي</button>
   </div>
 
-  <div id="resultArea">
-    <div class="empty-state">📍 اختاري المنطقة والفترة واضغطي "تحليل"</div>
+  <!-- METERS -->
+  <div class="meters-section">
+    <div class="sec-title">🔢 عدادات خطوط الطرد</div>
+    <div class="meters-grid">
+
+      <!-- خط 1 -->
+      <div class="meter-card line1">
+        <div class="meter-header">
+          <div class="meter-title">🔵 خط الطرد 1 (خط الشمال)</div>
+          <div class="meter-flow" id="flow1">-- م³</div>
+        </div>
+        <div class="meter-fields">
+          <div class="field">
+            <label>قراءة البداية (7ص) م³</label>
+            <input type="number" inputmode="decimal" id="meter1Start" placeholder="0" oninput="calcFlow(1)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line1);">
+          </div>
+          <div class="field">
+            <label>قراءة النهاية (7ص غد) م³</label>
+            <input type="number" inputmode="decimal" id="meter1End" placeholder="0" oninput="calcFlow(1)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
+          </div>
+          <div class="field">
+            <div class="meter-result" id="meter1Result" style="color:var(--line1);">--</div>
+            <div class="meter-result-label">إجمالي الخط م³</div>
+          </div>
+        </div>
+        <!-- مناطق ديناميكية -->
+        <div style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid var(--brd);">
+          <div style="font-size:0.75rem;color:var(--txt3);font-weight:700;margin-bottom:0.5rem;">📍 قراءات المناطق</div>
+          <div id="areaMeters1"></div>
+          <button onclick="addAreaMeter(1)" style="margin-top:0.4rem;padding:0.3rem 0.8rem;background:rgba(0,180,255,0.1);border:1px dashed rgba(0,180,255,0.4);border-radius:6px;color:var(--blue);font-family:Cairo,sans-serif;font-size:0.78rem;cursor:pointer;width:100%;">
+            ➕ إضافة منطقة
+          </button>
+        </div>
+      </div>
+
+      <!-- خط 2 -->
+      <div class="meter-card line2">
+        <div class="meter-header">
+          <div class="meter-title">🟢 خط الطرد 2 (شبكات الدهار)</div>
+          <div class="meter-flow" id="flow2">-- م³</div>
+        </div>
+        <div class="meter-fields">
+          <div class="field">
+            <label>قراءة البداية (7ص) م³</label>
+            <input type="number" inputmode="decimal" id="meter2Start" placeholder="0" oninput="calcFlow(2)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line2);">
+          </div>
+          <div class="field">
+            <label>قراءة النهاية (7ص غد) م³</label>
+            <input type="number" inputmode="decimal" id="meter2End" placeholder="0" oninput="calcFlow(2)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
+          </div>
+          <div class="field">
+            <div class="meter-result" id="meter2Result" style="color:var(--line2);">--</div>
+            <div class="meter-result-label">إجمالي الخط م³</div>
+          </div>
+        </div>
+        <div style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid var(--brd);">
+          <div style="font-size:0.75rem;color:var(--txt3);font-weight:700;margin-bottom:0.5rem;">📍 قراءات المناطق</div>
+          <div id="areaMeters2"></div>
+          <button onclick="addAreaMeter(2)" style="margin-top:0.4rem;padding:0.3rem 0.8rem;background:rgba(0,230,118,0.1);border:1px dashed rgba(0,230,118,0.4);border-radius:6px;color:var(--green);font-family:Cairo,sans-serif;font-size:0.78rem;cursor:pointer;width:100%;">
+            ➕ إضافة منطقة
+          </button>
+        </div>
+      </div>
+
+      <!-- خط 3 -->
+      <div class="meter-card line3">
+        <div class="meter-header">
+          <div class="meter-title">🟠 خط الطرد 3 (جبل العفش)</div>
+          <div class="meter-flow" id="flow3">-- م³</div>
+        </div>
+        <div class="meter-fields">
+          <div class="field">
+            <label>قراءة البداية (7ص) م³</label>
+            <input type="number" inputmode="decimal" id="meter3Start" placeholder="0" oninput="calcFlow(3)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--line3);">
+          </div>
+          <div class="field">
+            <label>قراءة النهاية (7ص غد) م³</label>
+            <input type="number" inputmode="decimal" id="meter3End" placeholder="0" oninput="calcFlow(3)" style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber);">
+          </div>
+          <div class="field">
+            <div class="meter-result" id="meter3Result" style="color:var(--line3);">--</div>
+            <div class="meter-result-label">إجمالي الخط م³</div>
+          </div>
+        </div>
+        <div style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid var(--brd);">
+          <div style="font-size:0.75rem;color:var(--txt3);font-weight:700;margin-bottom:0.5rem;">📍 قراءات المناطق</div>
+          <div id="areaMeters3"></div>
+          <button onclick="addAreaMeter(3)" style="margin-top:0.4rem;padding:0.3rem 0.8rem;background:rgba(255,112,67,0.1);border:1px dashed rgba(255,112,67,0.4);border-radius:6px;color:var(--orange);font-family:Cairo,sans-serif;font-size:0.78rem;cursor:pointer;width:100%;">
+            ➕ إضافة منطقة
+          </button>
+        </div>
+      </div>
+
+    </div>
   </div>
 
-</main>
-
-<!-- منطقة مخفية تُستخدم فقط عند الطباعة / تصدير PDF (التقرير العادي) -->
-<div id="printArea"></div>
-
-<!-- ── INFOGRAPHIC MODAL ── -->
-<div class="infographic-overlay" id="infographicOverlay" onclick="if(event.target===this) closeInfographic()">
-  <div class="infographic-box">
-    <div class="infographic-toolbar">
-      <div class="title">🎨 إنفوجراف التقرير</div>
-      <div class="infographic-toolbar-actions">
-        <button class="infographic-icon-btn" onclick="shareOrDownloadInfographic()" title="حفظ أو مشاركة كصورة">📤</button>
-        <button class="infographic-icon-btn" onclick="closeInfographic()" title="إغلاق">✕</button>
+  <!-- 🆕 قراءة الخزانات الرسمية عند قفل العداد (7ص غد) -->
+  <div class="meters-section tank-close-section">
+    <div class="sec-title">🏗 قراءة الخزانات عند القفل (7ص غد)</div>
+    <div class="meters-grid">
+      <div class="field tank-close-field">
+        <label>خزان 1 — قراءة القفل م</label>
+        <input type="number" inputmode="decimal" id="tank1Close" placeholder="--" step="0.01" class="tank-close-input">
+      </div>
+      <div class="field tank-close-field">
+        <label>خزان 2 — قراءة القفل م</label>
+        <input type="number" inputmode="decimal" id="tank2Close" placeholder="--" step="0.01" class="tank-close-input">
       </div>
     </div>
-    <div class="infographic-scroll">
-      <div id="infographicContent"></div>
+    <div style="font-size:0.75rem;color:var(--txt3);margin-top:0.5rem;">
+      ℹ️ تتسجل في نفس لحظة قراءة "نهاية العداد" (الساعة 7ص غد) — مختلفة عن آخر قراءة ساعية للخزان (6ص) بساعة كاملة، وبتُستخدم في حساب فرق التكديس بدل قراءة 6ص لضمان تطابق فترة 24 ساعة كاملة مع فترة العداد.
+    </div>
+  </div>
+
+  <!-- SCRIPT URL -->
+  <div class="meters-section">
+    <div class="sec-title">🔗 ربط Google Sheets</div>
+    <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;">
+      <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec"
+        dir="ltr" style="flex:1;min-width:200px;padding:0.5rem 0.8rem;background:var(--bg3);border:1px solid var(--brd);border-radius:8px;color:var(--cyan);font-size:0.75rem;font-family:monospace;outline:none;">
+      <button class="btn btn-primary" onclick="saveScriptUrl()">✔ حفظ الرابط</button>
+      <button id="loadShiftsBtn" class="btn btn-green" onclick="loadShiftsFromSheet()">☁ تحميل من الشيت</button>
+      <span id="urlStatus" style="font-size:0.78rem;color:var(--txt3);"></span>
+    </div>
+  </div>
+
+  <!-- LIVE STATUS -->
+  <div class="meters-section">
+    <div class="sec-title">📡 الحالة اللحظية للخطوط</div>
+    <div class="meters-grid">
+      <div class="meter-card line1" id="liveStatus1">
+        <div class="meter-title" style="color:var(--line1);margin-bottom:0.5rem;">🔵 خط 1 (خط الشمال) — الحالة الحالية</div>
+        <div id="liveContent1" style="font-size:0.82rem;color:var(--txt3);">لم يبدأ التسجيل بعد</div>
+      </div>
+      <div class="meter-card line2" id="liveStatus2">
+        <div class="meter-title" style="color:var(--line2);margin-bottom:0.5rem;">🟢 خط 2 (شبكات الدهار) — الحالة الحالية</div>
+        <div id="liveContent2" style="font-size:0.82rem;color:var(--txt3);">لم يبدأ التسجيل بعد</div>
+      </div>
+      <div class="meter-card line3" id="liveStatus3">
+        <div class="meter-title" style="color:var(--line3);margin-bottom:0.5rem;">🟠 خط 3 (جبل العفش) — الحالة الحالية</div>
+        <div id="liveContent3" style="font-size:0.82rem;color:var(--txt3);">لم يبدأ التسجيل بعد</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN TABLE -->
+  <div class="table-section">
+    <div class="sec-title">📋 سجل التشغيل الساعي (7ص → 6ص)</div>
+
+    <!-- 🆕 تبويبات لعرض خط واحد بس وقت التسجيل، تقليل الزحمة على الموبايل -->
+    <div class="line-view-tabs" role="tablist">
+      <button type="button" class="line-tab active" data-view="all" onclick="setLineView('all', this)">📊 عرض الكل</button>
+      <button type="button" class="line-tab" data-view="line1" onclick="setLineView('line1', this)">🔵 خط الشمال</button>
+      <button type="button" class="line-tab" data-view="line2" onclick="setLineView('line2', this)">🟢 شبكات الدهار</button>
+      <button type="button" class="line-tab" data-view="line3" onclick="setLineView('line3', this)">🟠 جبل العفش</button>
+    </div>
+
+    <table class="shift-table" id="shiftTable">
+      <thead>
+        <tr>
+          <th class="th-time" rowspan="2">الوقت</th>
+          <th class="th-tech" rowspan="2">الفني</th>
+          <!-- كهرباء وجهد ووارد — ثابتة لكل الخطوط -->
+          <th class="th-tank" rowspan="2">مصدر الكهرباء</th>
+          <th class="th-tank" rowspan="2">الجهد V</th>
+          <th class="th-tank" rowspan="2">الوارد م³</th>
+          <!-- خط 1 -->
+          <th class="th-line1" colspan="7" title="خط الشمال">🔵 خط الطرد 1 (خط الشمال)</th>
+          <!-- خط 2 -->
+          <th class="th-line2" colspan="7" title="شبكات الدهار">🟢 خط الطرد 2 (شبكات الدهار)</th>
+          <!-- خط 3 -->
+          <th class="th-line3" colspan="7" title="جبل العفش">🟠 خط الطرد 3 (جبل العفش)</th>
+          <!-- خزانات -->
+          <th class="th-tank" colspan="2">🏗 الخزانات</th>
+          <!-- ملاحظات -->
+          <th class="th-notes" rowspan="2">ملاحظات</th>
+        </tr>
+        <tr>
+          <!-- خط 1 -->
+          <th class="th-line1">الحالة</th>
+          <th class="th-line1">منطقة</th>
+          <th class="th-line1">طلمبة</th>
+          <th class="th-line1">تردد Hz</th>
+          <th class="th-line1">أمبير A</th>
+          <th class="th-line1">تصرف م³/س</th>
+          <th class="th-line1">ضغط الطلمبة (بار)</th>
+          <!-- خط 2 -->
+          <th class="th-line2">الحالة</th>
+          <th class="th-line2">منطقة</th>
+          <th class="th-line2">طلمبة</th>
+          <th class="th-line2">تردد Hz</th>
+          <th class="th-line2">أمبير A</th>
+          <th class="th-line2">تصرف م³/س</th>
+          <th class="th-line2">ضغط الطلمبة (بار)</th>
+          <!-- خط 3 -->
+          <th class="th-line3">الحالة</th>
+          <th class="th-line3">منطقة</th>
+          <th class="th-line3">طلمبة</th>
+          <th class="th-line3">تردد Hz</th>
+          <th class="th-line3">أمبير A</th>
+          <th class="th-line3">تصرف م³/س</th>
+          <th class="th-line3">ضغط الطلمبة (بار)</th>
+          <!-- خزانات -->
+          <th class="th-tank">خزان 1 م</th>
+          <th class="th-tank">خزان 2 م</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- generated by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary-section">
+    <div class="sec-title">📊 ملخص اليوم التشغيلي</div>
+    <div class="summary-grid">
+      <div class="summary-card line1">
+        <div class="summary-area" id="summaryArea1">خط 1</div>
+        <div class="summary-val" id="summaryFlow1">--</div>
+        <div class="summary-lbl">م³ منصرف</div>
+      </div>
+      <div class="summary-card line2">
+        <div class="summary-area" id="summaryArea2">خط 2</div>
+        <div class="summary-val" id="summaryFlow2">--</div>
+        <div class="summary-lbl">م³ منصرف</div>
+      </div>
+      <div class="summary-card line3">
+        <div class="summary-area" id="summaryArea3">خط 3</div>
+        <div class="summary-val" id="summaryFlow3">--</div>
+        <div class="summary-lbl">م³ منصرف</div>
+      </div>
+    </div>
+    <div class="total-box">
+      <div>
+        <div style="font-size:0.82rem;color:var(--txt3);font-weight:700;">💧 إجمالي المنصرف</div>
+        <div style="font-size:0.75rem;color:var(--txt3);" id="totalPeriod">--</div>
+      </div>
+      <div>
+        <div class="total-val" id="totalFlow">-- م³</div>
+        <div style="font-size:0.68rem;color:var(--txt3);margin-top:0.15rem;">
+          💧 حسب تصرف الطلمبات (تراكمي): <span id="totalFlowPumps" style="color:var(--cyan);font-weight:700;">-- م³</span>
+        </div>
+      </div>
+      <div style="text-align:left;">
+        <div style="font-size:0.72rem;color:var(--txt3);">المهندس المسؤول</div>
+        <div style="font-size:0.9rem;font-weight:800;color:var(--txt);" id="summaryEngineer">--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions">
+    <button class="btn btn-green" onclick="saveShift()">💾 حفظ السجل</button>
+    <button class="btn btn-primary" onclick="loadShift()">📥 تحميل سجل محفوظ</button>
+    <button class="btn btn-amber" onclick="generateWhatsAppReport()">📲 تقرير واتساب</button>
+    <button class="btn btn-outline" onclick="generateLiveFlowReport()">📡 تقرير لحظي (تصرف الطلمبات)</button>
+    <button class="btn btn-outline" onclick="window.print()">🖨 طباعة</button>
+    <button class="btn btn-outline" onclick="exportCSV()">📊 تصدير Excel</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 🆕 مودال تنبيهات اكتمال/نطاق البيانات قبل الحفظ -->
+<div class="validation-overlay" id="validationOverlay">
+  <div class="validation-modal">
+    <div class="validation-modal-title">⚠️ في بيانات محتاجة مراجعة قبل الحفظ</div>
+    <div class="validation-modal-body" id="validationModalBody"></div>
+    <div class="validation-modal-actions">
+      <button class="btn btn-outline" onclick="closeValidationModal()">🔙 رجوع للتعديل</button>
+      <button class="btn btn-amber" id="validationConfirmBtn" onclick="confirmSaveDespiteIssues()">✔ تأكيد الحفظ رغم النواقص</button>
     </div>
   </div>
 </div>
 
 <script>
-const COMPANY_NAME = 'شركة مياه الشرب والصرف الصحي بالبحر الأحمر';
-const DEPT_NAME = 'الإدارة العامة للمياه - رافع الدهار شمال الغردقة';
-let lastLoadedData = null; // { mode: 'area' | 'all', area, from, to, data }
-
 const AREAS = [
-  'شبكات الدهار كامله - تشغيل مستمر','السلام-الحجاز','السلام-سلخانه','السلام-فلفل','مجمع الخدمات','الكنيسه','الشيخ محمود','مجاهد','الموظفين','الزراعه','النجدة و الشيخ شحات',
+  'شبكات الدهار كامله - تشغيل مستمر','السلام','الكنيسه','الشيخ محمود','مجاهد','الموظفين و باتا','الزراعه','النجدة و الشيخ شحات',
   'حفر الباطن و التقوى','الهلال','فيلات مبارك 7',
   'اللؤلؤة و الفيروز','مبارك 11 و 12 و 13',
   'بلوكات الاحياء','رافع الجيش','الأمير طلال','خط جبل العفش'
 ];
 
-let scriptUrl = localStorage.getItem('shiftlog_script_url') || 'https://script.google.com/macros/s/AKfycbzH9abO9m7O5Fip6J89VAQU3CB_Bq2ESbAJjlz3zl3NR-KF-poYBLaVzYs04C-o3FcL5A/exec';
-let dailyChart = null;
+const PUMPS = ['P1','P2','P3','P4','P5','P6','P7','P8'];
 
-window.addEventListener('load', () => {
-  const sel = document.getElementById('areaSelect');
-  sel.innerHTML = '<option value="__ALL__">🗺️ كل المناطق (يوم واحد)</option>' +
-    AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
+const HOURS = [
+  '7ص','8ص','9ص','10ص','11ص','12ظ',
+  '1م','2م','3م','4م','5م','6م',
+  '7م','8م','9م','10م','11م','12م',
+  '1ص','2ص','3ص','4ص','5ص','6ص'
+];
 
-  scriptUrl = localStorage.getItem('shiftlog_script_url') || scriptUrl;
-  document.getElementById('scriptUrlInput').value = scriptUrl;
+const DAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
-  setQuickRange(7);
-  onAreaSelectChange();
-});
+// 🆕 النطاقات الطبيعية للبيانات الأساسية (تُستخدم في تنبيه اكتمال/سلامة البيانات قبل الحفظ)
+const NORMAL_RANGES = {
+  voltage: [380, 420],
+  freq:    [30, 50],
+  amp:     [100, 250],
+  press:   [1, 5.5],
+  inflow:  [0, 2000],
+  tank:    [0, 8]
+};
+const FIELD_LABELS_AR = {
+  voltage: 'الجهد', freq: 'التردد', amp: 'الأمبير', press: 'الضغط',
+  inflow: 'الوارد', tank1: 'خزان 1', tank2: 'خزان 2'
+};
 
-function onAreaSelectChange() {
-  const isAllAreas = document.getElementById('areaSelect').value === '__ALL__';
-  const toInput = document.getElementById('toDate');
-  toInput.disabled = isAllAreas;
-  if (isAllAreas) {
-    toInput.value = document.getElementById('fromDate').value;
+const TECHNICIANS = [
+  'اسلام اشرف','احمد خير','عمر عبد المتجلى','احمد عبد الخالق',
+  'اسلام عطية','محمد ابو السعود','حسن عبد القادر','طاهر سكوت','يسري',
+  'محمد حافظ','خالد السكي','محمود سيد'
+];
+
+const LINE_COLORS = { 1:'var(--line1)', 2:'var(--line2)', 3:'var(--line3)' };
+
+// ── INIT ──
+function updateDayName() {
+  const d = document.getElementById('shiftDate').value;
+  const el = document.getElementById('dayBadge');
+  if (d) {
+    el.textContent = DAYS_AR[new Date(d+'T12:00:00').getDay()];
   }
 }
 
-function onFromDateChange() {
-  const toInput = document.getElementById('toDate');
-  if (toInput.disabled) toInput.value = document.getElementById('fromDate').value;
+// 🆕 setLineView — تبديل عرض عمود خط واحد بس (أو الكل) لتقليل الزحمة وقت التسجيل من الموبايل
+function setLineView(mode, btn) {
+  const table = document.getElementById('shiftTable');
+  table.classList.remove('view-line1', 'view-line2', 'view-line3');
+  if (mode !== 'all') table.classList.add('view-' + mode);
+  document.querySelectorAll('.line-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
 }
 
-function saveScriptUrl() {
-  scriptUrl = document.getElementById('scriptUrlInput').value.trim();
-  localStorage.setItem('shiftlog_script_url', scriptUrl);
-  showToast('✔ اتحفظ رابط السكريبت');
+// 🆕 استخراج انديكس الساعة الحالية في مصفوفة HOURS (يوم الشيفت من 7ص لـ 6ص تاني يوم)
+function getCurrentHourIndex() {
+  const now = new Date();
+  const h = now.getHours(); // 0-23
+  let label;
+  if (h === 0) label = '12م';
+  else if (h < 12) label = h + 'ص';
+  else if (h === 12) label = '12ظ';
+  else label = (h - 12) + 'م';
+  return HOURS.indexOf(label);
 }
 
-function setQuickRange(days) {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - (days - 1));
-  document.getElementById('toDate').value = to.toLocaleDateString('en-CA');
-  document.getElementById('fromDate').value = from.toLocaleDateString('en-CA');
-  if (document.getElementById('toDate').disabled) {
-    document.getElementById('toDate').value = document.getElementById('fromDate').value;
+// 🆕 تمييز صف الساعة الحالية + سكرول ليها تلقائي أول ما الجدول يتبني
+function highlightCurrentHourRow() {
+  document.querySelectorAll('#tableBody tr').forEach(tr => tr.classList.remove('current-hour-row'));
+  const idx = getCurrentHourIndex();
+  if (idx === -1) return;
+  const tr = document.querySelectorAll('#tableBody tr')[idx];
+  if (tr) {
+    tr.classList.add('current-hour-row');
+    tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
 }
 
-function showToast(msg) {
-  const t = document.createElement('div');
-  t.textContent = msg;
-  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card-bg);border:1px solid var(--border);padding:.7rem 1.4rem;border-radius:10px;z-index:999;font-size:.85rem;';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
+// ── تشيك ليست المنطقة/الطلمبة لكل صف (ساعة) ولكل خط ──
+function toggleDropdown(id) {
+  const dd = document.getElementById(id);
+  const isOpen = dd.style.display === 'block';
+  document.querySelectorAll('.multi-dropdown').forEach(d => d.style.display='none');
+  if (isOpen) return;
 
-async function loadAnalytics() {
-  if (!scriptUrl) { showToast('⚠ محتاجة تحطي رابط السكريبت الأول'); return; }
-  const area = document.getElementById('areaSelect').value;
-  const from = document.getElementById('fromDate').value;
-  const to   = document.getElementById('toDate').value;
-  if (!from || !to) { showToast('⚠ حددي الفترة الأول'); return; }
-
-  document.getElementById('resultArea').innerHTML = '<div class="empty-state">⏳ جاري التحليل...</div>';
-
-  if (area === '__ALL__') {
-    await loadAllAreasAnalytics(from);
-    return;
-  }
-
-  try {
-    const url = `${scriptUrl}?action=getAreaAnalytics&area=${encodeURIComponent(area)}&from=${from}&to=${to}&t=${Date.now()}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    renderResult(area, from, to, data);
-  } catch (err) {
-    console.error(err);
-    document.getElementById('resultArea').innerHTML = '<div class="empty-state">⚠ تعذر الاتصال بالشيت</div>';
-  }
-}
-
-async function loadAllAreasAnalytics(date) {
-  try {
-    const url = `${scriptUrl}?action=getAllAreasAnalytics&from=${date}&to=${date}&t=${Date.now()}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    renderAllAreasResult(date, data);
-  } catch (err) {
-    console.error(err);
-    document.getElementById('resultArea').innerHTML = '<div class="empty-state">⚠ تعذر الاتصال بالشيت</div>';
-  }
-}
-
-function renderAllAreasResult(date, d) {
-  const container = document.getElementById('resultArea');
-
-  if (!d.areas || !d.areas.length) {
-    container.innerHTML = `<div class="empty-state">مفيش مناطق شغالة مسجلة فى يوم ${date}</div>`;
-    lastLoadedData = null;
-    return;
-  }
-
-  lastLoadedData = { mode: 'all', area: null, from: date, to: date, data: d };
-
-  const totalConsumption = d.areas.reduce((s, a) => s + a.consumption, 0);
-  const maxConsumption = d.areas[0].consumption || 1;
-
-  container.innerHTML = `
-    <div style="font-size:0.78rem; color:var(--text-tertiary); background:rgba(255,179,0,.06); border:1px solid rgba(255,179,0,.2); border-radius:10px; padding:0.7rem 1rem; margin-bottom:1rem; line-height:1.6;">
-      ℹ️ القائمة دي بتعرض كل منطقة اشتغلت فعليًا (لها ساعة تشغيل واحدة على الأقل) فى يوم ${date} فقط، مرتبة تنازليًا حسب الاستهلاك.
-    </div>
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">🗺️ عدد مناطق الضخ</div>
-        <div class="kpi-value">${d.areas.length}</div>
-        <div class="kpi-detail">من أصل ${AREAS.length} منطقة</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">💧 إجمالي الاستهلاك</div>
-        <div class="kpi-value">${fmt(totalConsumption)}</div>
-        <div class="kpi-detail">م³ خلال اليوم</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">🗺️ مناطق الضخ فى ${date}</div>
-      ${d.areas.map(a => `
-        <div class="bar-row">
-          <div class="bar-name" style="width:180px;">${a.area}</div>
-          <div class="bar-track"><div class="bar-fill" style="width:${(a.consumption/maxConsumption*100).toFixed(0)}%;"></div></div>
-          <div class="bar-val" style="width:170px;">${fmt(a.consumption)} م³ · ${a.operatingHours} ساعة</div>
-        </div>
-      `).join('')}
-    </div>
-
-    <div class="section">
-      <div class="section-title">📋 التفصيل</div>
-      <table>
-        <thead><tr><th>المنطقة</th><th>الاستهلاك من التصرفات (م³)</th><th>الاستهلاك من العدادات (م³)</th><th>ساعات التشغيل</th><th>معدل م³/ساعة</th></tr></thead>
-        <tbody>
-          ${d.areas.map(a => `
-            <tr>
-              <td>${a.area}</td>
-              <td>${fmt(a.consumption)}</td>
-              <td>${a.metersConsumption!=null ? fmt(a.metersConsumption) : '--'}</td>
-              <td>${a.operatingHours}</td>
-              <td>${a.avgFlowM3PerHour != null ? fmt(a.avgFlowM3PerHour) : '--'}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="report-actions">
-      <div class="filter-field" style="min-width:170px;">
-        <label>مصدر البيانات في التقرير</label>
-        <select id="reportSourceSelect">
-          <option value="flows">تصرف الخطوط (الساعي)</option>
-          <option value="meters">قراءة العدادات</option>
-        </select>
-      </div>
-      <button class="btn btn-report-normal" onclick="printNormalReport()">🖨️ تقرير عادي (طباعة/PDF)</button>
-      <button class="btn btn-report-infographic" onclick="openInfographic()">🎨 إنفوجراف</button>
-    </div>
-  `;
-}
-
-function renderResult(area, from, to, d) {
-  const container = document.getElementById('resultArea');
-
-  if (!d.daily || !d.daily.length) {
-    container.innerHTML = `<div class="empty-state">مفيش بيانات لمنطقة "${area}" فى الفترة من ${from} إلى ${to}</div>`;
-    lastLoadedData = null;
-    return;
-  }
-
-  lastLoadedData = { mode: 'area', area, from, to, data: d };
-
-  const pumpEntries = Object.entries(d.pumpHours || {}).sort((a,b)=>b[1]-a[1]);
-  const lineEntries = Object.entries(d.lineHours || {}).sort((a,b)=>b[1]-a[1]);
-  const maxPumpHrs = pumpEntries.length ? pumpEntries[0][1] : 1;
-
-  container.innerHTML = `
-    <div style="font-size:0.78rem; color:var(--text-tertiary); background:rgba(255,179,0,.06); border:1px solid rgba(255,179,0,.2); border-radius:10px; padding:0.7rem 1rem; margin-bottom:1rem; line-height:1.6;">
-      ℹ️ ساعات التشغيل وتوزيع الطلمبات محسوبة من تصرف الخطوط الساعي. الاستهلاك بيتعرض من مصدرين: تصرف الخطوط الساعي (نفس منطق التقسيم بين المناطق) وقراءات عدادات المناطق الفعلية، عشان تقدري تقارني بينهم.
-    </div>
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">💧 الاستهلاك من التصرفات</div>
-        <div class="kpi-value">${fmt(d.totalConsumption)}</div>
-        <div class="kpi-detail">م³ خلال الفترة (تصرف الخطوط)</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">🧮 الاستهلاك من العدادات</div>
-        <div class="kpi-value">${d.metersTotalConsumption!=null?fmt(d.metersTotalConsumption):'--'}</div>
-        <div class="kpi-detail">م³ خلال الفترة (قراءة فعلية)</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">📅 متوسط الاستهلاك اليومي</div>
-        <div class="kpi-value">${d.avgDailyConsumption!=null?fmt(d.avgDailyConsumption):'--'}</div>
-        <div class="kpi-detail">م³ / يوم (تصرفات)</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">⏱️ إجمالي ساعات التشغيل</div>
-        <div class="kpi-value">${d.totalOperatingHours}</div>
-        <div class="kpi-detail">ساعة خلال الفترة</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">⏱️ متوسط الساعات اليومي</div>
-        <div class="kpi-value">${d.avgDailyOperatingHours!=null?d.avgDailyOperatingHours:'--'}</div>
-        <div class="kpi-detail">ساعة / يوم</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">⚡ معدل التصرف</div>
-        <div class="kpi-value">${d.avgFlowM3PerHour!=null?fmt(d.avgFlowM3PerHour):'--'}</div>
-        <div class="kpi-detail">م³ / ساعة تشغيل (مؤشر الكفاءة)</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">🔧 توزيع ساعات التشغيل حسب الطلمبة</div>
-      ${pumpEntries.length ? pumpEntries.map(([name,hrs]) => `
-        <div class="bar-row">
-          <div class="bar-name">${name}</div>
-          <div class="bar-track"><div class="bar-fill" style="width:${(hrs/maxPumpHrs*100).toFixed(0)}%;"></div></div>
-          <div class="bar-val">${hrs} ساعة</div>
-        </div>
-      `).join('') : '<div class="empty-state">لا توجد بيانات طلمبات مسجلة للمنطقة دي فى الفترة دي</div>'}
-    </div>
-
-    <div class="section">
-      <div class="section-title">🔵 توزيع ساعات التشغيل حسب الخط</div>
-      <div style="display:flex; gap:1.5rem; flex-wrap:wrap;">
-        ${lineEntries.length ? lineEntries.map(([name,hrs]) => `
-          <div style="background:rgba(0,180,255,.06); border:1px solid var(--border); border-radius:10px; padding:.8rem 1.2rem; min-width:120px;">
-            <div style="font-size:.78rem; color:var(--text-tertiary);">${name}</div>
-            <div style="font-size:1.4rem; font-weight:800; color:var(--primary-light);">${hrs}</div>
-            <div style="font-size:.72rem; color:var(--text-secondary);">ساعة</div>
-          </div>
-        `).join('') : '<div class="empty-state">--</div>'}
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">📈 الاستهلاك اليومي وساعات التشغيل</div>
-      <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">📋 التفصيل اليومي</div>
-      <table>
-        <thead><tr><th>التاريخ</th><th>الاستهلاك من التصرفات (م³)</th><th>الاستهلاك من العدادات (م³)</th><th>ساعات التشغيل</th><th>معدل م³/ساعة</th></tr></thead>
-        <tbody>
-          ${d.daily.map(r => `
-            <tr>
-              <td>${r.date}</td>
-              <td>${fmt(r.consumption)}</td>
-              <td>${r.metersConsumption!=null ? fmt(r.metersConsumption) : '--'}</td>
-              <td>${r.operatingHours}</td>
-              <td>${r.avgFlowM3PerHour!=null ? fmt(r.avgFlowM3PerHour) : '--'}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="report-actions">
-      <div class="filter-field" style="min-width:170px;">
-        <label>مصدر البيانات في التقرير</label>
-        <select id="reportSourceSelect">
-          <option value="flows">تصرف الخطوط (الساعي)</option>
-          <option value="meters">قراءة العدادات</option>
-        </select>
-      </div>
-      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);" onclick="toggleManualAdjustment()">🔧 تعديل يدوي</button>
-      <button class="btn btn-report-normal" onclick="printNormalReport()">🖨️ تقرير عادي (طباعة/PDF)</button>
-      <button class="btn btn-report-infographic" onclick="openInfographic()">🎨 إنفوجراف</button>
-    </div>
-
-    <div id="manualAdjustmentPanel" style="display:none; margin-top:1.5rem; background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:1.3rem;">
-      <div class="section-title">🔧 تعديل التصرفات عند تزامن منطقتين أو أكثر</div>
-      <div style="font-size:0.78rem; color:var(--text-tertiary); background:rgba(124,58,237,.06); border:1px solid rgba(124,58,237,.2); border-radius:10px; padding:0.7rem 1rem; margin-bottom:1rem; line-height:1.6;">
-        👉 أدخل معدل التصرف الفعلي (م³/ساعة) لمنطقة معروفة، أو النسبة بين المنطقتين، وسيتم حساب الاستهلاك الفعلي تلقائياً.
-      </div>
-      <div id="adjustmentFields"></div>
-      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a78bfa); margin-top:1rem;" onclick="applyManualAdjustment()">✔️ تطبيق التعديلات</button>
-    </div>
-  `;
-}
-
-function fmt(n) {
-  return Number(n).toLocaleString('ar-EG', {maximumFractionDigits:1});
-}
-
-function renderChart(daily) {
-  const ctx = document.getElementById('dailyChart');
-  if (!ctx) return;
-  if (dailyChart) dailyChart.destroy();
-  dailyChart = new Chart(ctx, {
-    data: {
-      labels: daily.map(r => r.date),
-      datasets: [
-        {
-          type: 'bar', label: 'الاستهلاك من التصرفات (م³)', data: daily.map(r => r.consumption),
-          backgroundColor: 'rgba(0,180,255,.55)', borderRadius: 6, yAxisID: 'y'
-        },
-        {
-          type: 'bar', label: 'الاستهلاك من العدادات (م³)', data: daily.map(r => r.metersConsumption),
-          backgroundColor: 'rgba(0,230,166,.55)', borderRadius: 6, yAxisID: 'y'
-        },
-        {
-          type: 'line', label: 'ساعات التشغيل', data: daily.map(r => r.operatingHours),
-          borderColor: '#ffb300', backgroundColor: '#ffb300', tension: .3, yAxisID: 'y1'
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      scales: {
-        y:  { position:'left',  ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'}, title:{display:true, text:'م³', color:'#9bbcd4'} },
-        y1: { position:'right', ticks:{color:'#9bbcd4'}, grid:{display:false}, title:{display:true, text:'ساعة', color:'#9bbcd4'}, min:0, max:24 },
-        x:  { ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.03)'} }
-      },
-      plugins: { legend:{ labels:{ color:'#e8f4ff' } } }
+  // تعبئة تلقائية من آخر صف فيه اختيار لو القائمة لسه فاضية
+  const m = id.match(/^(area|pump)DD_(\d)_(\d+)$/);
+  if (m) {
+    const type = m[1], line = m[2], rowIdx = parseInt(m[3], 10);
+    if (getRowChecklist(type, line, rowIdx).length === 0) {
+      for (let i = rowIdx - 1; i >= 0; i--) {
+        const prevText = getRowChecklistText(type, line, i);
+        if (prevText) { setRowChecklist(type, line, rowIdx, prevText); autoStatusFromChecklist(line, rowIdx); break; }
+      }
     }
+  }
+
+  dd.style.display = 'block';
+}
+
+function onChecklistChange(type, line, rowIdx) {
+  updateChecklistDisplay(type, line, rowIdx);
+  autoStatusFromChecklist(line, rowIdx);
+  updateLiveStatus();
+  updateSummary();
+}
+
+function updateChecklistDisplay(type, line, rowIdx) {
+  const dd = document.getElementById(`${type}DD_${line}_${rowIdx}`);
+  const display = document.getElementById(`${type}Disp_${line}_${rowIdx}`);
+  if (!dd || !display) return;
+  const checked = [...dd.querySelectorAll('input:checked')].map(c=>c.value);
+
+  if (!checked.length) {
+    display.innerHTML = `<span style="color:var(--txt3)">اختر...</span>`;
+    return;
+  }
+
+  // 🆕 لو أكتر من منطقة واحدة مختارة لنفس الخط فى نفس الساعة، بنعرض خانة
+  // نسبة % جنب كل منطقة عشان الفني يقدر يحدد نصيب كل منطقة الفعلي من
+  // التصرف (بدل ما النظام يفرض تقسيم نص بالنص تلقائي فى التحليلات)
+  if (type !== 'area' || checked.length < 2) {
+    display.innerHTML = checked.map(v=>`<span class="tag">${v}</span>`).join('');
+    return;
+  }
+
+  const existing = getAreaSplitMap(line, rowIdx);
+  const equalShare = Math.round((100 / checked.length) * 10) / 10;
+  display.innerHTML = checked.map(v => {
+    const pct = existing[v] != null ? existing[v] : equalShare;
+    return `<span class="tag" style="display:inline-flex;align-items:center;gap:2px;">
+      ${v}
+      <input type="number" class="area-split-input" min="0" max="100" step="1"
+        data-area="${v.replace(/"/g,'&quot;')}"
+        value="${pct}" title="نسبة % من التصرف لمنطقة ${v}"
+        style="width:34px;padding:0 2px;font-size:0.65rem;border-radius:3px;"
+        onclick="event.stopPropagation()"
+        onchange="onAreaSplitChange(${line},${rowIdx})">%
+    </span>`;
+  }).join('');
+}
+
+// 🆕 يقرأ نسب التقسيم الحالية لمنطقة/خط/صف معين — من الخانات المعروضة
+// حاليًا لو موجودة، وإلا من آخر قيمة محفوظة فى الصف (بعد استرجاع سجل)
+function getAreaSplitMap(line, rowIdx) {
+  const map = {};
+  const display = document.getElementById(`areaDisp_${line}_${rowIdx}`);
+  if (display) {
+    display.querySelectorAll('.area-split-input').forEach(inp => {
+      map[inp.dataset.area] = parseFloat(inp.value) || 0;
+    });
+  }
+  if (Object.keys(map).length === 0) {
+    const tr = document.querySelectorAll('#tableBody tr')[rowIdx];
+    const raw = tr?.dataset[`areaSplit${line}`];
+    if (raw) {
+      raw.split('|').forEach(pair => {
+        const [name, pct] = pair.split(':');
+        if (name) map[name.trim()] = parseFloat(pct) || 0;
+      });
+    }
+  }
+  return map;
+}
+
+// 🆕 استخراج نص نسب التقسيم لحفظه مع الصف — بصيغة "منطقة:نسبة|منطقة:نسبة"
+// بيترجع فاضي لو منطقة واحدة بس (مفيش داعي لتقسيم)
+function getAreaSplitText(line, rowIdx) {
+  const display = document.getElementById(`areaDisp_${line}_${rowIdx}`);
+  if (!display) return '';
+  const inputs = [...display.querySelectorAll('.area-split-input')];
+  if (inputs.length < 2) return '';
+  return inputs.map(inp => `${inp.dataset.area}:${inp.value || 0}`).join('|');
+}
+
+function onAreaSplitChange(line, rowIdx) {
+  updateSummary();
+}
+
+function getRowChecklist(type, line, rowIdx) {
+  const dd = document.getElementById(`${type}DD_${line}_${rowIdx}`);
+  if (!dd) return [];
+  return [...dd.querySelectorAll('input:checked')].map(c=>c.value);
+}
+
+function getRowChecklistText(type, line, rowIdx) {
+  return getRowChecklist(type, line, rowIdx).join('+');
+}
+
+function setRowChecklist(type, line, rowIdx, text) {
+  const values = (text||'').split('+').map(s=>s.trim()).filter(Boolean);
+  const dd = document.getElementById(`${type}DD_${line}_${rowIdx}`);
+  if (!dd) return;
+  dd.querySelectorAll('input').forEach(inp => { inp.checked = values.includes(inp.value); });
+  updateChecklistDisplay(type, line, rowIdx);
+}
+
+// تجميع كل المناطق/الطلمبات المستخدمة خلال اليوم لخط معين (لاستخدامها في الملخص والتقرير)
+function aggregateLineValues(type, line) {
+  const set = new Set();
+  document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
+    getRowChecklist(type, line, i).forEach(v => set.add(v));
+  });
+  return [...set];
+}
+
+// إعادة تفعيل الخط تلقائياً لو الفني اختار منطقة أو طلمبة وهو متوقف
+function autoStatusFromChecklist(line, rowIdx) {
+  const hasArea = getRowChecklist('area', line, rowIdx).length > 0;
+  const hasPump = getRowChecklist('pump', line, rowIdx).length > 0;
+  if (!hasArea && !hasPump) return;
+  const tr = document.querySelectorAll('#tableBody tr')[rowIdx];
+  const btn = tr?.querySelector(`.line-status-btn[data-line="${line}"]`);
+  if (btn && btn.classList.contains('stopped-btn')) {
+    toggleLineStatus(btn);
+  }
+}
+
+// ── TABLE ──
+function buildTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = HOURS.map((h,i) => {
+    const cls = i%2===0 ? 'tr-odd' : 'tr-even';
+    return `<tr class="${cls}" data-hour="${h}">
+      <td class="time-cell" style="white-space:nowrap;">
+        ${h}
+        <button onclick="copyRowDown(this)" title="نسخ للصف التالي"
+          style="display:block;margin:2px auto 0;padding:1px 4px;background:rgba(0,212,255,0.12);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:var(--cyan);font-size:0.65rem;cursor:pointer;width:100%;">
+          📋↓
+        </button>
+      </td>
+      <td class="cell-notes">
+        <select class="tech-sel" style="font-size:0.72rem;color:var(--txt2);">
+          <option value="">--</option>
+          ${TECHNICIANS.map(t=>`<option>${t}</option>`).join('')}
+        </select>
+      </td>
+      <!-- مصدر الكهرباء -->
+      <td class="cell-tank">
+        <button class="power-btn grid-btn" onclick="togglePower(this)" data-mode="grid" title="اضغط للتبديل">
+          ⚡ شبكة
+        </button>
+      </td>
+      <!-- الجهد -->
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="voltage" placeholder="380" step="1" style="color:var(--amber);font-family:Rajdhani,sans-serif;"></td>
+      <!-- الوارد -->
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="inflow" placeholder="--" step="0.1" style="color:var(--purple);font-family:Rajdhani,sans-serif;"></td>
+      <!-- خط 1 -->
+      <td class="cell-line1" style="vertical-align:middle;text-align:center;">
+        <button class="line-status-btn active-btn" data-line="1" data-status="active"
+          onclick="toggleLineStatus(this)"
+          style="padding:2px 5px;border-radius:5px;border:1px solid rgba(0,180,255,0.4);background:rgba(0,180,255,0.12);color:var(--line1);font-size:0.65rem;font-family:Cairo,sans-serif;cursor:pointer;white-space:nowrap;width:100%;">
+          🟢 نشط
+        </button>
+      </td>
+      <td class="cell-line1">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="areaDisp_1_${i}" onclick="toggleDropdown('areaDD_1_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="areaDD_1_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line1">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="pumpDisp_1_${i}" onclick="toggleDropdown('pumpDD_1_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="pumpDD_1_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line1"><input type="number" inputmode="decimal" data-line="1" data-col="freq" placeholder="--" step="0.5"></td>
+      <td class="cell-line1"><input type="number" inputmode="decimal" data-line="1" data-col="amp" placeholder="--" step="1"></td>
+      <td class="cell-line1"><input type="number" inputmode="decimal" data-line="1" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
+      <td class="cell-line1"><input type="number" inputmode="decimal" data-line="1" data-col="press" placeholder="--" step="0.1"></td>
+      <!-- خط 2 -->
+      <td class="cell-line2" style="vertical-align:middle;text-align:center;">
+        <button class="line-status-btn active-btn" data-line="2" data-status="active"
+          onclick="toggleLineStatus(this)"
+          style="padding:2px 5px;border-radius:5px;border:1px solid rgba(0,230,118,0.4);background:rgba(0,230,118,0.12);color:var(--line2);font-size:0.65rem;font-family:Cairo,sans-serif;cursor:pointer;white-space:nowrap;width:100%;">
+          🟢 نشط
+        </button>
+      </td>
+      <td class="cell-line2">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="areaDisp_2_${i}" onclick="toggleDropdown('areaDD_2_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="areaDD_2_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line2">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="pumpDisp_2_${i}" onclick="toggleDropdown('pumpDD_2_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="pumpDD_2_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line2"><input type="number" inputmode="decimal" data-line="2" data-col="freq" placeholder="--" step="0.5"></td>
+      <td class="cell-line2"><input type="number" inputmode="decimal" data-line="2" data-col="amp" placeholder="--" step="1"></td>
+      <td class="cell-line2"><input type="number" inputmode="decimal" data-line="2" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
+      <td class="cell-line2"><input type="number" inputmode="decimal" data-line="2" data-col="press" placeholder="--" step="0.1"></td>
+      <!-- خط 3 -->
+      <td class="cell-line3" style="vertical-align:middle;text-align:center;">
+        <button class="line-status-btn active-btn" data-line="3" data-status="active"
+          onclick="toggleLineStatus(this)"
+          style="padding:2px 5px;border-radius:5px;border:1px solid rgba(255,112,67,0.4);background:rgba(255,112,67,0.12);color:var(--line3);font-size:0.65rem;font-family:Cairo,sans-serif;cursor:pointer;white-space:nowrap;width:100%;">
+          🟢 نشط
+        </button>
+      </td>
+      <td class="cell-line3">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="areaDisp_3_${i}" onclick="toggleDropdown('areaDD_3_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="areaDD_3_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line3">
+        <div class="multi-select-wrap cell-ms">
+          <div class="multi-select-display" id="pumpDisp_3_${i}" onclick="toggleDropdown('pumpDD_3_${i}')"><span style="color:var(--txt3)">اختر...</span></div>
+          <div class="multi-dropdown" id="pumpDD_3_${i}"></div>
+        </div>
+      </td>
+      <td class="cell-line3"><input type="number" inputmode="decimal" data-line="3" data-col="freq" placeholder="--" step="0.5"></td>
+      <td class="cell-line3"><input type="number" inputmode="decimal" data-line="3" data-col="amp" placeholder="--" step="1"></td>
+      <td class="cell-line3"><input type="number" inputmode="decimal" data-line="3" data-col="flow" placeholder="--" step="0.1" oninput="autoStatusFromData(this)"></td>
+      <td class="cell-line3"><input type="number" inputmode="decimal" data-line="3" data-col="press" placeholder="--" step="0.1"></td>
+      <!-- خزانات -->
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="tank1" placeholder="--" step="0.01" style="color:var(--purple);"></td>
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="tank2" placeholder="--" step="0.01" style="color:var(--purple);"></td>
+      <!-- ملاحظات -->
+      <td><input type="text" data-col="notes" placeholder="..." style="font-family:Cairo,sans-serif;font-size:0.75rem;min-width:100px;"></td>
+    </tr>`;
+  }).join('');
+// تعبئة تشيك ليست المناطق والطلمبات لكل صف/خط
+HOURS.forEach((h, i) => {
+  [1,2,3].forEach(l => {
+    const areaDD = document.getElementById(`areaDD_${l}_${i}`);
+    if (areaDD) {
+      areaDD.innerHTML = AREAS.map(a => `
+        <label>
+          <input type="checkbox" value="${a}" data-line="${l}" data-col="area" onchange="onChecklistChange('area',${l},${i})">
+          ${a}
+        </label>`).join('');
+    }
+    const pumpDD = document.getElementById(`pumpDD_${l}_${i}`);
+    if (pumpDD) {
+      pumpDD.innerHTML = PUMPS.map(p => `
+        <label>
+          <input type="checkbox" value="${p}" data-line="${l}" data-col="pump" onchange="onChecklistChange('pump',${l},${i})">
+          ${p}
+        </label>`).join('');
+    }
+  });
+  // 🆕 خط 3 دايماً بيغذي منطقة واحدة ثابتة (جبل العفش) — نحددها افتراضياً
+  // من غير ما الفني يحتاج يختارها يدوي كل ساعة
+  setRowChecklist('area', 3, i, 'خط جبل العفش');
+});
+  // ملحوظة: تعبئة المنطقة/الطلمبة التلقائية من الصف السابق بتحصل عند فتح قائمة التشيك نفسها (toggleDropdown)
+
+  // 🆕 تمييز الساعة الحالية والسكرول ليها
+  highlightCurrentHourRow();
+
+  // تملية تلقائية للكهرباء والجهد لما تتحرك للصف التالي
+  document.querySelectorAll('#tableBody tr').forEach((row, rowIdx) => {
+    row.querySelectorAll('input[data-col="flow"], input[data-col="press"]').forEach(inp => {
+      inp.addEventListener('blur', function() {
+        updateLiveStatus();
+        // انسخ مصدر الكهرباء والجهد للصف التالي لو فاضيين
+        const allRows = document.querySelectorAll('#tableBody tr');
+        const nextRow = allRows[rowIdx + 1];
+        if (!nextRow) return;
+        const currBtn  = row.querySelector('.power-btn');
+        const nextBtn  = nextRow.querySelector('.power-btn');
+        const currVolt = row.querySelector('input[data-col="voltage"]');
+        const nextVolt = nextRow.querySelector('input[data-col="voltage"]');
+        if (currBtn && nextBtn && !nextBtn.dataset.changed) {
+          nextBtn.dataset.mode = currBtn.dataset.mode;
+          nextBtn.textContent  = currBtn.textContent;
+          nextBtn.className    = currBtn.className;
+        }
+        if (currVolt && nextVolt && !nextVolt.value && currVolt.value) {
+          nextVolt.value = currVolt.value;
+        }
+      });
+    });
   });
 }
 
-function buildLetterheadHTML(reportTitle, reportSub) {
-  return `
-    <div class="report-letterhead">
-      <div class="company">🏢 ${COMPANY_NAME}</div>
-      <div class="dept">${DEPT_NAME}</div>
-      ${reportTitle ? `<h2 style="margin-top:.9rem;">${reportTitle}</h2>` : ''}
-      ${reportSub ? `<div class="report-meta">${reportSub}</div>` : ''}
-    </div>
-  `;
+function initShift() {
+  // 🆕 مسح قراءة قفل الخزانات القديمة عشان متفضلش من اليوم اللي فات
+  document.getElementById('tank1Close').value = '';
+  document.getElementById('tank2Close').value = '';
+  buildTable();
+  updateSummary();
+  showToast('✅ تم فتح اليوم التشغيلي');
 }
 
-function printNormalReport() {
-  if (!lastLoadedData) { showToast('⚠ حمّلي تحليل الأول'); return; }
-  const source = document.getElementById('reportSourceSelect')?.value || 'flows';
-  document.getElementById('printArea').innerHTML = buildNormalReportHTML({ ...lastLoadedData, source });
-  window.print();
+// ── METERS ──
+function calcFlow(line) {
+  const start = parseFloat(document.getElementById('meter'+line+'Start').value) || 0;
+  const end = parseFloat(document.getElementById('meter'+line+'End').value) || 0;
+  const diff = end > start ? Math.round(end - start) : 0;
+  document.getElementById('meter'+line+'Result').textContent = diff > 0 ? diff.toLocaleString() : '--';
+  document.getElementById('flow'+line).textContent = diff > 0 ? diff.toLocaleString()+' م³' : '-- م³';
+  updateSummary();
 }
 
-function sourceLabel(source) {
-  return source === 'meters' ? 'قراءة العدادات' : 'تصرف الخطوط (الساعي)';
+function getFlow(line) {
+  const start = parseFloat(document.getElementById('meter'+line+'Start').value) || 0;
+  const end = parseFloat(document.getElementById('meter'+line+'End').value) || 0;
+  return end > start ? Math.round(end - start) : 0;
 }
 
-function pickConsumption(row, source) {
-  return source === 'meters' ? row.metersConsumption : row.consumption;
+// ── SUMMARY ──
+function updateSummary() {
+  const date = document.getElementById('shiftDate').value || '--';
+  const engineer = document.getElementById('engineer').value || '--';
+  const total = getFlow(1) + getFlow(2) + getFlow(3);
+
+  [1,2,3].forEach(l => {
+    const areas = aggregateLineValues('area',l);
+    document.getElementById('summaryArea'+l).textContent = areas.length ? areas.join(' + ') : 'خط '+l;
+    document.getElementById('summaryFlow'+l).textContent = getFlow(l).toLocaleString() || '--';
+  });
+
+  document.getElementById('totalFlow').textContent = total > 0 ? total.toLocaleString()+' م³' : '-- م³';
+  document.getElementById('totalPeriod').textContent = date !== '--' ? `يوم ${date}` : '';
+  document.getElementById('summaryEngineer').textContent = engineer;
+
+  // 🆕 تحديث إجمالي تصرف الطلمبات (تراكمي — متاح فى أي وقت خلال اليوم)
+  const pumpTotals = getPumpFlowTotals();
+  const pfEl = document.getElementById('totalFlowPumps');
+  if (pfEl) pfEl.textContent = pumpTotals.total > 0 ? pumpTotals.total.toLocaleString()+' م³' : '-- م³';
 }
 
-function buildNormalReportHTML(ctx) {
-  const { mode, area, from, to, data, source = 'flows' } = ctx;
-  const generatedAt = new Date().toLocaleString('ar-EG');
-  const srcLabel = sourceLabel(source);
+// ── SAVE ──
+function collectData() {
+  const rows = [];
+  document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
+    const row = { time: HOURS[i] };
+    row.enteredAt = tr.dataset.enteredAt || '';
+    row.tech = tr.querySelector('.tech-sel')?.value || '';
+    const powerBtn = tr.querySelector('.power-btn');
+    row.powerSource = powerBtn?.dataset.mode === 'diesel' ? 'ديزل' : 'شبكة';
+    row.voltage = tr.querySelector('input[data-col="voltage"]')?.value || '';
+    row.inflow  = tr.querySelector('input[data-col="inflow"]')?.value || '';
+    [1,2,3].forEach(l => {
+      const statusBtn = tr.querySelector(`.line-status-btn[data-line="${l}"]`);
+      row['line'+l] = {
+        area: getRowChecklistText('area', l, i),
+        // 🆕 نسبة تقسيم التصرف بين المناطق المشتركة (لو أكتر من منطقة واحدة)
+        areaSplit: getAreaSplitText(l, i),
+        pump: getRowChecklistText('pump', l, i),
+        status: statusBtn?.classList.contains('stopped-btn') ? 'stopped' : 'نشط',
+        freq: tr.querySelector(`input[data-line="${l}"][data-col="freq"]`)?.value || '',
+        amp:  tr.querySelector(`input[data-line="${l}"][data-col="amp"]`)?.value || '',
+        flow: tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value || '',
+        press:tr.querySelector(`input[data-line="${l}"][data-col="press"]`)?.value || '',
+      };
+    });
+    row.tank1 = tr.querySelector('input[data-col="tank1"]')?.value || '';
+    row.tank2 = tr.querySelector('input[data-col="tank2"]')?.value || '';
+    row.notes = tr.querySelector('input[data-col="notes"]')?.value || '';
+    rows.push(row);
+  });
 
-  if (mode === 'area') {
-    const total = source === 'meters' ? data.metersTotalConsumption : data.totalConsumption;
-    const title = `تقرير استهلاك منطقة: ${area}`;
-    const sub = `الفترة من ${from} إلى ${to} — المصدر: ${srcLabel} — إجمالي الاستهلاك ${total!=null?fmt(total):'--'} م³ · إجمالي ساعات التشغيل ${data.totalOperatingHours} ساعة`;
-    const rows = data.daily.map(r => `
-      <tr>
-        <td>${r.date}</td>
-        <td>${fmt(pickConsumption(r, source))}</td>
-        <td>${r.operatingHours}</td>
-        <td>${r.avgFlowM3PerHour != null ? fmt(r.avgFlowM3PerHour) : '--'}</td>
-      </tr>
-    `).join('');
-    return `
-      ${buildLetterheadHTML(title, sub)}
-      <table>
-        <thead><tr><th>التاريخ</th><th>الاستهلاك (م³) — ${srcLabel}</th><th>ساعات التشغيل</th><th>معدل م³/ساعة</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="report-footer">تم إنشاء هذا التقرير آليًا بتاريخ ${generatedAt}</div>
-    `;
+  return {
+    date: document.getElementById('shiftDate').value,
+    dayName: document.getElementById('dayBadge').textContent,
+    engineer: document.getElementById('engineer').value,
+    generalNotes: document.getElementById('generalNotes').value,
+    meters: {
+      line1: { start: document.getElementById('meter1Start').value, end: document.getElementById('meter1End').value, flow: getFlow(1), areas: collectAreaMeters(1) },
+      line2: { start: document.getElementById('meter2Start').value, end: document.getElementById('meter2End').value, flow: getFlow(2), areas: collectAreaMeters(2) },
+      line3: { start: document.getElementById('meter3Start').value, end: document.getElementById('meter3End').value, flow: getFlow(3), areas: collectAreaMeters(3) },
+    },
+    // 🆕 قراءة الخزانات الرسمية وقت قفل العداد (7ص غد)
+    tankClose: {
+      tank1: document.getElementById('tank1Close').value || '',
+      tank2: document.getElementById('tank2Close').value || ''
+    },
+    config: {
+      line1: { areas: aggregateLineValues('area',1), pumps: aggregateLineValues('pump',1) },
+      line2: { areas: aggregateLineValues('area',2), pumps: aggregateLineValues('pump',2) },
+      line3: { areas: aggregateLineValues('area',3), pumps: aggregateLineValues('pump',3) },
+    },
+    rows,
+    totalFlow: getFlow(1)+getFlow(2)+getFlow(3),
+    savedAt: new Date().toLocaleString('ar-EG')
+  };
+}
+
+// جمع قراءات عدادات المناطق الفرعية (المضافة بزرار "➕ إضافة منطقة") لخط معين
+function collectAreaMeters(line) {
+  const container = document.getElementById('areaMeters'+line);
+  const result = [];
+  if (!container) return result;
+  container.querySelectorAll('[id^="areaMeter_"]').forEach(div => {
+    const checked = [...div.querySelectorAll('.am-area-checkbox:checked')].map(c => c.value);
+    const name = checked.join('+'); // نفس تنسيق '+' المستخدم فى خطوط الطرد لدعم المناطق المتعددة
+    const before = div.querySelector('.am-before')?.value || '';
+    const after  = div.querySelector('.am-after')?.value  || '';
+    const diff   = div.querySelector('.am-diff')?.value   || '';
+    // 🆕 نسبة تقسيم المنصرف بين المناطق المشتركة (لو أكتر من منطقة واحدة مختارة)
+    const splitInputs = [...div.querySelectorAll('.am-split-input')];
+    const split = splitInputs.length >= 2 ? splitInputs.map(inp => `${inp.dataset.area}:${inp.value || 0}`).join('|') : '';
+    if (name || before || after) {
+      result.push({ name, before, after, diff, split });
+    }
+  });
+  return result;
+}
+
+// ── SAVE (مع فحص الاكتمال والنطاق الطبيعي قبل الحفظ) ──
+function saveShift() {
+  const { missingIssues, rangeIssues } = validateShiftBeforeSave();
+  if (missingIssues.length || rangeIssues.length) {
+    openValidationModal(missingIssues, rangeIssues);
+    return;
+  }
+  doSaveShift();
+}
+
+async function doSaveShift() {
+  const data = collectData();
+  const key = 'dahar_shift_' + data.date;
+  localStorage.setItem(key, JSON.stringify(data));
+  localStorage.setItem('dahar_last_shift', data.date);
+
+  if (!scriptUrl) {
+    showToast('💾 اتحفظ محلياً بس — مفيش رابط شيت جوجل محفوظ (ضيفيه من قسم "ربط Google Sheets")', 'warn');
+    return;
   }
 
-  const title = `تقرير مناطق الضخ — يوم ${from}`;
-  const totalConsumption = data.areas.reduce((s, a) => s + (pickConsumption(a, source) || 0), 0);
-  const sub = `عدد مناطق الضخ: ${data.areas.length} من أصل ${AREAS.length} — المصدر: ${srcLabel} · إجمالي الاستهلاك ${fmt(totalConsumption)} م³`;
-  const rows = data.areas.map(a => `
-    <tr>
-      <td>${a.area}</td>
-      <td>${fmt(pickConsumption(a, source))}</td>
-      <td>${a.operatingHours}</td>
-      <td>${a.avgFlowM3PerHour != null ? fmt(a.avgFlowM3PerHour) : '--'}</td>
-    </tr>
-  `).join('');
-  return `
-    ${buildLetterheadHTML(title, sub)}
-    <table>
-      <thead><tr><th>المنطقة</th><th>الاستهلاك (م³) — ${srcLabel}</th><th>ساعات التشغيل</th><th>معدل م³/ساعة</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="report-footer">تم إنشاء هذا التقرير آليًا بتاريخ ${generatedAt}</div>
-  `;
-}
-
-// ============================================================
-// 🎨 الإنفوجراف (عرض مرئي + حفظ/مشاركة كصورة) — خلفية بيضاء وكارتات محددة
-// ============================================================
-function openInfographic() {
-  if (!lastLoadedData) { showToast('⚠ حمّلي تحليل الأول'); return; }
-  const source = document.getElementById('reportSourceSelect')?.value || 'flows';
-  document.getElementById('infographicContent').innerHTML = buildInfographicHTML({ ...lastLoadedData, source });
-  document.getElementById('infographicOverlay').classList.add('open');
-  document.addEventListener('keydown', handleInfographicEsc);
-}
-
-function closeInfographic() {
-  document.getElementById('infographicOverlay').classList.remove('open');
-  document.removeEventListener('keydown', handleInfographicEsc);
-}
-
-function handleInfographicEsc(e) {
-  if (e.key === 'Escape') closeInfographic();
-}
-
-function buildInfographicHTML(ctx) {
-  const { mode, area, from, to, data, source = 'flows' } = ctx;
-  const generatedAt = new Date().toLocaleDateString('ar-EG');
-  const srcLabel = sourceLabel(source);
-
-  const letterhead = `
-    <div class="info-letterhead">
-      <div class="logo-image">
-        <img src="logo.jpg" alt="شركة مياه الشرب والصرف الصحي">
-      </div>
-      <div class="company">${COMPANY_NAME}</div>
-      <div class="dept">${DEPT_NAME}</div>
-      <div class="report-title">${mode === 'area' ? `تقرير استهلاك منطقة: ${area}` : `مناطق الضخ — يوم ${from}`}</div>
-      <div class="report-sub">${mode === 'area' ? `الفترة من ${from} إلى ${to} — المصدر: ${srcLabel}` : `تم الإنشاء بتاريخ ${generatedAt} — المصدر: ${srcLabel}`}</div>
-    </div>
-  `;
-
-  if (mode === 'area') {
-    const total = source === 'meters' ? data.metersTotalConsumption : data.totalConsumption;
-    const avgDaily = source === 'meters' ? data.metersAvgDailyConsumption : data.avgDailyConsumption;
-    const kpis = `
-      <div class="info-kpi-grid">
-        <div class="info-kpi-card"><div class="icon">💧</div><div class="val">${total!=null?fmt(total):'--'}</div><div class="label">م³ إجمالي الاستهلاك</div></div>
-        <div class="info-kpi-card"><div class="icon">📅</div><div class="val">${avgDaily!=null?fmt(avgDaily):'--'}</div><div class="label">م³ / يوم (متوسط)</div></div>
-        <div class="info-kpi-card"><div class="icon">⏱️</div><div class="val">${data.totalOperatingHours}</div><div class="label">إجمالي ساعات التشغيل</div></div>
-        <div class="info-kpi-card"><div class="icon">⚡</div><div class="val">${data.avgFlowM3PerHour!=null?fmt(data.avgFlowM3PerHour):'--'}</div><div class="label">م³/ساعة (معدل التصرف)</div></div>
-      </div>
-    `;
-    const rows = data.daily.map((r, i) => `
-      <div class="info-area-card">
-        <div class="info-area-rank">${i + 1}</div>
-        <div class="info-area-name">${r.date}</div>
-        <div class="info-area-stats-row">
-          <div class="info-area-stat-icon">💧</div>
-          <div class="info-area-stat-label">الاستهلاك</div>
-          <div class="info-area-stat-value">${pickConsumption(r, source) != null ? fmt(pickConsumption(r, source)) : '--'} م³</div>
-        </div>
-        <div class="info-area-stats-row">
-          <div class="info-area-stat-icon">⏱️</div>
-          <div class="info-area-stat-label">ساعات التشغيل</div>
-          <div class="info-area-stat-value">${r.operatingHours} ساعة</div>
-        </div>
-      </div>
-    `).join('');
-    return `${letterhead}${kpis}<div class="info-areas-container">${rows}</div><div class="info-footer">تقرير مُنشأ آليًا من نظام مراقبة الطلمبات — محطة الدهار</div>`;
-  }
-
-  // mode === 'all'
-  const totalConsumption = data.areas.reduce((s, a) => s + (pickConsumption(a, source) || 0), 0);
-  const kpis = `
-    <div class="info-kpi-grid">
-      <div class="info-kpi-card"><div class="icon">🗺️</div><div class="val">${data.areas.length}</div><div class="label">منطقة ضخ من ${AREAS.length}</div></div>
-      <div class="info-kpi-card"><div class="icon">💧</div><div class="val">${fmt(totalConsumption)}</div><div class="label">م³ إجمالي الاستهلاك</div></div>
-    </div>
-  `;
-  const rows = data.areas.map((a, i) => `
-    <div class="info-area-card">
-      <div class="info-area-rank">${i + 1}</div>
-      <div class="info-area-name">${a.area}</div>
-      <div class="info-area-stats-row">
-        <div class="info-area-stat-icon">💧</div>
-        <div class="info-area-stat-label">الاستهلاك</div>
-        <div class="info-area-stat-value">${pickConsumption(a, source) != null ? fmt(pickConsumption(a, source)) : '--'} م³</div>
-      </div>
-      <div class="info-area-stats-row">
-        <div class="info-area-stat-icon">⏱️</div>
-        <div class="info-area-stat-label">ساعات التشغيل</div>
-        <div class="info-area-stat-value">${a.operatingHours} ساعة</div>
-      </div>
-    </div>
-  `).join('');
-  return `${letterhead}${kpis}<div class="info-areas-container">${rows}</div><div class="info-footer">تقرير مُنشأ آليًا من نظام مراقبة الطلمبات — محطة الدهار</div>`;
-}
-
-async function shareOrDownloadInfographic() {
-  const target = document.getElementById('infographicContent');
-  if (!target || !target.innerHTML.trim()) { showToast('⚠ افتحي الإنفوجراف الأول'); return; }
-
-  const canvas = await html2canvas(target, { backgroundColor: '#0a0e27', scale: 2, useCORS: true, allowTaint: true });
-  const dataUrl = canvas.toDataURL('image/png');
-  const filename = `تقرير_${lastLoadedData?.mode === 'area' ? lastLoadedData.area : 'المناطق'}_${new Date().toISOString().slice(0,10)}.png`;
+  const saveBtns = document.querySelectorAll('button[onclick="saveShift()"]');
+  const originalTexts = [...saveBtns].map(b => b.textContent);
+  saveBtns.forEach(b => { b.disabled = true; b.textContent = '⏳ جاري الحفظ في الشيت...'; });
 
   try {
-    const blob = await (await fetch(dataUrl)).blob();
-    const file = new File([blob], filename, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'تقرير استهلاك المناطق', text: COMPANY_NAME });
-      return;
+    // ملحوظة: من غير هيدرز عشان نتجنب CORS preflight مع Apps Script
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (result && result.status === 'ok') {
+      showToast('✅ تم حفظ سجل يوم '+data.date+' في شيت جوجل بنجاح');
+    } else {
+      showToast('⚠ اتحفظ محلياً بس فشل الرفع للشيت: '+(result?.message || 'خطأ غير معروف'), 'warn');
     }
   } catch (err) {
-    if (err && err.name === 'AbortError') return;
-    console.warn('تعذّرت المشاركة المباشرة، سيتم تحميل الصورة بدلاً من ذلك', err);
+    console.error(err);
+    showToast('⚠ اتحفظ محلياً بس تعذر الاتصال بشيت جوجل — تأكدي من الرابط والإنترنت', 'warn');
+  } finally {
+    saveBtns.forEach((b,i) => { b.disabled = false; b.textContent = originalTexts[i]; });
   }
+}
+
+function loadShift() {
+  const dates = [];
+  for (let i=0; i<localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('dahar_shift_')) dates.push(k.replace('dahar_shift_',''));
+  }
+  if (!dates.length) { showToast('⚠ لا توجد سجلات محفوظة','warn'); return; }
+  dates.sort().reverse();
+  const date = prompt('اختاري التاريخ:\n'+dates.join('\n'), dates[0]);
+  if (!date) return;
+  const data = JSON.parse(localStorage.getItem('dahar_shift_'+date)||'null');
+  if (!data) { showToast('⚠ لا يوجد سجل لهذا التاريخ','warn'); return; }
+  restoreShift(data);
+}
+
+function restoreShift(data) {
+  document.getElementById('shiftDate').value = data.date;
+  document.getElementById('dayBadge').textContent = data.dayName || '';
+  document.getElementById('engineer').value = data.engineer || '';
+  document.getElementById('generalNotes').value = data.generalNotes || '';
+
+  // 🆕 قراءة الخزانات الرسمية عند القفل
+  document.getElementById('tank1Close').value = data.tankClose?.tank1 || '';
+  document.getElementById('tank2Close').value = data.tankClose?.tank2 || '';
+
+  // meters
+  [1,2,3].forEach(l => {
+    const m = data.meters?.['line'+l];
+    if (m) {
+      // 🛠️ FIX: القراءات بتتحمّل زي ما اتسجلت بالظبط دايمًا — من غير أي نسخ
+      // تلقائي لـ"نهاية" يوم سابق فوق "بداية" يوم جديد. القراءة يدخلها
+      // الفني بإيده وما بتتغيرش لوحدها. (المرجع البصري لقراءة الأمس بيظهر
+      // بس كـ placeholder رمادي فاضي من خلال carryForwardMeterStarts)
+      document.getElementById('meter'+l+'Start').value = m.start || '';
+      document.getElementById('meter'+l+'End').value = m.end || '';
+      calcFlow(l);
+
+      // استرجاع قراءات عدادات المناطق الفرعية
+      const container = document.getElementById('areaMeters'+l);
+      if (container) container.innerHTML = '';
+      areaMeterCounts[l] = 0;
+      (m.areas||[]).forEach(am => {
+        addAreaMeter(l);
+        const idx = areaMeterCounts[l];
+        const div = document.getElementById(`areaMeter_${l}_${idx}`);
+        if (div) {
+          // بيدعم السجلات القديمة (منطقة واحدة) والجديدة (أكتر من منطقة مفصولة بـ '+')
+          div.dataset.split = am.split || ''; // 🆕 نسبة التقسيم المحفوظة (لو موجودة) — لازم قبل تحديد الشيك بوكسات
+          const namesToCheck = String(am.name || '').split('+').map(s => s.trim()).filter(Boolean);
+          div.querySelectorAll('.am-area-checkbox').forEach(cb => {
+            cb.checked = namesToCheck.includes(cb.value);
+          });
+          updateAreaMeterSelection(l, idx);
+          const beforeInp = div.querySelector('.am-before');
+          const afterInp  = div.querySelector('.am-after');
+          const diffInp   = div.querySelector('.am-diff');
+          if (beforeInp) beforeInp.value = am.before || '';
+          if (afterInp)  afterInp.value  = am.after  || '';
+          if (diffInp)   diffInp.value   = am.diff   || '';
+        }
+      });
+    }
+  });
+
+  buildTable();
+
+  // rows
+  data.rows?.forEach((row, i) => {
+    const tr = document.querySelectorAll('#tableBody tr')[i];
+    if (!tr) return;
+    if (row.enteredAt) tr.dataset.enteredAt = row.enteredAt;
+    const techSel = tr.querySelector('.tech-sel');
+    if (techSel) techSel.value = row.tech || '';
+
+    // مصدر الكهرباء
+    const powerBtn = tr.querySelector('.power-btn');
+    if (powerBtn) {
+      if (row.powerSource === 'ديزل') {
+        powerBtn.dataset.mode = 'diesel';
+        powerBtn.textContent  = '🔴 ديزل';
+        powerBtn.className    = 'power-btn diesel-btn';
+      } else {
+        powerBtn.dataset.mode = 'grid';
+        powerBtn.textContent  = '⚡ شبكة';
+        powerBtn.className    = 'power-btn grid-btn';
+      }
+    }
+    const voltInp = tr.querySelector('input[data-col="voltage"]');
+    if (voltInp) voltInp.value = row.voltage || '';
+    const inflowInp = tr.querySelector('input[data-col="inflow"]');
+    if (inflowInp) inflowInp.value = row.inflow || '';
+
+    [1,2,3].forEach(l => {
+      const ld = row['line'+l];
+      if (!ld) return;
+      // حالة الخط أولاً (نشط/متوقف) — قبل استرجاع القيم عشان التبديل بيمسح الخانات
+      const statusBtn = tr.querySelector(`.line-status-btn[data-line="${l}"]`);
+      if (statusBtn) {
+        const shouldBeStopped = ld.status === 'stopped';
+        const isStopped = statusBtn.classList.contains('stopped-btn');
+        if (shouldBeStopped !== isStopped) toggleLineStatus(statusBtn);
+      }
+      // 🆕 نسبة تقسيم المناطق المحفوظة (لو موجودة) — لازم تتحط قبل
+      // setRowChecklist عشان updateChecklistDisplay تلاقيها وتعرضها صح
+      tr.dataset[`areaSplit${l}`] = ld.areaSplit || '';
+      setRowChecklist('area', l, i, ld.area);
+      setRowChecklist('pump', l, i, ld.pump);
+      ['freq','amp','flow','press'].forEach(col => {
+        const inp = tr.querySelector(`input[data-line="${l}"][data-col="${col}"]`);
+        if (inp) inp.value = ld[col] || '';
+      });
+    });
+    ['tank1','tank2','notes'].forEach(col => {
+      const inp = tr.querySelector(`input[data-col="${col}"]`);
+      if (inp) inp.value = row[col] || '';
+    });
+  });
+
+  updateSummary();
+  refreshAllRowCompletion();
+  showToast('✅ تم تحميل سجل '+data.date);
+}
+
+// ── تصرف الطلمبات (تراكمي) ──
+// بيحسب إجمالي المنصرف من مجموع قراءات "تصرف" الساعية لكل خط (الخطوط
+// المتوقفة مايتحسبوش). مفيد فى أي وقت خلال اليوم، عكس فرق العداد اللي
+// مايبقاش له معنى إلا لما قراءة "نهاية" العداد تتسجل (عادة 8ص/8م)
+function getPumpFlowTotals() {
+  const sums = {1:0, 2:0, 3:0};
+  const counts = {1:0, 2:0, 3:0};
+  document.querySelectorAll('#tableBody tr').forEach(tr => {
+    [1,2,3].forEach(l => {
+      const statusBtn = tr.querySelector(`.line-status-btn[data-line="${l}"]`);
+      const stopped = statusBtn?.classList.contains('stopped-btn');
+      if (stopped) return;
+      const flowInp = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`);
+      const v = parseFloat(flowInp?.value);
+      if (!isNaN(v)) { sums[l] += v; counts[l]++; }
+    });
+  });
+  const total = sums[1] + sums[2] + sums[3];
+  return { line1: Math.round(sums[1]), line2: Math.round(sums[2]), line3: Math.round(sums[3]), total: Math.round(total), counts };
+}
+
+// ── تقرير لحظي (تصرف الطلمبات) ──
+// يفيد فى أي وقت أثناء اليوم التشغيلي، وكذلك فى تقرير 8م، لأنه مبني على
+// تصرف الطلمبات ساعة بساعة، مش على فرق العداد اللي بيتقفل الساعة 8ص بس
+function generateLiveFlowReport() {
+  const date = document.getElementById('shiftDate')?.value || '';
+  const dayName = document.getElementById('dayBadge')?.textContent || '';
+  const engineer = document.getElementById('engineer')?.value || '--';
+  const p = getPumpFlowTotals();
+  const a1 = aggregateLineValues('area',1).join('+') || '--';
+  const a2 = aggregateLineValues('area',2).join('+') || '--';
+  const a3 = aggregateLineValues('area',3).join('+') || '--';
+
+  const msg =
+`📡 *تقرير لحظي — محطة الدهار*
+📅 ${date} ${dayName}
+👷 ${engineer}
+⏰ حتى الساعة: ${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}
+
+💧 *تصرف الطلمبات التراكمي:*
+🔵 خط 1 (${a1}): ${p.line1.toLocaleString()} م³ (${p.counts[1]} قراءة)
+🟢 خط 2 (${a2}): ${p.line2.toLocaleString()} م³ (${p.counts[2]} قراءة)
+🟠 خط 3 (${a3}): ${p.line3.toLocaleString()} م³ (${p.counts[3]} قراءة)
+━━━━━━━━━━━━━━━━━
+💧 *الإجمالي: ${p.total.toLocaleString()} م³*
+
+ℹ️ الرقم ده تراكمي من مجموع تصرف الطلمبات ساعة بساعة، ومختلف عن رقم العداد النهائي اللي بيظهر فى تقرير 8ص.`;
+
+  if (confirm('📱 فتح واتساب لإرسال التقرير اللحظي؟')) {
+    showToast('📌 ابعتيها لجروب: تشغيل روافع مياه الغردقة');
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+}
+
+// ── WHATSAPP ──
+function sendWhatsApp() {
+  updateSummary();
+  const data = collectData();
+  const f1 = data.meters.line1.flow.toLocaleString();
+  const f2 = data.meters.line2.flow.toLocaleString();
+  const f3 = data.meters.line3.flow.toLocaleString();
+  const total = data.totalFlow.toLocaleString();
+  const a1 = data.config.line1.areas.join('+') || '--';
+  const a2 = data.config.line2.areas.join('+') || '--';
+  const a3 = data.config.line3.areas.join('+') || '--';
+
+  const msg =
+`🏭 *محطة الدهار الجديدة*
+📋 *تقرير اليوم التشغيلي*
+━━━━━━━━━━━━━━━━━
+📅 ${data.date} — ${data.dayName}
+👷 ${data.engineer}
+━━━━━━━━━━━━━━━━━
+🔵 *خط 1* — ${a1}
+   منصرف: *${f1} م³*
+
+🟢 *خط 2* — ${a2}
+   منصرف: *${f2} م³*
+
+🟠 *خط 3* — ${a3}
+   منصرف: *${f3} م³*
+━━━━━━━━━━━━━━━━━
+💧 *إجمالي المنصرف: ${total} م³*
+━━━━━━━━━━━━━━━━━
+${data.generalNotes ? '📝 '+data.generalNotes : ''}`;
+
+  const url = `https://wa.me/201022121104?text=${encodeURIComponent(msg)}`;
+  if (confirm('📱 فتح واتساب لإرسال التقرير؟')) window.open(url,'_blank');
+}
+
+// ── EXPORT ──
+function exportCSV() {
+  const data = collectData();
+  let csv = '\uFEFF';
+  csv += `محطة الدهار الجديدة — سجل التشغيل اليومي\n`;
+  csv += `التاريخ:,${data.date},اليوم:,${data.dayName},المهندس:,${data.engineer}\n\n`;
+  csv += `عدادات الخطوط\n`;
+  csv += `الخط,بداية م³,نهاية م³,منصرف م³\n`;
+  csv += `خط 1,${data.meters.line1.start},${data.meters.line1.end},${data.meters.line1.flow}\n`;
+  csv += `خط 2,${data.meters.line2.start},${data.meters.line2.end},${data.meters.line2.flow}\n`;
+  csv += `خط 3,${data.meters.line3.start},${data.meters.line3.end},${data.meters.line3.flow}\n\n`;
+  csv += `الوقت,الفني,منطقة خ1,طلمبة خ1,تردد خ1,أمبير خ1,تصرف خ1,ضغط خ1,منطقة خ2,طلمبة خ2,تردد خ2,أمبير خ2,تصرف خ2,ضغط خ2,منطقة خ3,طلمبة خ3,تردد خ3,أمبير خ3,تصرف خ3,ضغط خ3,خزان1,خزان2,ملاحظات\n`;
+  data.rows.forEach(r => {
+    const l1=r.line1, l2=r.line2, l3=r.line3;
+    csv += `${r.time},${r.tech},${l1.area},${l1.pump},${l1.freq},${l1.amp},${l1.flow},${l1.press},${l2.area},${l2.pump},${l2.freq},${l2.amp},${l2.flow},${l2.press},${l3.area},${l3.pump},${l3.freq},${l3.amp},${l3.flow},${l3.press},${r.tank1},${r.tank2},"${r.notes}"\n`;
+  });
+  csv += `\nإجمالي المنصرف:,${data.totalFlow} م³\n`;
 
   const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `سجل_التشغيل_${data.date}.csv`;
   a.click();
 }
 
-// ============================================================
-// 🔧 خاصية التعديل اليدوي للتصرفات المتزامنة
-// ============================================================
-function toggleManualAdjustment() {
-  const panel = document.getElementById('manualAdjustmentPanel');
-  if (!panel) return;
-  if (panel.style.display === 'none') {
-    buildAdjustmentFields();
-    panel.style.display = 'block';
+// ── TOAST ──
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.color = type==='warn' ? 'var(--amber)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── POWER TOGGLE ──
+function togglePower(btn) {
+  if (btn.dataset.mode === 'grid') {
+    btn.dataset.mode = 'diesel';
+    btn.textContent = '🔴 ديزل';
+    btn.className = 'power-btn diesel-btn';
   } else {
-    panel.style.display = 'none';
+    btn.dataset.mode = 'grid';
+    btn.textContent = '⚡ شبكة';
+    btn.className = 'power-btn grid-btn';
   }
 }
 
-function buildAdjustmentFields() {
-  if (!lastLoadedData || lastLoadedData.mode !== 'area') return;
-  const fieldsDiv = document.getElementById('adjustmentFields');
-  const data = lastLoadedData.data;
-  
-  if (!data.daily || !data.daily.length) return;
+// ── AREA METERS ──
+const areaMeterCounts = {1:0, 2:0, 3:0};
 
-  // تجميع التواريخ التي فيها ساعات تشغيل لتسهيل الاختيار
-  const daysWithOps = data.daily.filter(d => d.operatingHours > 0);
-  
-  fieldsDiv.innerHTML = `
-    <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));">
-      <div class="filter-field">
-        <label>اختار التاريخ (اختياري - للتطبيق على يوم واحد فقط)</label>
-        <select id="adjustmentDate">
-          <option value="">تطبيق على كل الفترة</option>
-          ${daysWithOps.map(d => `<option value="${d.date}">${d.date}</option>`).join('')}
-        </select>
-      </div>
-      
-      <div class="filter-field">
-        <label>معدل التصرف المعروف - تصرف الخطوط (م³/ساعة)</label>
-        <input type="number" id="knownFlowRate" placeholder="مثال: 15.5" step="0.1" min="0">
-      </div>
+function addAreaMeter(line) {
+  areaMeterCounts[line]++;
+  const idx = areaMeterCounts[line];
+  const colors = {1:'var(--line1)', 2:'var(--line2)', 3:'var(--line3)'};
+  const color = colors[line];
+  const container = document.getElementById('areaMeters'+line);
 
-      <div class="filter-field">
-        <label>معدل التصرف المعروف - من العدادات (م³/ساعة)</label>
-        <input type="number" id="knownMeterRate" placeholder="مثال: 14.8" step="0.1" min="0">
+  const div = document.createElement('div');
+  div.id = `areaMeter_${line}_${idx}`;
+  div.style = `background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:0.6rem;margin-bottom:0.4rem;`;
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;gap:0.4rem;">
+      <div class="am-multiselect" style="position:relative;flex:1;">
+        <button type="button" class="am-multiselect-btn" onclick="toggleAreaMeterDropdown(${line},${idx})"
+          style="width:100%;text-align:right;font-size:0.78rem;color:${color};background:var(--bg3);border:1px solid var(--brd);border-radius:6px;padding:0.35rem 0.5rem;font-family:Cairo,sans-serif;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          -- اختاري منطقة أو أكتر --
+        </button>
+        <div class="am-multiselect-panel" id="areaMeterPanel_${line}_${idx}"
+          style="display:none;position:absolute;top:105%;right:0;left:0;z-index:20;background:var(--bg3);border:1px solid var(--brd);border-radius:8px;max-height:220px;overflow-y:auto;padding:0.4rem;box-shadow:0 8px 20px rgba(0,0,0,0.4);">
+          ${AREAS.map(a => `
+            <label style="display:flex;align-items:center;gap:0.4rem;padding:0.32rem 0.2rem;font-size:0.78rem;color:var(--txt);cursor:pointer;">
+              <input type="checkbox" class="am-area-checkbox" value="${a}" onchange="updateAreaMeterSelection(${line},${idx})">
+              <span>${a}</span>
+            </label>
+          `).join('')}
+        </div>
       </div>
-      
-      <div class="filter-field">
-        <label>النسبة بين منطقتين (مثال: 2:1)</label>
-        <input type="text" id="ratioInput" placeholder="مثال: 2:1 أو 60:40">
-      </div>
-      
-      <div class="filter-field">
-        <label>ملاحظات إضافية</label>
-        <input type="text" id="adjustmentNotes" placeholder="مثال: منطقة الحجاز من الساعة 6 صباحاً">
-      </div>
+      <button onclick="removeAreaMeter(${line},${idx})" style="background:rgba(255,59,92,0.15);border:1px solid rgba(255,59,92,0.4);border-radius:4px;color:var(--red);padding:0.15rem 0.4rem;font-size:0.7rem;cursor:pointer;flex-shrink:0;">✕</button>
     </div>
-    
-    <div style="margin-top:1rem; padding:1rem; background:rgba(0,180,255,.06); border:1px solid rgba(0,180,255,.15); border-radius:10px; font-size:0.8rem; color:var(--text-secondary);">
-      <strong>💡 الطرق المتاحة:</strong><br>
-      1️⃣ <strong>معدل التصرف:</strong> لو تعرف معدل تصرف من تصرف الخطوط أو العدادات = (الاستهلاك الفعلي ÷ ساعات التشغيل)<br>
-      2️⃣ <strong>النسبة:</strong> لو تعرف أن منطقة A بتصرف 2 ضعف منطقة B (اكتب 2:1)<br>
-      3️⃣ <strong>نسب مئوية:</strong> لو تعرف التوزيع (60:40 تعني 60% و 40%)
-    </div>
-  `;
+    <div class="am-split-container"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;">
+      <div>
+        <div style="font-size:0.65rem;color:var(--txt3);margin-bottom:0.2rem;">قراءة قبل م³</div>
+        <input type="number" inputmode="decimal" class="am-before" placeholder="0" oninput="calcAreaMeter(${line},${idx})"
+          style="width:100%;padding:0.3rem;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:Rajdhani,sans-serif;font-size:0.82rem;">
+      </div>
+      <div>
+        <div style="font-size:0.65rem;color:var(--txt3);margin-bottom:0.2rem;">قراءة بعد م³</div>
+        <input type="number" inputmode="decimal" class="am-after" placeholder="0" oninput="calcAreaMeter(${line},${idx})"
+          style="width:100%;padding:0.3rem;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:Rajdhani,sans-serif;font-size:0.82rem;">
+      </div>
+      <div>
+        <div style="font-size:0.65rem;color:var(--txt3);margin-bottom:0.2rem;">المنصرف م³</div>
+        <input type="number" inputmode="decimal" class="am-diff" readonly
+          style="width:100%;padding:0.3rem;background:rgba(0,212,255,0.05);border:1px solid var(--brd);border-radius:6px;color:${color};font-family:Rajdhani,sans-serif;font-size:0.85rem;font-weight:700;">
+      </div>
+    </div>`;
+  container.appendChild(div);
 }
 
-function applyManualAdjustment() {
-  if (!lastLoadedData || lastLoadedData.mode !== 'area') { showToast('⚠ محتاجة تحميل تحليل منطقة الأول'); return; }
-  
-  const selectedDate = document.getElementById('adjustmentDate')?.value;
-  const knownFlowRate = parseFloat(document.getElementById('knownFlowRate')?.value || 0);
-  const knownMeterRate = parseFloat(document.getElementById('knownMeterRate')?.value || 0);
-  const ratioStr = document.getElementById('ratioInput')?.value.trim() || '';
-  const notes = document.getElementById('adjustmentNotes')?.value.trim() || '';
-  
-  if (!knownFlowRate && !knownMeterRate && !ratioStr) {
-    showToast('⚠ أدخل معدل التصرف أو النسبة على الأقل');
+// بتفتح/تقفل قائمة اختيار المناطق (متعددة) لعداد فرعي معين، وتقفل أي قائمة تانية مفتوحة
+function toggleAreaMeterDropdown(line, idx) {
+  const targetId = `areaMeterPanel_${line}_${idx}`;
+  document.querySelectorAll('.am-multiselect-panel').forEach(p => {
+    if (p.id !== targetId) p.style.display = 'none';
+  });
+  const panel = document.getElementById(targetId);
+  if (panel) panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+}
+
+// بتحدّث نص الزرار ليعرض المناطق المختارة (ممكن تكون أكتر من منطقة لنفس العداد الفرعي)
+// 🆕 ولو أكتر من منطقة واحدة، بتعرض خانة % لكل منطقة عشان تحددي نصيبها
+// الفعلي من المنصرف بدل ما النظام يفرض تقسيم متساوي فى التحليلات
+function updateAreaMeterSelection(line, idx) {
+  const div = document.getElementById(`areaMeter_${line}_${idx}`);
+  if (!div) return;
+  const checked = [...div.querySelectorAll('.am-area-checkbox:checked')].map(c => c.value);
+  const btn = div.querySelector('.am-multiselect-btn');
+  if (btn) btn.textContent = checked.length ? checked.join(' + ') : '-- اختاري منطقة أو أكتر --';
+
+  const splitContainer = div.querySelector('.am-split-container');
+  if (!splitContainer) return;
+  if (checked.length < 2) {
+    splitContainer.innerHTML = '';
     return;
   }
-
-  // تطبيق التعديلات على البيانات
-  const adjustedData = JSON.parse(JSON.stringify(lastLoadedData.data)); // نسخ عميقة
-  
-  if (knownFlowRate > 0) {
-    applyFlowRateAdjustment(adjustedData, knownFlowRate, selectedDate, 'flows');
-  }
-
-  if (knownMeterRate > 0) {
-    applyFlowRateAdjustment(adjustedData, knownMeterRate, selectedDate, 'meters');
-  }
-  
-  if (ratioStr) {
-    applyRatioAdjustment(adjustedData, ratioStr, selectedDate);
-  }
-
-  // تحديث البيانات وإعادة رسم الجداول
-  lastLoadedData.data = adjustedData;
-  lastLoadedData.notes = notes;
-  
-  // إعادة رسم الجدول
-  const container = document.getElementById('resultArea');
-  const daily = adjustedData.daily;
-  const table = container.querySelector('table:last-of-type');
-  if (table) {
-    const newRows = daily.map(r => `
-      <tr ${selectedDate && r.date !== selectedDate ? 'style="opacity:0.6;"' : ''}>
-        <td>
-          ${r.date}
-          ${r.adjustedNote ? `<br><small style="color:#00e6a8;">${r.adjustedNote}</small>` : ''}
-          ${r.meterAdjustedNote ? `<br><small style="color:#00b4ff;">${r.meterAdjustedNote}</small>` : ''}
-        </td>
-        <td>${fmt(r.consumption)}</td>
-        <td>${r.metersConsumption!=null ? fmt(r.metersConsumption) : '--'}</td>
-        <td>${r.operatingHours}</td>
-        <td>${r.avgFlowM3PerHour!=null ? fmt(r.avgFlowM3PerHour) : '--'}</td>
-      </tr>
-    `).join('');
-    table.querySelector('tbody').innerHTML = newRows;
-  }
-  
-  // تحديث KPI cards
-  const totalConsumption = adjustedData.daily.reduce((s, d) => s + d.consumption, 0);
-  const totalMeterConsumption = adjustedData.daily.reduce((s, d) => s + (d.metersConsumption || 0), 0);
-  const totalOperatingHours = adjustedData.daily.reduce((s, d) => s + d.operatingHours, 0);
-  const avgFlowRate = totalOperatingHours > 0 ? totalConsumption / totalOperatingHours : 0;
-  
-  // تحديث KPI في الصفحة
-  const kpiCards = container.querySelectorAll('.kpi-card');
-  if (kpiCards.length > 0) {
-    kpiCards[0].innerHTML = `<div class="kpi-label">💧 الاستهلاك من التصرفات</div><div class="kpi-value">${fmt(totalConsumption)}</div><div class="kpi-detail">م³ خلال الفترة (معدل)</div>`;
-  }
-  if (kpiCards.length > 1) {
-    kpiCards[1].innerHTML = `<div class="kpi-label">🧮 الاستهلاك من العدادات</div><div class="kpi-value">${totalMeterConsumption > 0 ? fmt(totalMeterConsumption) : '--'}</div><div class="kpi-detail">م³ خلال الفترة (معدل)</div>`;
-  }
-  if (kpiCards.length > 5) {
-    kpiCards[5].innerHTML = `<div class="kpi-label">⚡ معدل التصرف</div><div class="kpi-value">${fmt(avgFlowRate)}</div><div class="kpi-detail">م³ / ساعة تشغيل (معدل)</div>`;
-  }
-  
-  if (daily.length > 0) {
-    renderChart(daily);
-  }
-  
-  showToast('✔ تم تطبيق التعديلات على التصرفات والعدادات');
-  document.getElementById('manualAdjustmentPanel').style.display = 'none';
+  const existing = getAreaMeterSplitMap(line, idx);
+  const equalShare = Math.round((100 / checked.length) * 10) / 10;
+  splitContainer.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin:0.35rem 0;">` +
+    checked.map(v => {
+      const pct = existing[v] != null ? existing[v] : equalShare;
+      return `<label style="display:flex;align-items:center;gap:3px;font-size:0.68rem;color:var(--txt3);background:var(--bg3);border:1px solid var(--brd);border-radius:5px;padding:2px 5px;">
+        ${v}
+        <input type="number" class="am-split-input" min="0" max="100" step="1"
+          data-area="${v.replace(/"/g,'&quot;')}" value="${pct}" title="نسبة % من المنصرف لمنطقة ${v}"
+          style="width:32px;padding:0 2px;font-size:0.68rem;border-radius:3px;">%
+      </label>`;
+    }).join('') + `</div>`;
 }
 
-function applyFlowRateAdjustment(data, flowRate, selectedDate, source = 'flows') {
-  data.daily.forEach(day => {
-    if (selectedDate && day.date !== selectedDate) return;
-    
-    const newConsumption = flowRate * day.operatingHours;
-    const sourceLabel = source === 'meters' ? 'عداد' : 'تصرف';
-    
-    if (source === 'meters') {
-      day.metersConsumption = newConsumption;
-      day.meterAdjustedNote = `✔️ (عداد) معدل ${flowRate} م³/ساعة`;
+// 🆕 يقرأ نسب التقسيم الحالية لعداد فرعي معين — من الخانات المعروضة حاليًا
+// لو موجودة، وإلا من آخر قيمة محفوظة (بعد استرجاع سجل)
+function getAreaMeterSplitMap(line, idx) {
+  const map = {};
+  const div = document.getElementById(`areaMeter_${line}_${idx}`);
+  if (div) {
+    div.querySelectorAll('.am-split-input').forEach(inp => { map[inp.dataset.area] = parseFloat(inp.value) || 0; });
+  }
+  if (Object.keys(map).length === 0 && div?.dataset.split) {
+    div.dataset.split.split('|').forEach(pair => {
+      const [name, pct] = pair.split(':');
+      if (name) map[name.trim()] = parseFloat(pct) || 0;
+    });
+  }
+  return map;
+}
+
+// قفل أي قائمة اختيار مناطق مفتوحة لو المستخدم دوس بره القايمة
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.am-multiselect')) {
+    document.querySelectorAll('.am-multiselect-panel').forEach(p => { p.style.display = 'none'; });
+  }
+});
+
+function removeAreaMeter(line, idx) {
+  const el = document.getElementById(`areaMeter_${line}_${idx}`);
+  if (el) el.remove();
+}
+
+function calcAreaMeter(line, idx) {
+  const el = document.getElementById(`areaMeter_${line}_${idx}`);
+  if (!el) return;
+  const before = parseFloat(el.querySelector('.am-before').value) || 0;
+  const after  = parseFloat(el.querySelector('.am-after').value)  || 0;
+  el.querySelector('.am-diff').value = after > before ? Math.round(after - before) : '';
+}
+
+// ── LIVE STATUS ──
+function updateLiveStatus() {
+  [1,2,3].forEach(line => {
+    const rows = document.querySelectorAll('#tableBody tr');
+    let lastArea = '--', lastPump = '--', lastFlow = '--', lastPress = '--';
+    rows.forEach((row, i) => {
+      const areaTxt = getRowChecklistText('area', line, i);
+      const pumpTxt = getRowChecklistText('pump', line, i);
+      const flowInp = row.querySelector(`input[data-line="${line}"][data-col="flow"]`);
+      const pressInp = row.querySelector(`input[data-line="${line}"][data-col="press"]`);
+      if (areaTxt) lastArea  = areaTxt;
+      if (pumpTxt) lastPump  = pumpTxt;
+      if (flowInp?.value) lastFlow  = flowInp.value + ' م³/س';
+      if (pressInp?.value) lastPress = pressInp.value + ' بار';
+    });
+    const colors = {1:'var(--line1)', 2:'var(--line2)', 3:'var(--line3)'};
+    document.getElementById('liveContent'+line).innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;font-size:0.8rem;">
+        <div><span style="color:var(--txt3);">📍 منطقة: </span><span style="color:${colors[line]};font-weight:700;">${lastArea}</span></div>
+        <div><span style="color:var(--txt3);">🔩 طلمبة: </span><span style="color:${colors[line]};font-weight:700;">${lastPump}</span></div>
+        <div><span style="color:var(--txt3);">💧 تصرف: </span><span style="color:var(--cyan);font-weight:700;">${lastFlow}</span></div>
+        <div><span style="color:var(--txt3);">📊 ضغط: </span><span style="color:var(--amber);font-weight:700;">${lastPress}</span></div>
+      </div>`;
+  });
+}
+
+// تحديث الحالة اللحظية كل 30 ثانية
+setInterval(updateLiveStatus, 30000);
+
+// ── SCRIPT URL ──
+let scriptUrl = localStorage.getItem('shiftlog_script_url') || 'https://script.google.com/macros/s/AKfycbzH9abO9m7O5Fip6J89VAQU3CB_Bq2ESbAJjlz3zl3NR-KF-poYBLaVzYs04C-o3FcL5A/exec';
+
+function saveScriptUrl() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    showToast('⚠ الرابط غير صحيح');
+    return;
+  }
+  scriptUrl = url;
+  localStorage.setItem('shiftlog_script_url', url);
+  document.getElementById('urlStatus').textContent = '✅ تم حفظ الرابط';
+  document.getElementById('urlStatus').style.color = 'var(--green)';
+  showToast('✅ تم حفظ رابط الـ Script');
+}
+
+// 🆕 إحصائيات كل خط (نسخة JS من lineStats فى computeDailyTotals بالباك إند):
+// المناطق، أسماء وعدد الطلمبات المختلفة، وساعات التشغيل التراكمي
+function computeLineStatsJS() {
+  const acc = { 1: { areas: new Set(), pumps: new Set(), hours: 0, flow: null, press: null },
+                2: { areas: new Set(), pumps: new Set(), hours: 0, flow: null, press: null },
+                3: { areas: new Set(), pumps: new Set(), hours: 0, flow: null, press: null } };
+  document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
+    [1, 2, 3].forEach(l => {
+      const statusBtn = tr.querySelector(`.line-status-btn[data-line="${l}"]`);
+      const stopped = statusBtn?.classList.contains('stopped-btn');
+      const areas = getRowChecklist('area', l, i);
+      if (stopped || areas.length === 0) return;
+      areas.forEach(a => acc[l].areas.add(a));
+      getRowChecklist('pump', l, i).forEach(p => acc[l].pumps.add(p));
+      acc[l].hours++;
+      const flowVal = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value;
+      const pressVal = tr.querySelector(`input[data-line="${l}"][data-col="press"]`)?.value;
+      if (flowVal) acc[l].flow = flowVal;
+      if (pressVal) acc[l].press = pressVal;
+    });
+  });
+  const out = {};
+  [1, 2, 3].forEach(l => {
+    out['line' + l] = {
+      areas: [...acc[l].areas],
+      pumpNames: [...acc[l].pumps],
+      pumpCount: acc[l].pumps.size,
+      hours: acc[l].hours,
+      currentFlow: acc[l].flow,
+      currentPress: acc[l].press
+    };
+  });
+  return out;
+}
+
+// 🆕 فني بداية اليوم (7ص) وآخر فني سجّل بيانات (نسخة JS من نفس منطق الباك إند)
+function computeTechInfoJS() {
+  const trs = [...document.querySelectorAll('#tableBody tr')];
+  const tech7am = trs[0]?.querySelector('.tech-sel')?.value || null;
+
+  let latestTr = null, latestIdx = -1, latestTime = null;
+  trs.forEach((tr, idx) => {
+    const ea = tr.dataset.enteredAt;
+    if (ea) {
+      const tms = new Date(ea).getTime();
+      if (!latestTime || tms > latestTime) { latestTime = tms; latestTr = tr; latestIdx = idx; }
+    }
+  });
+  if (!latestTr) {
+    for (let i = trs.length - 1; i >= 0; i--) {
+      const tr = trs[i];
+      const hasData = [1, 2, 3].some(l => {
+        const flowInp = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`);
+        const freqInp = tr.querySelector(`input[data-line="${l}"][data-col="freq"]`);
+        return !!(flowInp?.value || freqInp?.value);
+      }) || !!(tr.querySelector('input[data-col="tank1"]')?.value ||
+               tr.querySelector('input[data-col="tank2"]')?.value ||
+               tr.querySelector('input[data-col="inflow"]')?.value);
+      if (hasData) { latestTr = tr; latestIdx = i; break; }
+    }
+  }
+  const techLast = latestTr?.querySelector('.tech-sel')?.value || null;
+  const techLastTimeLabel = latestIdx >= 0 ? HOURS[latestIdx] : null;
+  return { tech7am, techLast, techLastTimeLabel };
+}
+
+// 🆕 سطر "🔧 الفني" الموحّد: اليوم مقفول → فني 7ص، اليوم لسه مفتوح → آخر فني سجّل
+function formatTechHeaderLineJS(t) {
+  const name = t.meterClosed ? t.tech7am : t.techLast;
+  return `🔧 الفني: ${name || '--'}`;
+}
+
+// ── حسابات موحدة (نسخة JS من computeDailyTotals فى الباك إند) ──
+// بتُستخدم فى تقرير الواتساب عشان الأرقام تتطابق مع الداشبورد بدل ما
+// تبقى نسخة مصغّرة منفصلة بمنطق تاني.
+function computeShiftTotalsJS() {
+  const m1 = getFlow(1), m2 = getFlow(2), m3 = getFlow(3);
+  const outflowTotal = m1 + m2 + m3;
+  const pf = getPumpFlowTotals();
+
+  const meterClosed = !!(parseFloat(document.getElementById('meter1End').value) ||
+                          parseFloat(document.getElementById('meter2End').value) ||
+                          parseFloat(document.getElementById('meter3End').value));
+
+  // 🆕 قراءة الخزان: أول قيمة فى الجدول = بداية (7ص)، آخر قيمة = نهاية (6ص)
+  // إلا لو موجودة قراءة قفل رسمية (7ص غد) فبتحل محل قراءة الـ6ص
+  function tankStartEnd(col, closeInputId) {
+    const vals = [];
+    document.querySelectorAll(`input[data-col="${col}"]`).forEach(inp => {
+      const v = parseFloat(inp.value);
+      if (!isNaN(v)) vals.push(v);
+    });
+    const start = vals.length ? vals[0] : null;
+    let end = vals.length ? vals[vals.length - 1] : null;
+    const closeVal = parseFloat(document.getElementById(closeInputId)?.value);
+    if (!isNaN(closeVal)) end = closeVal;
+    return { start, end };
+  }
+  const t1 = tankStartEnd('tank1', 'tank1Close');
+  const t2 = tankStartEnd('tank2', 'tank2Close');
+
+  const TANK_M3_PER_METER = 1250;
+  const tank1ChangeM3 = (t1.start != null && t1.end != null) ? (t1.end - t1.start) * TANK_M3_PER_METER : 0;
+  const tank2ChangeM3 = (t2.start != null && t2.end != null) ? (t2.end - t2.start) * TANK_M3_PER_METER : 0;
+  const stackingChangeM3 = tank1ChangeM3 + tank2ChangeM3;
+  const tank1CurrentM3 = t1.end != null ? t1.end * TANK_M3_PER_METER : null;
+  const tank2CurrentM3 = t2.end != null ? t2.end * TANK_M3_PER_METER : null;
+  const totalCurrentStackM3 = (tank1CurrentM3 || 0) + (tank2CurrentM3 || 0);
+
+  const effectiveOutflowForInflow = meterClosed ? outflowTotal : pf.total;
+  const inflowComputed = effectiveOutflowForInflow + stackingChangeM3;
+
+  const inflowReadings = [];
+  document.querySelectorAll('input[data-col="inflow"]').forEach(inp => {
+    const v = parseFloat(inp.value);
+    if (!isNaN(v)) inflowReadings.push(v);
+  });
+  const sumManualInflow = inflowReadings.length ? inflowReadings.reduce((a, b) => a + b, 0) : null;
+
+  // 🆕 نسبة خطأ عداد الوارد (نفس منطق الباك إند)
+  const inflowDiff = (sumManualInflow != null) ? (sumManualInflow - inflowComputed) : null;
+  const inflowDiffPct = (inflowDiff != null && inflowComputed) ? (inflowDiff / inflowComputed * 100) : null;
+
+  const lineStats = computeLineStatsJS();
+  const techInfo = computeTechInfoJS();
+
+  return {
+    m1, m2, m3, outflowTotal, pf, meterClosed, t1, t2,
+    tank1ChangeM3, tank2ChangeM3, stackingChangeM3,
+    tank1CurrentM3, tank2CurrentM3, totalCurrentStackM3,
+    effectiveOutflowForInflow, inflowComputed,
+    sumManualInflow, inflowReadingsCount: inflowReadings.length,
+    inflowDiff, inflowDiffPct,
+    lineStats, tech7am: techInfo.tech7am, techLast: techInfo.techLast, techLastTimeLabel: techInfo.techLastTimeLabel
+  };
+}
+
+// ── WHATSAPP REPORT ──
+function generateWhatsAppReport() {
+  const date     = document.getElementById('shiftDate')?.value || '';
+  const dayName  = document.getElementById('dayBadge')?.textContent || '';
+  const engineer = document.getElementById('engineer')?.value || '--';
+
+  const t = computeShiftTotalsJS();
+
+  const genTimeStr = new Date().toLocaleString('ar-EG', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+  });
+  const periodStr = t.meterClosed
+    ? `من 7:00ص ${date} إلى 7:00ص اليوم التالي (24 ساعة كاملة)`
+    : `من 7:00ص ${date} حتى الساعة ${t.techLastTimeLabel || '--'}`;
+
+  const lines = [];
+  lines.push('📊 *تقرير محطة الدهار*');
+  lines.push(`📅 ${date} (${dayName})`);
+  lines.push(`👷 المهندس: ${engineer}`);
+  lines.push(formatTechHeaderLineJS(t));
+  lines.push(`🕐 وقت إصدار التقرير: ${genTimeStr}   📍 الفترة: ${periodStr}`);
+  lines.push('');
+
+  // ── المنصرف ──
+  lines.push('💧 *المنصرف لكل خط*');
+  function lineBlock(label, ln, meterVal, pumpVal) {
+    const s = t.lineStats['line' + ln];
+    if (!s || s.hours === 0) {
+      lines.push(`${label} — متوقف`);
+      return;
+    }
+    const totalVal = t.meterClosed ? Math.round(meterVal) : Math.round(pumpVal);
+    const totalSuffix = t.meterClosed ? '' : ' (تراكمي من بداية التشغيل)';
+    lines.push(`${label} — ${s.areas.join('+') || '--'}`);
+    lines.push(`   ⚙️ الطلمبات: ${s.pumpCount} (${s.pumpNames.join('، ') || '--'})`);
+    lines.push(`   📟 التصرف الحالي: ${s.currentFlow || '--'} م³/س | الضغط: ${s.currentPress || '--'} بار`);
+    lines.push(`   💧 الإجمالي: ${totalVal.toLocaleString()} م³${totalSuffix}`);
+    lines.push(`   ⏱ ساعات التشغيل: ${s.hours} ساعة`);
+  }
+  lineBlock('🔵 خط 1', 1, t.m1, t.pf.line1);
+  lineBlock('🟢 خط 2', 2, t.m2, t.pf.line2);
+  lineBlock('🟠 خط 3 (جبل العفش)', 3, t.m3, t.pf.line3);
+  lines.push(`*الإجمالي الكلي:* ${Math.round(t.meterClosed ? t.outflowTotal : t.pf.total).toLocaleString()} م³${t.meterClosed ? '' : ' (تراكمي من بداية التشغيل)'}`);
+  lines.push('');
+
+  // ── الوارد ──
+  // 🆕 التقرير بيعرض قراءة العداد بس. الحسابات التانية (المحسوب/نسبة الخطأ)
+  // لسه محسوبة جوه t (computeShiftTotalsJS) ومتاحة للداشبورد، بس مبتتطبعش هنا.
+  lines.push('🌊 *الوارد*');
+  lines.push(`بالعداد: ${t.sumManualInflow != null ? (Math.round(t.sumManualInflow).toLocaleString() + ' م³ (' + t.inflowReadingsCount + ' قراءة)') : '--'}`);
+  lines.push('');
+
+  // ── الخزانات والتكديس ──
+  lines.push('🏗 *الخزانات والتكديس*');
+  lines.push(`• خزان 1: ${t.t1.end != null ? t.t1.end.toFixed(2) : '--'} م (≈ ${t.tank1CurrentM3 != null ? Math.round(t.tank1CurrentM3).toLocaleString() : '--'} م³)`);
+  lines.push(`• خزان 2: ${t.t2.end != null ? t.t2.end.toFixed(2) : '--'} م (≈ ${t.tank2CurrentM3 != null ? Math.round(t.tank2CurrentM3).toLocaleString() : '--'} م³)`);
+  lines.push(`*الإجمالي الحالي:* ${Math.round(t.totalCurrentStackM3).toLocaleString()} م³`);
+  lines.push(`${t.stackingChangeM3 >= 0 ? '📈' : '📉'} التغير اليوم: ${t.stackingChangeM3 >= 0 ? '+' : ''}${Math.round(t.stackingChangeM3).toLocaleString()} م³`);
+
+  const generalNotes = document.getElementById('generalNotes')?.value || '';
+  if (generalNotes) {
+    lines.push('');
+    lines.push(`📝 *ملاحظات:* ${generalNotes}`);
+  }
+
+  const msg = lines.join('\n');
+  const encoded = encodeURIComponent(msg);
+  showToast('📌 ابعتيها لجروب: تشغيل روافع مياه الغردقة');
+  window.open(`https://wa.me/?text=${encoded}`, '_blank');
+}
+
+
+// جدولة التقرير التلقائي الساعة 8ص
+function scheduleReport() {
+  const now  = new Date();
+  const next = new Date();
+  next.setHours(8, 0, 0, 0);
+  if (now >= next) next.setDate(next.getDate() + 1);
+  const delay = next - now;
+  setTimeout(() => {
+    generateWhatsAppReport();
+    setInterval(generateWhatsAppReport, 24*60*60*1000); // كل 24 ساعة
+  }, delay);
+}
+scheduleReport();
+
+// ── تحميل السجلات من الشيت ──
+async function loadShiftsFromSheet() {
+  if (!scriptUrl) { showToast('⚠ الرابط غير محفوظ — أدخله أولاً'); return; }
+
+  const btn = document.getElementById('loadShiftsBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري التحميل...'; }
+
+  try {
+    const res  = await fetch(scriptUrl + '?action=getShifts&t=' + Date.now());
+    const data = await res.json();
+    const shifts = data.shifts || [];
+
+    if (!shifts.length) {
+      showToast('⚠ لا توجد سجلات في الشيت');
+      return;
+    }
+
+    // حفظ السجلات في localStorage
+    let loaded = 0;
+    shifts.forEach(shift => {
+      const key = 'dahar_shift_' + (shift.id || shift.date);
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, JSON.stringify(shift));
+        loaded++;
+      }
+    });
+
+    // تحديث قائمة السجلات
+    renderShiftList();
+    showToast(`✅ تم تحميل ${loaded} سجل جديد من ${shifts.length} إجمالي`);
+
+  } catch(err) {
+    showToast('❌ فشل التحميل — تأكد من الرابط والاتصال');
+    console.error(err);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '☁ تحميل من الشيت'; }
+  }
+}
+
+// ── LINE STATUS (نشط / متوقف) ──
+function toggleLineStatus(btn) {
+  const line = btn.dataset.line;
+  const row  = btn.closest('tr');
+  const isActive = btn.dataset.status === 'active';
+
+  if (isActive) {
+    // تحويل لمتوقف — مسح بيانات الخط
+    btn.dataset.status  = 'stopped';
+    btn.textContent     = '🔴 متوقف';
+    btn.style.background = 'rgba(255,59,92,0.12)';
+    btn.style.borderColor = 'rgba(255,59,92,0.4)';
+    btn.style.color      = 'var(--red)';
+
+    // مسح كل inputs الخط ده في الصف
+    row.querySelectorAll(`input[data-line="${line}"]`).forEach(inp => {
+      inp.value = '';
+      inp.disabled = true;
+      inp.style.opacity = '0.3';
+    });
+  } else {
+    // تحويل لنشط
+    btn.dataset.status  = 'active';
+    btn.textContent     = '🟢 نشط';
+    const colors = {'1':'var(--line1)','2':'var(--line2)','3':'var(--line3)'};
+    const bgs    = {'1':'rgba(0,180,255,0.12)','2':'rgba(0,230,118,0.12)','3':'rgba(255,112,67,0.12)'};
+    const borders= {'1':'rgba(0,180,255,0.4)','2':'rgba(0,230,118,0.4)','3':'rgba(255,112,67,0.4)'};
+    btn.style.background  = bgs[line];
+    btn.style.borderColor = borders[line];
+    btn.style.color       = colors[line];
+
+    // تفعيل الخانات
+    row.querySelectorAll(`input[data-line="${line}"]`).forEach(inp => {
+      inp.disabled = false;
+      inp.style.opacity = '1';
+    });
+  }
+  updateLiveStatus();
+}
+
+// تحويل تلقائي لنشط لو الفني بدأ يكتب بيانات
+function autoStatusFromData(inp) {
+  if (!inp.value) return;
+  const row = inp.closest('tr');
+  const line = inp.dataset.line;
+  const btn = row.querySelector(`.line-status-btn[data-line="${line}"]`);
+  if (btn && btn.dataset.status === 'stopped') {
+    toggleLineStatus(btn); // تحويل لنشط تلقائياً
+  }
+}
+
+// ── LINE STATUS TOGGLE ──
+function toggleLineStatus(btn) {
+  const line = btn.dataset.line;
+  const row  = btn.closest('tr');
+  const isActive = btn.classList.contains('active-btn');
+
+  if (isActive) {
+    // تحويل لمتوقف — مسح بيانات الخط
+    btn.classList.remove('active-btn');
+    btn.classList.add('stopped-btn');
+    btn.textContent = '⛔ متوقف';
+    btn.style.background = 'rgba(255,59,92,0.15)';
+    btn.style.border = '1px solid rgba(255,59,92,0.4)';
+    btn.style.color = 'var(--red)';
+
+    // مسح كل بيانات الخط في نفس الصف
+    row.querySelectorAll(`input[data-line="${line}"]:not([type="checkbox"])`).forEach(inp => {
+      inp.value = '';
+      inp.style.opacity = '0.3';
+    });
+    row.querySelectorAll(`input[data-line="${line}"][type="checkbox"]`).forEach(inp => { inp.checked = false; });
+    ['area','pump'].forEach(type => {
+      updateChecklistDisplay(type, line, [...document.querySelectorAll('#tableBody tr')].indexOf(row));
+      const wrap = row.querySelector(`#${type}Disp_${line}_${[...document.querySelectorAll('#tableBody tr')].indexOf(row)}`)?.closest('.multi-select-wrap');
+      if (wrap) wrap.style.opacity = '0.3';
+    });
+  } else {
+    // تحويل لنشط — إعادة تفعيل الخانات
+    btn.classList.remove('stopped-btn');
+    btn.classList.add('active-btn');
+    btn.textContent = '🟢 نشط';
+    btn.style.background = 'rgba(0,230,118,0.15)';
+    btn.style.border = '1px solid rgba(0,230,118,0.4)';
+    btn.style.color = 'var(--green)';
+
+    row.querySelectorAll(`input[data-line="${line}"]:not([type="checkbox"])`).forEach(inp => {
+      inp.style.opacity = '1';
+    });
+    ['area','pump'].forEach(type => {
+      const rowIdx = [...document.querySelectorAll('#tableBody tr')].indexOf(row);
+      const wrap = row.querySelector(`#${type}Disp_${line}_${rowIdx}`)?.closest('.multi-select-wrap');
+      if (wrap) wrap.style.opacity = '1';
+    });
+  }
+  updateLiveStatus();
+}
+
+// تحديث autoStatusFromData — لو دخل بيانات يبقى نشط تلقائياً
+function autoStatusFromData(inp) {
+  const line = inp.dataset.line;
+  const row  = inp.closest('tr');
+  const btn  = row.querySelector(`.line-status-btn[data-line="${line}"]`);
+  if (btn && inp.value && !btn.classList.contains('active-btn')) {
+    // إعادة تفعيل لو كان متوقف وبدأ يكتب
+    btn.classList.remove('stopped-btn');
+    btn.classList.add('active-btn');
+    btn.textContent = '🟢 نشط';
+    btn.style.background = 'rgba(0,230,118,0.15)';
+    btn.style.border = '1px solid rgba(0,230,118,0.4)';
+    btn.style.color = 'var(--green)';
+    row.querySelectorAll(`input[data-line="${line}"]`).forEach(i => { i.style.opacity = '1'; });
+  }
+}
+
+// ── COPY ROW DOWN ──
+function copyRowDown(btn) {
+  const currentRow = btn.closest('tr');
+  const allRows = [...document.querySelectorAll('#tableBody tr')];
+  const idx = allRows.indexOf(currentRow);
+  if (idx < 0 || idx >= allRows.length - 1) {
+    showToast('⚠ لا يوجد صف تالٍ');
+    return;
+  }
+  const nextRow = allRows[idx + 1];
+
+  // نسخ كل الـ inputs العادية (بدون الـ checkboxes الخاصة بقوائم التشيك)
+  const currInputs = currentRow.querySelectorAll('input:not([readonly]):not([type="checkbox"]), select');
+  const nextInputs = nextRow.querySelectorAll('input:not([readonly]):not([type="checkbox"]), select');
+  currInputs.forEach((inp, i) => {
+    if (!nextInputs[i]) return;
+    nextInputs[i].value = inp.value;
+    nextInputs[i].style.opacity = inp.style.opacity || '1';
+  });
+
+  // نسخ اختيارات المنطقة والطلمبة (تشيك ليست) لكل خط
+  [1,2,3].forEach(line => {
+    ['area','pump'].forEach(type => {
+      const text = getRowChecklistText(type, line, idx);
+      setRowChecklist(type, line, idx + 1, text);
+    });
+  });
+
+  // نسخ زرار مصدر الكهرباء
+  const currPwr = currentRow.querySelector('.power-btn');
+  const nextPwr = nextRow.querySelector('.power-btn');
+  if (currPwr && nextPwr) {
+    nextPwr.dataset.mode = currPwr.dataset.mode;
+    nextPwr.textContent  = currPwr.textContent;
+    nextPwr.className    = currPwr.className;
+  }
+
+  // نسخ حالة الخطوط (نشط/متوقف)
+  [1,2,3].forEach(line => {
+    const currBtn = currentRow.querySelector(`.line-status-btn[data-line="${line}"]`);
+    const nextBtn = nextRow.querySelector(`.line-status-btn[data-line="${line}"]`);
+    if (currBtn && nextBtn) {
+      nextBtn.className    = currBtn.className;
+      nextBtn.textContent  = currBtn.textContent;
+      nextBtn.style.background = currBtn.style.background;
+      nextBtn.style.border     = currBtn.style.border;
+      nextBtn.style.color      = currBtn.style.color;
+      // لو متوقف — خانات الخط تبقى شفافة
+      if (currBtn.classList.contains('stopped-btn')) {
+        nextRow.querySelectorAll(`input[data-line="${line}"]:not([type="checkbox"])`).forEach(i => { i.style.opacity = '0.3'; });
+        nextRow.querySelectorAll(`[id^="areaDisp_${line}_"], [id^="pumpDisp_${line}_"]`).forEach(d => {
+          const wrap = d.closest('.multi-select-wrap');
+          if (wrap) wrap.style.opacity = '0.3';
+        });
+      }
+    }
+  });
+
+  showToast('📋 تم نسخ بيانات الصف للصف التالي');
+  updateRowCompletionClass(nextRow);
+}
+
+// ── CLOCK ──
+function updateClock() {
+  document.getElementById('clockEl').textContent = new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+
+// ── CLOSE DROPDOWNS ──
+document.addEventListener('click', e => {
+  if (!e.target.closest('.multi-select-wrap')) {
+    document.querySelectorAll('.multi-dropdown').forEach(d => d.style.display='none');
+  }
+});
+
+// 🆕 ── تسجيل وقت أول إدخال فعلي لكل صف ساعي (لتقييم الالتزام بالمواعيد) ──
+// بيتسجل مرة واحدة بس (أول لمسة حقيقية من الفني: كتابة رقم، اختيار من
+// الليستة، أو تبديل حالة خط) — تحميل سجل قديم عن طريق restoreShift()
+// بيحصل بتعيين .value مباشرة من غير أحداث، فمش بيفعّل التسجيل ده.
+document.getElementById('tableBody')?.addEventListener('input', stampRowEntryTime, true);
+document.getElementById('tableBody')?.addEventListener('change', stampRowEntryTime, true);
+document.getElementById('tableBody')?.addEventListener('click', function(e) {
+  if (e.target.closest('.line-status-btn') || e.target.closest('.power-btn') || e.target.closest('input[type="checkbox"]')) {
+    stampRowEntryTime(e);
+  }
+}, true);
+function stampRowEntryTime(e) {
+  const tr = e.target.closest('tr[data-hour]');
+  if (tr && !tr.dataset.enteredAt) {
+    tr.dataset.enteredAt = new Date().toISOString();
+  }
+}
+
+// 🆕 تلوين الصف اللي اكتملت بياناته الأساسية + إعادة الفحص عند أي تعديل
+document.getElementById('tableBody')?.addEventListener('input', markRowCompletionFromEvent, true);
+document.getElementById('tableBody')?.addEventListener('change', markRowCompletionFromEvent, true);
+document.getElementById('tableBody')?.addEventListener('click', function(e) {
+  if (e.target.closest('.line-status-btn')) {
+    // تأخير بسيط لحد ما toggleLineStatus يخلص شغله على الـ classList
+    setTimeout(() => markRowCompletionFromEvent(e), 0);
+  }
+}, true);
+
+function markRowCompletionFromEvent(e) {
+  const tr = e.target.closest('tr[data-hour]');
+  if (tr) updateRowCompletionClass(tr);
+}
+
+// بترجع true لو الخط ده نشط في الصف ده
+function isLineActiveInRow(tr, line) {
+  const btn = tr.querySelector(`.line-status-btn[data-line="${line}"]`);
+  if (!btn) return false;
+  return !btn.classList.contains('stopped-btn');
+}
+
+// بتفحص لو الصف مكتمل البيانات الأساسية المطلوبة (الجهد/الوارد/الخزانات + بيانات كل خط نشط)
+function isRowComplete(tr) {
+  const voltage = tr.querySelector('input[data-col="voltage"]')?.value;
+  const inflow  = tr.querySelector('input[data-col="inflow"]')?.value;
+  const tank1   = tr.querySelector('input[data-col="tank1"]')?.value;
+  const tank2   = tr.querySelector('input[data-col="tank2"]')?.value;
+  if (!voltage || !inflow || !tank1 || !tank2) return false;
+
+  for (const l of [1,2,3]) {
+    if (!isLineActiveInRow(tr, l)) continue;
+    const freq  = tr.querySelector(`input[data-line="${l}"][data-col="freq"]`)?.value;
+    const amp   = tr.querySelector(`input[data-line="${l}"][data-col="amp"]`)?.value;
+    const flow  = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value;
+    const press = tr.querySelector(`input[data-line="${l}"][data-col="press"]`)?.value;
+    if (!freq || !amp || !flow || !press) return false;
+  }
+  return true;
+}
+
+function updateRowCompletionClass(tr) {
+  tr.classList.toggle('row-complete', isRowComplete(tr));
+}
+
+function refreshAllRowCompletion() {
+  document.querySelectorAll('#tableBody tr[data-hour]').forEach(tr => updateRowCompletionClass(tr));
+}
+
+// 🆕 فحص اكتمال وسلامة نطاق البيانات الأساسية قبل الحفظ (حتى الساعة الحالية)
+function validateShiftBeforeSave() {
+  const rows = [...document.querySelectorAll('#tableBody tr[data-hour]')];
+  const currentIdx = getCurrentHourIndex();
+  const lastIdx = currentIdx === -1 ? rows.length - 1 : currentIdx;
+
+  const missingIssues = [];
+  const rangeIssues = [];
+
+  const checkRange = (hourLabel, fieldKey, value, rangeKey, displayLabel) => {
+    if (value === '' || value === null || value === undefined) return;
+    const num = parseFloat(value);
+    if (isNaN(num)) return;
+    const [min, max] = NORMAL_RANGES[rangeKey];
+    if (num < min || num > max) {
+      rangeIssues.push(`الساعة ${hourLabel} — ${displayLabel}: ${num} (النطاق الطبيعي ${min}–${max})`);
+    }
+  };
+
+  rows.forEach((tr, i) => {
+    if (i > lastIdx) return; // ساعات لسه ما جاش وقتها — مش مطلوب نتحقق منها
+    const hourLabel = tr.dataset.hour;
+
+    const voltage = tr.querySelector('input[data-col="voltage"]')?.value || '';
+    const inflow  = tr.querySelector('input[data-col="inflow"]')?.value  || '';
+    const tank1   = tr.querySelector('input[data-col="tank1"]')?.value   || '';
+    const tank2   = tr.querySelector('input[data-col="tank2"]')?.value   || '';
+
+    if (!voltage) missingIssues.push(`الساعة ${hourLabel} — الجهد فاضي`);
+    if (!inflow)  missingIssues.push(`الساعة ${hourLabel} — الوارد فاضي`);
+    if (!tank1)   missingIssues.push(`الساعة ${hourLabel} — قراءة خزان 1 فاضية`);
+    if (!tank2)   missingIssues.push(`الساعة ${hourLabel} — قراءة خزان 2 فاضية`);
+
+    checkRange(hourLabel, 'voltage', voltage, 'voltage', 'الجهد');
+    checkRange(hourLabel, 'inflow',  inflow,  'inflow',  'الوارد');
+    checkRange(hourLabel, 'tank1',   tank1,   'tank',    'خزان 1');
+    checkRange(hourLabel, 'tank2',   tank2,   'tank',    'خزان 2');
+
+    [1,2,3].forEach(l => {
+      if (!isLineActiveInRow(tr, l)) return;
+      const freq  = tr.querySelector(`input[data-line="${l}"][data-col="freq"]`)?.value  || '';
+      const amp   = tr.querySelector(`input[data-line="${l}"][data-col="amp"]`)?.value   || '';
+      const flow  = tr.querySelector(`input[data-line="${l}"][data-col="flow"]`)?.value  || '';
+      const press = tr.querySelector(`input[data-line="${l}"][data-col="press"]`)?.value || '';
+
+      if (!freq)  missingIssues.push(`الساعة ${hourLabel} — خط ${l}: التردد فاضي`);
+      if (!amp)   missingIssues.push(`الساعة ${hourLabel} — خط ${l}: الأمبير فاضي`);
+      if (!flow)  missingIssues.push(`الساعة ${hourLabel} — خط ${l}: التصرف فاضي`);
+      if (!press) missingIssues.push(`الساعة ${hourLabel} — خط ${l}: الضغط فاضي`);
+
+      checkRange(hourLabel, 'freq',  freq,  'freq',  `خط ${l} — التردد`);
+      checkRange(hourLabel, 'amp',   amp,   'amp',   `خط ${l} — الأمبير`);
+      checkRange(hourLabel, 'press', press, 'press', `خط ${l} — الضغط`);
+    });
+  });
+
+  return { missingIssues, rangeIssues };
+}
+
+function openValidationModal(missingIssues, rangeIssues) {
+  const body = document.getElementById('validationModalBody');
+  let html = '';
+  if (missingIssues.length) {
+    html += `<div class="vgroup"><div class="vgroup-title missing">❌ بيانات ناقصة (${missingIssues.length})</div>`;
+    html += missingIssues.slice(0, 30).map(m => `<div class="vitem">${m}</div>`).join('');
+    if (missingIssues.length > 30) html += `<div class="vitem">... و${missingIssues.length - 30} أخرى</div>`;
+    html += `</div>`;
+  }
+  if (rangeIssues.length) {
+    html += `<div class="vgroup"><div class="vgroup-title range">⚠️ قيم خارج النطاق الطبيعي (${rangeIssues.length})</div>`;
+    html += rangeIssues.slice(0, 30).map(m => `<div class="vitem">${m}</div>`).join('');
+    if (rangeIssues.length > 30) html += `<div class="vitem">... و${rangeIssues.length - 30} أخرى</div>`;
+    html += `</div>`;
+  }
+  body.innerHTML = html;
+  document.getElementById('validationOverlay').classList.add('show');
+}
+
+function closeValidationModal() {
+  document.getElementById('validationOverlay').classList.remove('show');
+}
+
+function confirmSaveDespiteIssues() {
+  closeValidationModal();
+  doSaveShift();
+}
+
+// ── INIT ──
+window.addEventListener('load', async () => {
+  document.getElementById('shiftDate').value = new Date().toLocaleDateString('en-CA');
+  updateDayName();
+  buildTable();
+  updateClock();
+
+  // تحميل رابط الـ Script
+  const savedUrl = localStorage.getItem('shiftlog_script_url') || scriptUrl;
+  scriptUrl = savedUrl;
+  const urlInput = document.getElementById('scriptUrl');
+  const urlStatus = document.getElementById('urlStatus');
+  if (urlInput) urlInput.value = savedUrl;
+  if (urlStatus) { urlStatus.textContent = '✅ رابط محفوظ'; urlStatus.style.color = 'var(--green)'; }
+
+  // تحميل آخر سجل تلقائياً (احتياطي محلي — فقط لو خاص بيوم النهاردة نفسه)
+  // 🆕 مبنعملش استرجاع لو آخر سجل محفوظ خاص بيوم قديم، عشان الصفحة تفتح دايمًا على يوم النهاردة
+  const today = new Date().toLocaleDateString('en-CA');
+  const last = localStorage.getItem('dahar_last_shift');
+  if (last === today) {
+    const data = JSON.parse(localStorage.getItem('dahar_shift_'+last)||'null');
+    if (data) restoreShift(data);
+  }
+  // 🆕 تأكيد إن حقل التاريخ فضل على يوم النهاردة مهما حصل فوق
+  document.getElementById('shiftDate').value = today;
+  updateDayName();
+
+  // 🆕 لو النهاردة يوم جديد، نعرض "نهاية العداد" المحفوظة من أمس كمرجع بصري
+  // (placeholder) جوه خانة "بداية العداد" النهاردة — من غير ما يتملى تلقائيًا
+  await carryForwardMeterStarts(today);
+
+  // 🆕 مزامنة تلقائية من شيت جوجل لنفس تاريخ اليوم (المصدر الأدق لو موجود)
+  await syncFromSheet(true);
+
+  // تحديث الحالة اللحظية
+  updateLiveStatus();
+});
+
+// 🆕 يجيب تاريخ اليوم اللي قبل تاريخ معين (بصيغة YYYY-MM-DD)
+function getPreviousDateStr(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('en-CA');
+}
+
+// 🆕 بيعرض "نهاية العداد" المحفوظة من آخر سجل (أمس) كمرجع بصري بس فى خانة
+// "بداية العداد" النهاردة (placeholder رمادي) — من غير ما يملأها تلقائيًا،
+// عشان الإدخال يفضل كله يدوي بإيد الفني ويقلل احتمال الخطأ فى نفس الوقت.
+async function carryForwardMeterStarts(currentDate) {
+  const yesterday = getPreviousDateStr(currentDate);
+  let yesterdayMeters = null;
+
+  if (scriptUrl) {
+    try {
+      const res = await fetch(scriptUrl + '?action=getShiftByDate&date=' + yesterday + '&t=' + Date.now());
+      const result = await res.json();
+      if (result && result.found && result.data) {
+        yesterdayMeters = result.data.meters;
+      }
+    } catch (err) {
+      console.warn('carryForwardMeterStarts: تعذر الاتصال بالشيت، هنجرب النسخة المحلية', err);
+    }
+  }
+
+  if (!yesterdayMeters) {
+    const local = JSON.parse(localStorage.getItem('dahar_shift_' + yesterday) || 'null');
+    if (local) yesterdayMeters = local.meters;
+  }
+
+  if (!yesterdayMeters) return; // مفيش سجل أمس أصلاً — نسيبها فاضية زي ما هي
+
+  [1,2,3].forEach(l => {
+    const startInput = document.getElementById('meter'+l+'Start');
+    const endVal = yesterdayMeters['line'+l]?.end;
+    if (startInput && endVal) {
+      startInput.placeholder = endVal; // مرجع بصري بس (رمادي)، الفني هو اللي بيكتبها بنفسه
+    }
+  });
+}
+
+// 🆕 تحميل بيانات اليوم المختار من شيت جوجل تلقائياً (يستبدل المحلي لو موجود بالشيت)
+async function syncFromSheet(silent) {
+  const date = document.getElementById('shiftDate').value;
+  if (!date || !scriptUrl) return;
+  try {
+    const res = await fetch(scriptUrl + '?action=getShiftByDate&date=' + date + '&t=' + Date.now());
+    const result = await res.json();
+    if (result && result.found && result.data) {
+      restoreShift(result.data);
+      if (!silent) showToast('☁ تم تحميل بيانات يوم '+date+' من الشيت');
     } else {
-      day.consumption = newConsumption;
-      day.avgFlowM3PerHour = flowRate;
-      day.adjustedNote = `✔️ (تصرف) معدل ${flowRate} م³/ساعة`;
+      // 🆕 يوم جديد لسه مالوش سجل محفوظ — نمسح قراءة قفل الخزانات والعدادات
+      // عشان متفضلش قراءة اليوم اللي فات ظاهرة وكإنها خاصة باليوم الجديد
+      document.getElementById('tank1Close').value = '';
+      document.getElementById('tank2Close').value = '';
+
+      // 🆕 مسح النهاية للعدادات فى يوم جديد
+      [1,2,3].forEach(l => {
+        document.getElementById('meter'+l+'End').value = '';
+      });
+
+      // 🆕 وبعدين نعرض "بداية العداد" كمرجع بصري (placeholder) من نهاية اليوم اللي قبله
+      await carryForwardMeterStarts(date);
+
+      if (!silent) showToast('⚠ لا يوجد سجل محفوظ في الشيت لهذا التاريخ', 'warn');
     }
-  });
-}
-
-function applyRatioAdjustment(data, ratioStr, selectedDate) {
-  // تحليل النسبة: "2:1" أو "60:40"
-  const parts = ratioStr.split(':').map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
-  if (parts.length !== 2) { showToast('⚠ صيغة النسبة غلط (استخدم مثلاً: 2:1)'); return; }
-
-  const ratio1 = parts[0];
-  const ratio2 = parts[1];
-  const total = ratio1 + ratio2;
-  const pct1 = (ratio1 / total) * 100;
-  const pct2 = (ratio2 / total) * 100;
-
-  data.daily.forEach(day => {
-    if (selectedDate && day.date !== selectedDate) return;
-    
-    // تطبيق النسبة على الاستهلاك (التصرفات)
-    const adjusted1 = (day.consumption * ratio1) / total;
-    const adjusted2 = (day.consumption * ratio2) / total;
-    
-    day.consumption = adjusted1;
-    day.adjustedNote = `✔️ (تصرف) نسبة ${ratio1}:${ratio2} (${pct1.toFixed(0)}% و ${pct2.toFixed(0)}%)`;
-    
-    // تطبيق النسبة على العدادات أيضاً إذا كانت موجودة
-    if (day.metersConsumption != null) {
-      const adjustedMeter1 = (day.metersConsumption * ratio1) / total;
-      const adjustedMeter2 = (day.metersConsumption * ratio2) / total;
-      day.metersConsumption = adjustedMeter1;
-      day.meterAdjustedNote = `✔️ (عداد) نسبة ${ratio1}:${ratio2} (${pct1.toFixed(0)}% و ${pct2.toFixed(0)}%)`;
-    }
-  });
+  } catch (err) {
+    console.error('syncFromSheet error:', err);
+    if (!silent) showToast('⚠ تعذر الاتصال بالشيت', 'warn');
+  }
 }
 </script>
 </body>
