@@ -852,7 +852,7 @@ function buildInfographicHTML(ctx) {
         <div class="info-area-stats-row">
           <div class="info-area-stat-icon">💧</div>
           <div class="info-area-stat-label">الاستهلاك</div>
-          <div class="info-area-stat-value">${fmt(pickConsumption(r, source))} م³</div>
+          <div class="info-area-stat-value">${pickConsumption(r, source) != null ? fmt(pickConsumption(r, source)) : '--'} م³</div>
         </div>
         <div class="info-area-stats-row">
           <div class="info-area-stat-icon">⏱️</div>
@@ -879,7 +879,7 @@ function buildInfographicHTML(ctx) {
       <div class="info-area-stats-row">
         <div class="info-area-stat-icon">💧</div>
         <div class="info-area-stat-label">الاستهلاك</div>
-        <div class="info-area-stat-value">${fmt(pickConsumption(a, source))} م³</div>
+        <div class="info-area-stat-value">${pickConsumption(a, source) != null ? fmt(pickConsumption(a, source)) : '--'} م³</div>
       </div>
       <div class="info-area-stats-row">
         <div class="info-area-stat-icon">⏱️</div>
