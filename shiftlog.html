@@ -991,7 +991,7 @@ const DAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربع�
 
 // 🆕 النطاقات الطبيعية للبيانات الأساسية (تُستخدم في تنبيه اكتمال/سلامة البيانات قبل الحفظ)
 const NORMAL_RANGES = {
-  voltage: [380, 420],
+  voltage: [200, 220],
   freq:    [30, 50],
   amp:     [100, 250],
   press:   [1, 5.5],
@@ -1219,7 +1219,7 @@ function buildTable() {
         </button>
       </td>
       <!-- الجهد -->
-      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="voltage" placeholder="380" step="1" style="color:var(--amber);font-family:Rajdhani,sans-serif;"></td>
+      <td class="cell-tank"><input type="number" inputmode="decimal" data-col="voltage" placeholder="213" step="1" style="color:var(--amber);font-family:Rajdhani,sans-serif;"></td>
       <!-- الوارد -->
       <td class="cell-tank"><input type="number" inputmode="decimal" data-col="inflow" placeholder="--" step="0.1" style="color:var(--purple);font-family:Rajdhani,sans-serif;"></td>
       <!-- خط 1 -->
