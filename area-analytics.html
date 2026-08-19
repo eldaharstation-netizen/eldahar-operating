@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+ <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -223,7 +224,16 @@
     <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(7)">آخر 7 أيام</button>
     <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(30)">آخر 30 يوم</button>
   </div>
-
+<!-- 🆕 جراف التصرفات الساعي -->
+<div class="hourly-chart-section" id="hourlyChartSection" style="background:var(--card-bg); border:1px solid var(--brd); border-radius:14px; padding:1.3rem; margin-bottom:1.5rem; display:none;">
+  <div style="font-size: 0.95rem; font-weight: 700; color: var(--blue); margin-bottom: 1rem;">
+    📊 جراف التصرفات على مدار اليوم
+  </div>
+  <div style="position:relative; height:380px; margin-bottom:1rem; background:rgba(0,180,255,0.03); border-radius:10px; padding:1rem;">
+    <canvas id="hourlyFlowChart"></canvas>
+  </div>
+  <div class="chart-legend-hourly" id="chartLegendHourly" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.8rem; margin-top:1.5rem; font-size:0.85rem;"></div>
+</div>
   <div id="resultArea">
     <div class="empty-state">📍 اختاري المنطقة والفترة واضغطي "تحليل"</div>
   </div>
