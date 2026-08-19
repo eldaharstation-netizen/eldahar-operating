@@ -225,8 +225,8 @@
     <button class="btn" style="background:linear-gradient(135deg,#444,#666);" onclick="setQuickRange(30)">آخر 30 يوم</button>
   </div>
 <!-- 🆕 جراف التصرفات الساعي -->
-<div class="hourly-chart-section" id="hourlyChartSection" style="background:var(--card-bg); border:1px solid var(--brd); border-radius:14px; padding:1.3rem; margin-bottom:1.5rem; display:none;">
-  <div style="font-size: 0.95rem; font-weight: 700; color: var(--blue); margin-bottom: 1rem;">
+<div class="hourly-chart-section" id="hourlyChartSection" style="background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:1.3rem; margin-bottom:1.5rem; display:none;">
+  <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-light); margin-bottom: 1rem;">
     📊 جراف التصرفات على مدار اليوم
   </div>
   <div style="position:relative; height:380px; margin-bottom:1rem; background:rgba(0,180,255,0.03); border-radius:10px; padding:1rem;">
@@ -271,6 +271,7 @@ const AREAS = [
 
 let scriptUrl = localStorage.getItem('shiftlog_script_url') || 'https://script.google.com/macros/s/AKfycbzH9abO9m7O5Fip6J89VAQU3CB_Bq2ESbAJjlz3zl3NR-KF-poYBLaVzYs04C-o3FcL5A/exec';
 let dailyChart = null;
+let hourlyChartInstance = null; // 🆕 جراف التصرف الساعي
 
 window.addEventListener('load', () => {
   const sel = document.getElementById('areaSelect');
@@ -292,6 +293,10 @@ function onAreaSelectChange() {
   toInput.disabled = isAllAreas;
   if (isAllAreas) {
     toInput.value = document.getElementById('fromDate').value;
+  }
+  // 🆕 جراف التصرف الساعي بيتعرض بس لمنطقة واحدة محددة، مش "كل المناطق"
+  if (isAllAreas) {
+    document.getElementById('hourlyChartSection').style.display = 'none';
   }
 }
 
@@ -336,6 +341,7 @@ async function loadAnalytics() {
   document.getElementById('resultArea').innerHTML = '<div class="empty-state">⏳ جاري التحليل...</div>';
 
   if (area === '__ALL__') {
+    document.getElementById('hourlyChartSection').style.display = 'none';
     await loadAllAreasAnalytics(from);
     return;
   }
@@ -345,6 +351,9 @@ async function loadAnalytics() {
     const res = await fetch(url);
     const data = await res.json();
     renderResult(area, from, to, data);
+    // 🆕 جراف التصرف الساعي — منفصل عن نتيجة التحليل الرئيسية، بيتحمّل
+    // بالتوازي، فمش بيأخر ظهور باقي التحليل لو الشبكة بطيئة
+    loadHourlyChart(area, from, to);
   } catch (err) {
     console.error(err);
     document.getElementById('resultArea').innerHTML = '<div class="empty-state">⚠ تعذر الاتصال بالشيت</div>';
@@ -362,6 +371,117 @@ async function loadAllAreasAnalytics(date) {
   } catch (err) {
     console.error(err);
     document.getElementById('resultArea').innerHTML = '<div class="empty-state">⚠ تعذر الاتصال بالشيت</div>';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// 🆕 جراف التصرف الساعي — بيتنادى عبر fetch على doGet
+// (مش google.script.run، لأن الصفحة دي بتتفتح كملف HTML مستقل
+// وبتكلم Apps Script كـ Web App، مش كـ HtmlService داخل نفس المشروع)
+// ════════════════════════════════════════════════════════
+async function loadHourlyChart(area, from, to) {
+  try {
+    const url = `${scriptUrl}?action=getAreaHourlyChart&area=${encodeURIComponent(area)}&from=${from}&to=${to}&t=${Date.now()}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    renderHourlyChart(data);
+  } catch (err) {
+    console.error('خطأ الجراف الساعي:', err);
+    document.getElementById('hourlyChartSection').style.display = 'none';
+  }
+}
+
+function renderHourlyChart(data) {
+  if (!data || data.error || !data.datasets || !data.datasets.length) {
+    document.getElementById('hourlyChartSection').style.display = 'none';
+    return;
+  }
+
+  const chartSection = document.getElementById('hourlyChartSection');
+  chartSection.style.display = 'block';
+
+  const ctx = document.getElementById('hourlyFlowChart');
+  if (!ctx) return;
+
+  if (hourlyChartInstance) hourlyChartInstance.destroy();
+
+  const datasets = data.datasets.map(ds => ({
+    label: ds.label,
+    data: ds.data,
+    borderColor: ds.borderColor,
+    backgroundColor: ds.backgroundColor,
+    tension: ds.tension,
+    fill: ds.fill,
+    pointRadius: ds.pointRadius,
+    pointHoverRadius: ds.pointHoverRadius,
+    pointBackgroundColor: ds.pointBackgroundColor,
+    pointBorderColor: ds.pointBorderColor,
+    pointBorderWidth: ds.pointBorderWidth,
+    _notes: ds._notes,
+    _pressures: ds._pressures,
+    _freqs: ds._freqs
+  }));
+
+  hourlyChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels: data.labels, datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(15, 26, 58, 0.95)',
+          borderColor: 'rgba(0, 180, 255, 0.3)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          padding: 10,
+          titleColor: '#00e5ff',
+          bodyColor: '#e8f4ff',
+          callbacks: {
+            title(context) { return '⏰ ' + context[0].label; },
+            label(context) {
+              const ds = context.dataset;
+              const idx = context.dataIndex;
+              const p = ds._pressures?.[idx];
+              const f = ds._freqs?.[idx];
+              let label = `${ds.label}: ${context.raw} م³/س`;
+              if (p) label += `\n💧 الضغط: ${p} م`;
+              if (f) label += `\n⚡ التردد: ${f} Hz`;
+              return label;
+            },
+            afterLabel(context) {
+              const note = context.dataset._notes?.[context.dataIndex];
+              return note ? `\n${note}` : '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0, 180, 255, 0.08)' }, ticks: { color: 'rgba(232, 244, 255, 0.7)' } },
+        y: {
+          grid: { color: 'rgba(0, 180, 255, 0.08)' },
+          ticks: { color: 'rgba(232, 244, 255, 0.7)' },
+          title: { display: true, text: 'التصرف (م³/س)', color: '#e8f4ff' }
+        }
+      }
+    }
+  });
+
+  const legend = document.getElementById('chartLegendHourly');
+  if (legend) {
+    legend.innerHTML = '';
+    datasets.forEach(ds => {
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex; align-items:center; gap:0.6rem;';
+      item.innerHTML = `
+        <div style="width:20px; height:3px; border-radius:2px; background-color:${ds.borderColor};"></div>
+        <span>${ds.label}</span>
+      `;
+      legend.appendChild(item);
+    });
   }
 }
 
@@ -445,6 +565,7 @@ function renderResult(area, from, to, d) {
   if (!d.daily || !d.daily.length) {
     container.innerHTML = `<div class="empty-state">مفيش بيانات لمنطقة "${area}" فى الفترة من ${from} إلى ${to}</div>`;
     lastLoadedData = null;
+    document.getElementById('hourlyChartSection').style.display = 'none';
     return;
   }
 
