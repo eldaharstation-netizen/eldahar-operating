@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تحليل استهلاك المناطق — محطة الدهار</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   :root {
@@ -66,17 +65,30 @@
   }
   .section-title { font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--primary-light); }
 
-  /* ── الجراف ── */
-  .chart-container {
+  /* ── الجراف الجديد ── */
+  .hourly-chart-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.3rem;
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+
+  .hourly-chart-section.active {
+    display: block;
+  }
+
+  .chart-wrapper {
     position: relative;
-    height: 400px;
+    height: 380px;
     margin-bottom: 1rem;
     background: rgba(0, 180, 255, 0.03);
     border-radius: 10px;
     padding: 1rem;
   }
 
-  .chart-legend {
+  .chart-legend-hourly {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 0.8rem;
@@ -84,54 +96,17 @@
     font-size: 0.85rem;
   }
 
-  .legend-item {
+  .legend-item-hourly {
     display: flex;
     align-items: center;
     gap: 0.6rem;
   }
 
-  .legend-color {
+  .legend-color-hourly {
     width: 20px;
     height: 3px;
     border-radius: 2px;
     flex-shrink: 0;
-  }
-
-  /* ── Tooltip مخصص ── */
-  .chart-tooltip {
-    background: rgba(15, 26, 58, 0.95);
-    border: 1px solid rgba(0, 180, 255, 0.3);
-    border-radius: 8px;
-    padding: 0.8rem;
-    color: var(--text);
-    font-size: 0.8rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    z-index: 100;
-  }
-
-  .tooltip-line {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.4rem;
-  }
-
-  .tooltip-label {
-    color: var(--text-secondary);
-    min-width: 80px;
-  }
-
-  .tooltip-value {
-    color: var(--primary-light);
-    font-weight: 700;
-  }
-
-  .tooltip-note {
-    margin-top: 0.6rem;
-    padding-top: 0.6rem;
-    border-top: 1px solid rgba(0, 180, 255, 0.2);
-    color: var(--warning);
-    font-size: 0.75rem;
   }
 
   table { width:100%; border-collapse:collapse; font-size:.85rem; }
@@ -147,15 +122,8 @@
 
   .empty-state { text-align:center; padding:3rem 1rem; color:var(--text-tertiary); }
 
-  .url-bar { display:flex; gap:.5rem; align-items:center; }
-  .url-bar input { width:280px; }
-
   .report-actions { display:flex; gap:.7rem; flex-wrap:wrap; margin-top:1.5rem; }
   .report-actions .btn { padding:.7rem 1.4rem; font-size:.85rem; }
-
-  .loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
-  .spinner { border: 3px solid var(--border); border-top-color: var(--primary-light); border-radius: 50%; width: 30px; height: 30px; animation: spin 0.8s linear infinite; margin: 0 auto; }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
   .toast {
     position: fixed;
@@ -179,7 +147,7 @@
     <div class="logo-box">💧</div>
     <div class="header-title">
       <h1>تحليل استهلاك المناطق</h1>
-      <p>محطة الدهار — مع جراف التصرفات اليومي</p>
+      <p>محطة الدهار — جراف التصرفات اليومي</p>
     </div>
   </div>
 </header>
@@ -201,43 +169,83 @@
       <label>إلى التاريخ</label>
       <input type="date" id="toDate">
     </div>
-    <button class="btn" onclick="loadAnalytics()">🔍 تحليل</button>
+    <button class="btn" onclick="loadAnalyticsWithChart()">🔍 تحليل</button>
   </div>
 
   <!-- KPI Cards -->
   <div class="kpi-grid" id="kpiGrid"></div>
 
-  <!-- جراف التصرفات -->
-  <div class="section" id="chartSection" style="display:none;">
-    <div class="section-title">📊 جراف التصرفات على مدار اليوم (معه الضغط والتردد)</div>
-    <div class="chart-container">
-      <canvas id="flowChart"></canvas>
+  <!-- 🆕 جراف التصرفات الساعي -->
+  <div class="hourly-chart-section" id="hourlyChartSection">
+    <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-light); margin-bottom: 1rem;">
+      📊 جراف التصرفات على مدار اليوم
     </div>
-    <div class="chart-legend" id="chartLegend"></div>
+    <div class="chart-wrapper">
+      <canvas id="hourlyFlowChart"></canvas>
+    </div>
+    <div class="chart-legend-hourly" id="chartLegendHourly"></div>
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-secondary);">
+      💡 كل يوم = خط بلون مختلف • عند تمرير الفأرة = الضغط والتردد والملاحظات
+    </div>
   </div>
 
-  <!-- جدول تفاصيل يومي -->
-  <div class="section" id="tableSection" style="display:none;">
-    <div class="section-title">📋 تفاصيل الساعات اليومية</div>
-    <table id="dailyTable">
+  <!-- جدول ملخص يومي -->
+  <div class="section" id="summarySection" style="display:none;">
+    <div class="section-title">📊 ملخص الاستهلاك اليومي</div>
+    <table id="summaryTable">
       <thead>
         <tr>
           <th>التاريخ</th>
-          <th>الساعة</th>
-          <th>التصرف (م³/س)</th>
-          <th>الضغط (م)</th>
-          <th>التردد (Hz)</th>
-          <th>ملاحظات</th>
+          <th>الاستهلاك (م³)</th>
+          <th>ساعات التشغيل</th>
+          <th>متوسط التصرف (م³/س)</th>
         </tr>
       </thead>
-      <tbody id="dailyTableBody"></tbody>
+      <tbody id="summaryTableBody"></tbody>
     </table>
+  </div>
+
+  <!-- جدول تحليل الخطوط والطلمبات -->
+  <div class="section" id="lineSection" style="display:none;">
+    <div class="section-title">⚙️ توزيع ساعات التشغيل</div>
+    
+    <div style="margin-bottom: 2rem;">
+      <div style="font-size:0.9rem; font-weight:700; color:var(--primary-light); margin-bottom:0.8rem;">الخطوط</div>
+      <div id="lineHoursContainer"></div>
+    </div>
+
+    <div style="margin-bottom: 2rem;">
+      <div style="font-size:0.9rem; font-weight:700; color:var(--primary-light); margin-bottom:0.8rem;">الطلمبات</div>
+      <div id="pumpHoursContainer"></div>
+    </div>
+  </div>
+
+  <!-- معلومات عامة -->
+  <div class="section" id="statsSection" style="display:none;">
+    <div class="section-title">📈 الإحصائيات العامة</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.3rem;">إجمالي الاستهلاك</div>
+        <div style="font-size:1.4rem; font-weight:700; color:var(--primary-light);" id="totalConsumption">-</div>
+      </div>
+      <div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.3rem;">متوسط يومي</div>
+        <div style="font-size:1.4rem; font-weight:700; color:var(--primary-light);" id="avgDailyConsumption">-</div>
+      </div>
+      <div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.3rem;">عدد الأيام</div>
+        <div style="font-size:1.4rem; font-weight:700; color:var(--primary-light);" id="daysCount">-</div>
+      </div>
+      <div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.3rem;">متوسط التصرف</div>
+        <div style="font-size:1.4rem; font-weight:700; color:var(--primary-light);" id="avgFlow">-</div>
+      </div>
+    </div>
   </div>
 
   <!-- التقرير والتنزيل -->
   <div class="report-actions">
     <button class="btn" onclick="printReport()" style="background:linear-gradient(135deg,#444,#666) !important;">🖨️ طباعة</button>
-    <button class="btn" onclick="downloadChartImage()" style="background:linear-gradient(135deg,#8a3ffc,#c264ff) !important;">📥 تحميل الجراف</button>
   </div>
 </main>
 
@@ -246,9 +254,14 @@
   let lastChartInstance = null;
   let lastAnalyticsData = null;
   const AREAS = [
-  'شبكات الدهار كامله - تشغيل مستمر','السلام-الحجاز','السلام-الحجاز','السلام الحجاز+ابوجميعه+الكهف','السلام-فلفل','مجمع الخدمات','مجمع الخدمات+جبل العقش','الكنيسه','الشيخ محمود','مجاهد','الموظفين','الزراعه','النجدة و الشيخ شحات',
+
+ 'شبكات الدهار كامله - تشغيل مستمر','السلام-الحجاز','الصوب+ابوعشره','ابوعشره','الصوب','السلام الحجاز+ ابوجميعه + الكهف','السلام-فلفل','مجمع الخدمات','مجمع الخدمات+جبل العقش','الكنيسه','الشيخ محمود','مجاهد','الموظفين','الزراعه','النجدة و الشيخ شحات',
+
   'حفر الباطن و التقوى','الهلال','فيلات مبارك 7','اللؤلؤة و الفيروز','مبارك 11 و 12 و 13','بلوكات الاحياء-فاطمه الزهراء','رافع الجيش','الأمير طلال','بلوكات الاحياء داخل السور -كليه التربيه','خط جبل العفش'
+
 ];
+
+
 
   // ── تهيئة الصفحة ──
   window.addEventListener('DOMContentLoaded', function() {
@@ -279,7 +292,7 @@
   }
 
   // ── تحميل البيانات من Google Apps Script ──
-  function loadAnalytics() {
+  function loadAnalyticsWithChart() {
     const area = document.getElementById('areaSelect').value;
     const from = document.getElementById('fromDate').value;
     const to = document.getElementById('toDate').value;
@@ -291,121 +304,124 @@
 
     showToast('⏳ جاري التحميل...');
 
+    // استدعاء الدالة الأصلية
     google.script.run
-      .withSuccessHandler(onDataLoaded)
+      .withSuccessHandler(onAnalyticsLoaded)
       .withFailureHandler(onDataError)
+      .getAreaAnalyticsAction(area, from, to);
+
+    // استدعاء البيانات للجراف
+    google.script.run
+      .withSuccessHandler(renderHourlyChart)
+      .withFailureHandler(err => console.error('خطأ الجراف:', err))
       .getAreaHourlyAnalyticsForChart(area, from, to);
   }
 
-  function onDataLoaded(data) {
-    if (!data || data.error) {
-      showToast('⚠️ ' + (data?.error || 'خطأ في التحميل'));
+  function onAnalyticsLoaded(data) {
+    if (!data) {
+      showToast('⚠️ خطأ في التحميل');
       return;
     }
 
     lastAnalyticsData = data;
-    updateKPIs(data);
-    renderChart(data);
-    renderDailyTable(data);
     
-    document.getElementById('chartSection').style.display = 'block';
-    document.getElementById('tableSection').style.display = 'block';
-    
+    // عرض الإحصائيات
+    document.getElementById('totalConsumption').textContent = Math.round(data.totalConsumption * 100) / 100 + ' م³';
+    document.getElementById('avgDailyConsumption').textContent = (data.avgDailyConsumption || 0) + ' م³';
+    document.getElementById('daysCount').textContent = data.daily.length + ' يوم';
+    document.getElementById('avgFlow').textContent = (data.avgFlowM3PerHour || 0) + ' م³/س';
+    document.getElementById('statsSection').style.display = 'block';
+
+    // عرض جدول ملخص يومي
+    const summaryBody = document.getElementById('summaryTableBody');
+    summaryBody.innerHTML = '';
+    data.daily.forEach(day => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${day.date}</td>
+        <td>${day.consumption}</td>
+        <td>${day.operatingHours}</td>
+        <td>${day.avgFlowM3PerHour || '-'}</td>
+      `;
+      summaryBody.appendChild(tr);
+    });
+    document.getElementById('summarySection').style.display = 'block';
+
+    // عرض توزيع الخطوط والطلمبات
+    const lineContainer = document.getElementById('lineHoursContainer');
+    lineContainer.innerHTML = '';
+    Object.entries(data.lineHours).forEach(([line, hours]) => {
+      lineContainer.innerHTML += `
+        <div class="bar-row">
+          <div class="bar-name">${line}</div>
+          <div class="bar-track"><div class="bar-fill" style="width: ${(hours / (data.totalOperatingHours || 1)) * 100}%"></div></div>
+          <div class="bar-val">${hours} س</div>
+        </div>
+      `;
+    });
+
+    const pumpContainer = document.getElementById('pumpHoursContainer');
+    pumpContainer.innerHTML = '';
+    Object.entries(data.pumpHours).forEach(([pump, hours]) => {
+      pumpContainer.innerHTML += `
+        <div class="bar-row">
+          <div class="bar-name">${pump}</div>
+          <div class="bar-track"><div class="bar-fill" style="width: ${(hours / (data.totalOperatingHours || 1)) * 100}%"></div></div>
+          <div class="bar-val">${hours} س</div>
+        </div>
+      `;
+    });
+    document.getElementById('lineSection').style.display = 'block';
+
     showToast('✅ تم تحميل البيانات بنجاح');
   }
 
-  function onDataError(error) {
-    console.error('خطأ:', error);
-    showToast('❌ خطأ في الاتصال: ' + error);
-  }
+  function renderHourlyChart(data) {
+    if (!data || data.error) {
+      console.log('لا توجد بيانات للجراف');
+      return;
+    }
 
-  // ── تحديث KPI Cards ──
-  function updateKPIs(data) {
-    const kpiGrid = document.getElementById('kpiGrid');
-    kpiGrid.innerHTML = '';
+    const chartSection = document.getElementById('hourlyChartSection');
+    if (chartSection) {
+      chartSection.classList.add('active');
+    }
 
-    const totalConsumption = data.datasets.reduce((sum, ds) => {
-      return sum + ds.data.filter(v => v !== null).reduce((a, b) => a + b, 0);
-    }, 0);
-
-    const daysCount = data.datasets.length;
-    const avgDaily = daysCount > 0 ? Math.round(totalConsumption / daysCount * 100) / 100 : 0;
-
-    const kpis = [
-      { label: 'المنطقة', value: data.area, detail: '' },
-      { label: 'إجمالي الاستهلاك', value: Math.round(totalConsumption * 100) / 100 + ' م³', detail: '' },
-      { label: 'عدد أيام الضخ', value: daysCount, detail: '' },
-      { label: 'متوسط اليومي', value: avgDaily + ' م³', detail: '' }
-    ];
-
-    kpis.forEach(kpi => {
-      const card = document.createElement('div');
-      card.className = 'kpi-card';
-      card.innerHTML = `
-        <div class="kpi-label">${kpi.label}</div>
-        <div class="kpi-value">${kpi.value}</div>
-        ${kpi.detail ? '<div class="kpi-detail">' + kpi.detail + '</div>' : ''}
-      `;
-      kpiGrid.appendChild(card);
-    });
-  }
-
-  // ── رسم الجراف ──
-  function renderChart(data) {
-    const ctx = document.getElementById('flowChart').getContext('2d');
+    const ctx = document.getElementById('hourlyFlowChart');
+    if (!ctx) return;
 
     if (lastChartInstance) {
       lastChartInstance.destroy();
     }
 
-    // إعداد المؤشرات المخصصة (tooltip)
-    const chartPlugin = {
-      id: 'customTooltip',
-      afterDraw(chart) {
-        const activePoints = chart.tooltip.getActiveElements();
-        if (activePoints.length === 0) return;
+    const colors = [
+      '#00b4ff', '#00e676', '#ff7043', '#ffd740', '#e91e63',
+      '#9c27b0', '#00bcd4', '#8bc34a', '#ff5722', '#673ab7',
+      '#b39ddb', '#ffb74d', '#4dd0e1', '#c5e1a5', '#f8bbd0'
+    ];
 
-        const point = activePoints[0];
-        const dataset = chart.data.datasets[point.datasetIndex];
-        const index = point.index;
-        const hourLabel = chart.data.labels[index];
-        const flowValue = point.raw;
-
-        // استخراج البيانات الإضافية
-        const pressure = dataset._dayData?.[index]?.pressure || 'N/A';
-        const freq = dataset._dayData?.[index]?.freq || 'N/A';
-        const note = dataset._notes?.[index] || '';
-
-        // عرض tooltip مخصص
-        showCustomTooltip(point.element, {
-          hour: hourLabel,
-          flow: flowValue,
-          pressure: pressure,
-          freq: freq,
-          note: note
-        });
-      }
-    };
+    const datasets = data.datasets.map((ds, idx) => ({
+      label: ds.label,
+      data: ds.data,
+      borderColor: ds.borderColor,
+      backgroundColor: ds.backgroundColor,
+      tension: ds.tension,
+      fill: ds.fill,
+      pointRadius: ds.pointRadius,
+      pointHoverRadius: ds.pointHoverRadius,
+      pointBackgroundColor: ds.pointBackgroundColor,
+      pointBorderColor: ds.pointBorderColor,
+      pointBorderWidth: ds.pointBorderWidth,
+      _notes: ds._notes,
+      _pressures: ds._pressures,
+      _freqs: ds._freqs
+    }));
 
     lastChartInstance = new Chart(ctx, {
       type: 'line',
       data: {
         labels: data.labels,
-        datasets: data.datasets.map(ds => ({
-          label: ds.label,
-          data: ds.data,
-          borderColor: ds.borderColor,
-          backgroundColor: ds.backgroundColor,
-          tension: ds.tension,
-          fill: ds.fill,
-          pointRadius: ds.pointRadius,
-          pointHoverRadius: ds.pointHoverRadius,
-          pointBackgroundColor: ds.pointBackgroundColor,
-          pointBorderColor: ds.pointBorderColor,
-          pointBorderWidth: ds.pointBorderWidth,
-          _notes: ds._notes,
-          _dayData: ds._dayData
-        }))
+        datasets: datasets
       },
       options: {
         responsive: true,
@@ -430,20 +446,17 @@
             bodyFont: { size: 11 },
             callbacks: {
               title(context) {
-                return 'الساعة: ' + context[0].label;
+                return '⏰ ' + context[0].label;
               },
               label(context) {
                 const dataset = context.dataset;
                 const idx = context.dataIndex;
-                const dayData = dataset._dayData?.[idx];
-                
+                const pressure = dataset._pressures?.[idx];
+                const freq = dataset._freqs?.[idx];
+
                 let label = `${dataset.label}: ${context.raw} م³/س`;
-                if (dayData?.pressure !== null && dayData?.pressure !== undefined) {
-                  label += `\nالضغط: ${dayData.pressure} م`;
-                }
-                if (dayData?.freq !== null && dayData?.freq !== undefined) {
-                  label += `\nالتردد: ${dayData.freq} Hz`;
-                }
+                if (pressure) label += `\n💧 الضغط: ${pressure} م`;
+                if (freq) label += `\n⚡ التردد: ${freq} Hz`;
                 return label;
               },
               afterLabel(context) {
@@ -457,18 +470,14 @@
         },
         scales: {
           x: {
-            grid: {
-              color: 'rgba(0, 180, 255, 0.08)'
-            },
+            grid: { color: 'rgba(0, 180, 255, 0.08)' },
             ticks: {
               color: 'rgba(232, 244, 255, 0.7)',
               font: { size: 11 }
             }
           },
           y: {
-            grid: {
-              color: 'rgba(0, 180, 255, 0.08)'
-            },
+            grid: { color: 'rgba(0, 180, 255, 0.08)' },
             ticks: {
               color: 'rgba(232, 244, 255, 0.7)',
               font: { size: 11 }
@@ -476,77 +485,35 @@
             title: {
               display: true,
               text: 'التصرف (م³/س)',
-              color: 'var(--text)',
+              color: '#e8f4ff',
               font: { weight: 'bold' }
             }
           }
         }
-      },
-      plugins: [chartPlugin]
+      }
     });
 
     // تحديث Legend
-    renderChartLegend(data);
-  }
-
-  function renderChartLegend(data) {
-    const legend = document.getElementById('chartLegend');
-    legend.innerHTML = '';
-
-    data.datasets.forEach((ds, idx) => {
-      const item = document.createElement('div');
-      item.className = 'legend-item';
-      item.innerHTML = `
-        <div class="legend-color" style="background-color: ${ds.borderColor};"></div>
-        <span>${ds.label}</span>
-      `;
-      legend.appendChild(item);
-    });
-  }
-
-  // ── جدول التفاصيل ──
-  function renderDailyTable(data) {
-    const tbody = document.getElementById('dailyTableBody');
-    tbody.innerHTML = '';
-
-    const rows = [];
-
-    data.datasets.forEach(ds => {
-      ds.data.forEach((flow, idx) => {
-        if (flow !== null) {
-          const dayData = ds._dayData?.[idx];
-          rows.push({
-            date: ds.label,
-            hour: data.labels[idx],
-            flow: flow,
-            pressure: dayData?.pressure || '-',
-            freq: dayData?.freq || '-',
-            note: ds._notes?.[idx] || ''
-          });
-        }
+    const legend = document.getElementById('chartLegendHourly');
+    if (legend) {
+      legend.innerHTML = '';
+      datasets.forEach(ds => {
+        const item = document.createElement('div');
+        item.className = 'legend-item-hourly';
+        item.innerHTML = `
+          <div class="legend-color-hourly" style="background-color: ${ds.borderColor};"></div>
+          <span>${ds.label}</span>
+        `;
+        legend.appendChild(item);
       });
-    });
-
-    rows.sort((a, b) => {
-      if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return parseInt(a.hour) - parseInt(b.hour);
-    });
-
-    rows.forEach(row => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${row.date}</td>
-        <td>${row.hour}</td>
-        <td>${row.flow}</td>
-        <td>${row.pressure}</td>
-        <td>${row.freq}</td>
-        <td style="color: ${row.note ? 'var(--warning)' : 'inherit'};">${row.note || '-'}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+    }
   }
 
-  // ── Utility Functions ──
+  function onDataError(error) {
+    console.error('خطأ:', error);
+    showToast('❌ خطأ في الاتصال: ' + error);
+  }
+
   function showToast(msg) {
     const toast = document.createElement('div');
     toast.className = 'toast';
@@ -555,27 +522,8 @@
     setTimeout(() => toast.remove(), 3000);
   }
 
-  function showCustomTooltip(element, data) {
-    // لا نستخدمها بسبب أن Chart.js يدير الـ tooltips تلقائياً
-  }
-
   function printReport() {
     window.print();
-  }
-
-  async function downloadChartImage() {
-    if (!lastChartInstance) {
-      showToast('⚠️ لم يتم رسم جراف بعد');
-      return;
-    }
-
-    const image = lastChartInstance.toBase64Image();
-    const link = document.createElement('a');
-    link.href = image;
-    link.download = `chart_${lastAnalyticsData.area}_${new Date().toISOString().split('T')[0]}.png`;
-    link.click();
-    
-    showToast('✅ تم تحميل الجراف');
   }
 </script>
 
