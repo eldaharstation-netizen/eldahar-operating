@@ -6,6 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تحليل استهلاك المناطق — محطة الدهار</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -226,8 +228,18 @@
   </div>
 <!-- 🆕 جراف التصرفات الساعي -->
 <div class="hourly-chart-section" id="hourlyChartSection" style="background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:1.3rem; margin-bottom:1.5rem; display:none;">
-  <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-light); margin-bottom: 1rem;">
-    📊 جراف التصرفات على مدار اليوم
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; margin-bottom:1rem;">
+    <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-light);">
+      📊 جراف التصرفات على مدار اليوم
+    </div>
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+      <button class="btn" style="background:linear-gradient(135deg,#444,#666); padding:.45rem .8rem; font-size:.78rem;" onclick="resetHourlyChartZoom()">↺ إعادة ضبط التكبير</button>
+      <button class="btn" style="background:linear-gradient(135deg,#444,#666); padding:.45rem .8rem; font-size:.78rem;" onclick="downloadHourlyChartImage()">🖼️ حفظ كصورة</button>
+      <button class="btn" style="background:linear-gradient(135deg,#444,#666); padding:.45rem .8rem; font-size:.78rem;" onclick="downloadHourlyChartCSV()">📄 تنزيل البيانات (CSV)</button>
+    </div>
+  </div>
+  <div style="font-size:0.7rem; color:var(--text-tertiary); margin-bottom:0.6rem;">
+    🖱️ كبّري بعجلة الماوس أو بإصبعين على الموبايل، واسحبي للتنقل يمين/شمال
   </div>
   <div style="position:relative; height:380px; margin-bottom:1rem; background:rgba(0,180,255,0.03); border-radius:10px; padding:1rem;">
     <canvas id="hourlyFlowChart"></canvas>
@@ -457,6 +469,15 @@ function renderHourlyChart(data) {
               return note ? `\n${note}` : '';
             }
           }
+        },
+        // 🆕 التكبير/التصغير والتنقل (عجلة الماوس، سحب، إصبعين على الموبايل)
+        zoom: {
+          pan: { enabled: true, mode: 'x' },
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x'
+          }
         }
       },
       scales: {
@@ -483,6 +504,43 @@ function renderHourlyChart(data) {
       legend.appendChild(item);
     });
   }
+}
+
+// 🆕 إعادة ضبط التكبير/التصغير للجراف الساعي لوضعه الأصلي
+function resetHourlyChartZoom() {
+  if (!hourlyChartInstance) { showToast('⚠ حمّلي الجراف الأول'); return; }
+  hourlyChartInstance.resetZoom();
+}
+
+// 🆕 حفظ الجراف الساعي كصورة PNG — جاهزة للإرسال للإدارة أو الحفظ
+function downloadHourlyChartImage() {
+  if (!hourlyChartInstance) { showToast('⚠ حمّلي الجراف الأول'); return; }
+  const url = hourlyChartInstance.toBase64Image('image/png', 1);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `جراف_${lastLoadedData?.area || 'المنطقة'}_${new Date().toISOString().slice(0,10)}.png`;
+  a.click();
+}
+
+// 🆕 تنزيل بيانات الجراف الساعي كملف CSV — يفتح فى إكسل للاشتغال عليه
+// خارج الواجهة (تحليل إضافي، أرشفة، إلخ)
+function downloadHourlyChartCSV() {
+  if (!hourlyChartInstance || !hourlyChartInstance.data) { showToast('⚠ حمّلي الجراف الأول'); return; }
+  const labels = hourlyChartInstance.data.labels;
+  const datasets = hourlyChartInstance.data.datasets;
+  let csv = 'الساعة,' + datasets.map(ds => ds.label).join(',') + '\n';
+  labels.forEach((label, i) => {
+    const row = [label, ...datasets.map(ds => (ds.data[i] != null ? ds.data[i] : ''))];
+    csv += row.join(',') + '\n';
+  });
+  // 🆕 BOM فى الأول عشان الحروف العربية تظهر صح لو الملف اتفتح فى إكسل
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `بيانات_${lastLoadedData?.area || 'المنطقة'}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function renderAllAreasResult(date, d) {
