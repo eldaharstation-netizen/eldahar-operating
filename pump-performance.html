@@ -624,6 +624,8 @@ async function loadPerformance() {
 let detailChart = null;
 let effChart = null;
 let trendChart = null;
+let uptimeTimelineChart = null;
+let dailyHoursChart = null;
 let lastScatter = [];
 let lastPumps = {};
 let lastTrendVerdict = null;
@@ -726,6 +728,15 @@ function renderPerformance(d) {
       </div>
       <div class="chart-wrap" style="height:280px;"><canvas id="trendChart"></canvas></div>
       <div id="trendSummary" style="margin-top:.8rem;"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⏱️ تايم لاين التشغيل/التوقف — <span id="timelinePumpName"></span></div>
+      <div id="timelineSummary" style="margin-bottom:1rem;"></div>
+      <div class="ref-note" style="margin-top:0; margin-bottom:1rem;">الجراف الأول بيوضح كل ساعة اتسجلت للطلمبة دي خلال الفترة: شغالة (فوق) ولا متوقفة (تحت). الجراف التاني بيجمّع عدد ساعات التشغيل/التوقف لكل يوم.</div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="uptimeTimelineChart"></canvas></div>
+      <div class="chart-wrap" style="height:280px; margin-top:1.5rem;"><canvas id="dailyHoursChart"></canvas></div>
+      <div id="timelineEmpty"></div>
     </div>
   `;
 
@@ -970,6 +981,137 @@ function renderPumpDetail(name) {
 
   renderTrend(name, rows);
   buildAnalysisText(name, rows);
+  loadPumpTimeline(name);
+}
+
+// ============================================================
+// ⏱️ تايم لاين التشغيل/التوقف — بيجيب كل قراءة ساعية اتسجل فيها اسم
+// الطلمبة (شغالة أو متوقفة) خلال نفس الفترة (من/إلى) المختارة فوق،
+// ويرسم جراف "خط درجات" (شغال=1 / متوقف=0) + جراف أعمدة يومي مجمّع
+// ============================================================
+async function loadPumpTimeline(name) {
+  const summaryEl = document.getElementById('timelineSummary');
+  const emptyEl = document.getElementById('timelineEmpty');
+  const nameEl = document.getElementById('timelinePumpName');
+  if (!summaryEl || !emptyEl || !nameEl) return; // القسم لسه متعملش render
+
+  nameEl.textContent = name;
+  emptyEl.innerHTML = '';
+  summaryEl.innerHTML = '<div class="empty-state" style="padding:.6rem;">⏳ جاري تحميل تايم لاين التشغيل...</div>';
+
+  if (!scriptUrl) {
+    summaryEl.innerHTML = '';
+    emptyEl.innerHTML = '<div class="empty-state">⚠ محتاجة تحطي رابط السكريبت الأول</div>';
+    if (uptimeTimelineChart) { uptimeTimelineChart.destroy(); uptimeTimelineChart = null; }
+    if (dailyHoursChart) { dailyHoursChart.destroy(); dailyHoursChart = null; }
+    return;
+  }
+
+  const from = document.getElementById('fromDate').value;
+  const to = document.getElementById('toDate').value;
+
+  try {
+    const res = await fetch(`${scriptUrl}?action=getPumpTimeline&pump=${encodeURIComponent(name)}&from=${from}&to=${to}&t=${Date.now()}`);
+    const data = await res.json();
+    renderPumpTimeline(data);
+  } catch (err) {
+    console.error(err);
+    summaryEl.innerHTML = '';
+    emptyEl.innerHTML = '<div class="empty-state">⚠ تعذر تحميل تايم لاين التشغيل</div>';
+  }
+}
+
+function renderPumpTimeline(data) {
+  const summaryEl = document.getElementById('timelineSummary');
+  const emptyEl = document.getElementById('timelineEmpty');
+  const hourly = (data && data.hourly) || [];
+  const daily = (data && data.daily) || [];
+  const totals = (data && data.totals) || {};
+
+  if (!hourly.length) {
+    summaryEl.innerHTML = '';
+    emptyEl.innerHTML = '<div class="empty-state">مفيش قراءات مسجلة لهذه الطلمبة (شغالة أو متوقفة) خلال الفترة المحددة</div>';
+    if (uptimeTimelineChart) { uptimeTimelineChart.destroy(); uptimeTimelineChart = null; }
+    if (dailyHoursChart) { dailyHoursChart.destroy(); dailyHoursChart = null; }
+    return;
+  }
+  emptyEl.innerHTML = '';
+
+  summaryEl.innerHTML = `
+    <div class="ref-note" style="margin-top:0;">
+      ساعات التشغيل المسجلة: <b style="color:var(--success);">${totals.hoursRunning ?? '--'}</b> —
+      ساعات التوقف المسجلة: <b style="color:var(--danger);">${totals.hoursStopped ?? '--'}</b> —
+      نسبة التشغيل: <b>${totals.uptimePct != null ? totals.uptimePct + '%' : '--'}</b>
+      (من إجمالي ${totals.hoursRecorded ?? '--'} قراءة مسجلة لها خلال الفترة)
+    </div>
+  `;
+
+  // ── جراف "خط درجات" شغال/متوقف لكل قراءة ساعية بالترتيب الزمني ──
+  const labels = hourly.map(h => `${h.date} ${h.timeLabel}`);
+  const values = hourly.map(h => h.status === 'running' ? 1 : 0);
+  const pointColors = hourly.map(h => h.status === 'running' ? '#00e676' : '#ff3b5c');
+
+  const ctxU = document.getElementById('uptimeTimelineChart');
+  if (uptimeTimelineChart) uptimeTimelineChart.destroy();
+  uptimeTimelineChart = new Chart(ctxU, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'حالة التشغيل',
+        data: values,
+        stepped: true,
+        borderColor: '#00b4ff', borderWidth: 1.5,
+        backgroundColor: 'rgba(0,180,255,.08)', fill: true,
+        pointRadius: 3, pointHoverRadius: 5,
+        pointBackgroundColor: pointColors, pointBorderColor: pointColors
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks:{ color:'#9bbcd4', maxRotation:60, autoSkip:true, maxTicksLimit:16 }, grid:{color:'rgba(255,255,255,.05)'} },
+        y: { min:-0.15, max:1.15, ticks:{ color:'#9bbcd4', stepSize:1, callback: v => v===1?'شغال':(v===0?'متوقف':'') }, grid:{color:'rgba(255,255,255,.05)'} }
+      },
+      plugins: {
+        legend:{ display:false },
+        tooltip: {
+          callbacks: {
+            label: (item) => {
+              const h = hourly[item.dataIndex];
+              return h.status === 'running' ? `🟢 شغالة${h.freq!=null?' — '+h.freq+' هرتز':''}` : '🔴 متوقفة';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ── جراف أعمدة يومي مجمّع: ساعات تشغيل مقابل ساعات توقف لكل يوم ──
+  const dLabels = daily.map(d => d.date);
+  const runningVals = daily.map(d => d.hoursRunning);
+  const stoppedVals = daily.map(d => d.hoursStopped);
+
+  const ctxD = document.getElementById('dailyHoursChart');
+  if (dailyHoursChart) dailyHoursChart.destroy();
+  dailyHoursChart = new Chart(ctxD, {
+    type: 'bar',
+    data: {
+      labels: dLabels,
+      datasets: [
+        { label: 'ساعات التشغيل', data: runningVals, backgroundColor: '#00e676', stack: 's' },
+        { label: 'ساعات التوقف', data: stoppedVals, backgroundColor: '#ff3b5c', stack: 's' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked:true, ticks:{ color:'#9bbcd4', maxRotation:60 }, grid:{color:'rgba(255,255,255,.05)'} },
+        y: { stacked:true, title:{display:true, text:'عدد الساعات', color:'#9bbcd4'}, ticks:{color:'#9bbcd4'}, grid:{color:'rgba(255,255,255,.05)'} }
+      },
+      plugins: { legend:{ labels:{ color:'#e8f4ff' } } }
+    }
+  });
 }
 
 // رسم منحنى الكفاءة الأصلي (Q-η عند 50 هرتز) مقابل نقاط الكفاءة التقديرية الفعلية،
